@@ -1,0 +1,68 @@
+{% load humanize %}
+{% comment %}
+Usage: {% include "partials/property_card.html" with property=p %}
+Expects a dict/object with: id, title, location, beds, baths, area, price, image, no_brokerage
+Optional: badge = "verified" | "featured" | "premium"
+Optional: show_actions=True renders View Details / Contact Owner buttons (search results)
+{% endcomment %}
+<article class="property-card">
+    <div class="property-card__media">
+        <img src="{{ property.image }}" alt="{{ property.title }}" loading="lazy">
+        {% if property.badge == "featured" %}
+            <span class="badge badge-featured property-card__badge">
+                {% include "partials/icon.html" with name="star" cls="icon" %}
+                Featured
+            </span>
+        {% elif property.badge == "premium" %}
+            <span class="badge badge-premium property-card__badge">
+                {% include "partials/icon.html" with name="star" cls="icon" %}
+                Premium
+            </span>
+        {% elif property.badge == "verified" %}
+            <span class="badge badge-success property-card__badge">
+                {% include "partials/icon.html" with name="shield-check" cls="icon" %}
+                Verified
+            </span>
+        {% endif %}
+        <button type="button" class="property-card__save js-save-toggle" aria-label="Save property">
+            {% include "partials/icon.html" with name="heart" %}
+        </button>
+    </div>
+    <div class="property-card__body">
+        <h3 class="property-card__title">
+            {% if property.id %}<a href="{% url 'properties:detail' property.id %}">{{ property.title }}</a>{% else %}{{ property.title }}{% endif %}
+        </h3>
+        <div class="property-card__location">
+            {% include "partials/icon.html" with name="map-pin" %}
+            {{ property.location }}
+        </div>
+        <div class="property-card__specs">
+            <span>{% include "partials/icon.html" with name="bed" %} {{ property.beds }} Bed{{ property.beds|pluralize }}</span>
+            <span>{% include "partials/icon.html" with name="bath" %} {{ property.baths }} Bath{{ property.baths|pluralize }}</span>
+            <span>{% include "partials/icon.html" with name="area" %} {{ property.area }} sq.ft.</span>
+        </div>
+        <div class="property-card__footer">
+            <div class="property-card__price">
+                <span class="text-price-stat">&#8377;{{ property.price|intcomma }}</span>
+                <span>/month</span>
+            </div>
+            {% if property.no_brokerage %}
+                <span class="badge badge-success-outline">No Brokerage</span>
+            {% endif %}
+        </div>
+        {% if show_actions %}
+        <div class="property-card__actions">
+            <a href="{% url 'properties:detail' property.id %}" class="btn btn-secondary btn-sm">View Details</a>
+            <a href="{% url 'properties:detail' property.id %}" class="btn btn-primary btn-sm">
+                {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
+                Contact Owner
+            </a>
+        </div>
+        {% elif property.id %}
+        <a href="{% url 'properties:detail' property.id %}" class="property-card__details-link">
+            Details
+            {% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}
+        </a>
+        {% endif %}
+    </div>
+</article>

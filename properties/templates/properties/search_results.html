@@ -1,0 +1,239 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Search Properties | Rentora{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/properties.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <nav class="breadcrumb">
+        <a href="{% url 'core:home' %}">Home</a>
+        <span>/</span>
+        <span>Search Results</span>
+    </nav>
+</div>
+
+<!-- Search Toolbar -->
+<div class="search-toolbar">
+    <div class="container">
+        <form class="search-toolbar__bar" action="{% url 'properties:search' %}" method="get">
+            <label class="search-toolbar__field">
+                {% include "partials/icon.html" with name="map-pin" %}
+                <span class="search-toolbar__field-label">
+                    <span>Location</span>
+                    <select name="city">
+                        <option>Bengaluru</option>
+                        <option>Hyderabad</option>
+                        <option>Mumbai</option>
+                        <option>Pune</option>
+                    </select>
+                </span>
+            </label>
+            <label class="search-toolbar__field">
+                {% include "partials/icon.html" with name="map-pin" %}
+                <span class="search-toolbar__field-label">
+                    <span>Area / Locality</span>
+                    <select name="area">
+                        <option>Koramangala</option>
+                    </select>
+                </span>
+            </label>
+            <label class="search-toolbar__field">
+                {% include "partials/icon.html" with name="house" %}
+                <span class="search-toolbar__field-label">
+                    <span>Property Type</span>
+                    <select name="property_type">
+                        <option value="">Select Type</option>
+                        <option>Flat / Apartment</option>
+                        <option>Independent House</option>
+                    </select>
+                </span>
+            </label>
+            <label class="search-toolbar__field">
+                {% include "partials/icon.html" with name="key" %}
+                <span class="search-toolbar__field-label">
+                    <span>Budget</span>
+                    <select name="budget">
+                        <option>&#8377;10,000 - &#8377;30,000</option>
+                    </select>
+                </span>
+            </label>
+            <button type="submit" class="btn btn-primary">
+                {% include "partials/icon.html" with name="search" %}
+                Search
+            </button>
+            <button type="button" class="search-toolbar__more" id="moreFiltersDesktop">
+                {% include "partials/icon.html" with name="sliders" cls="icon-sm" %}
+                More Filters
+                <span class="dot"></span>
+            </button>
+            <button type="button" class="btn btn-secondary search-toolbar__filters-trigger" id="filtersTrigger">
+                {% include "partials/icon.html" with name="sliders" cls="icon-sm" %}
+                Filters
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="container search-layout">
+    <!-- Filters -->
+    <div class="filters-panel" id="filtersPanel">
+        <div class="filters-panel__head">
+            <h3>Filters</h3>
+            <div class="icon-row">
+                <a href="#" class="link-more">Clear All</a>
+                <button type="button" class="filters-panel__close" id="filtersClose" aria-label="Close filters">
+                    {% include "partials/icon.html" with name="chevron-down" cls="icon-sm" %}
+                </button>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <div class="filter-group__head">
+                <h3>Budget Range</h3>
+                {% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}
+            </div>
+            <div class="filter-group__body">
+                <div class="range-slider" id="budgetSlider">
+                    <div class="range-slider__track"></div>
+                    <div class="range-slider__fill"></div>
+                    <input type="range" min="0" max="100000" step="1000" value="10000" id="budgetMin">
+                    <input type="range" min="0" max="100000" step="1000" value="30000" id="budgetMax">
+                </div>
+                <div class="range-slider__labels">
+                    <span id="budgetMinLabel">&#8377;10,000</span>
+                    <span id="budgetMaxLabel">&#8377;30,000+</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <div class="filter-group__head">
+                <h3>Property Type</h3>
+                {% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}
+            </div>
+            <div class="filter-group__body">
+                <label class="checkbox-row"><input type="checkbox" checked> All Types</label>
+                <label class="checkbox-row"><input type="checkbox"> Flat / Apartment</label>
+                <label class="checkbox-row"><input type="checkbox"> Independent House</label>
+                <label class="checkbox-row"><input type="checkbox"> PG / Hostel</label>
+                <label class="checkbox-row"><input type="checkbox"> Room</label>
+                <label class="checkbox-row"><input type="checkbox"> Villa</label>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <div class="filter-group__head">
+                <h3>Bedrooms</h3>
+                {% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}
+            </div>
+            <div class="filter-group__body">
+                <label class="checkbox-row"><input type="checkbox"> 1 RK / Studio</label>
+                <label class="checkbox-row"><input type="checkbox"> 1 BHK</label>
+                <label class="checkbox-row"><input type="checkbox" checked> 2 BHK</label>
+                <label class="checkbox-row"><input type="checkbox"> 3 BHK</label>
+                <label class="checkbox-row"><input type="checkbox"> 4+ BHK</label>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <div class="filter-group__head">
+                <h3>Furnishing</h3>
+                {% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}
+            </div>
+            <div class="filter-group__body">
+                <label class="checkbox-row"><input type="checkbox"> Fully Furnished</label>
+                <label class="checkbox-row"><input type="checkbox"> Semi Furnished</label>
+                <label class="checkbox-row"><input type="checkbox"> Unfurnished</label>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <div class="filter-group__head">
+                <h3>Verification</h3>
+                {% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}
+            </div>
+            <div class="filter-group__body">
+                <label class="checkbox-row"><input type="checkbox"> Mobile Verified</label>
+                <label class="checkbox-row"><input type="checkbox"> Identity Verified</label>
+                <label class="checkbox-row"><input type="checkbox"> Property Verified</label>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block" id="filtersApply">Show Results</button>
+    </div>
+    <div class="filters-panel__backdrop" id="filtersBackdrop"></div>
+
+    <!-- Results -->
+    <div class="results-main">
+        <div class="results-header">
+            <div class="results-count">{{ result_count }} Properties Found</div>
+            <div class="results-controls">
+                <select aria-label="Sort by">
+                    <option>Newest First</option>
+                    <option>Price: Low to High</option>
+                    <option>Price: High to Low</option>
+                    <option>Most Viewed</option>
+                </select>
+                <div class="view-toggle">
+                    <button type="button" class="is-active">
+                        {% include "partials/icon.html" with name="grid" cls="icon-sm" %}
+                        Grid
+                    </button>
+                    <button type="button">
+                        {% include "partials/icon.html" with name="rows" cls="icon-sm" %}
+                        List
+                    </button>
+                    <button type="button">
+                        {% include "partials/icon.html" with name="map-pin" cls="icon-sm" %}
+                        Map
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-banner">
+            <span class="info-banner__msg">
+                {% include "partials/icon.html" with name="info" cls="icon-sm" %}
+                Showing verified and active properties only
+            </span>
+            <a href="#">
+                {% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}
+                Learn more about verification
+            </a>
+        </div>
+
+        <div class="results-grid">
+            {% for property in properties %}
+                {% include "partials/property_card.html" with property=property show_actions=True %}
+            {% endfor %}
+        </div>
+
+        <div class="pagination">
+            <div class="pagination__pages">
+                <button type="button" aria-label="Previous page">{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</button>
+                <button type="button" class="is-active">1</button>
+                <button type="button">2</button>
+                <button type="button">3</button>
+                <span>&hellip;</span>
+                <button type="button">25</button>
+                <button type="button" aria-label="Next page">{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</button>
+            </div>
+            <div class="pagination__per-page">
+                <span>Show</span>
+                <select>
+                    <option>12</option>
+                    <option>24</option>
+                    <option>48</option>
+                </select>
+                <span>per page</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+{% load static humanize core_extras %}
+
+{% block title %}{{ property.title }} | Rentora{% endblock %}
+{% block body_class %}page-property-detail{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/properties.css' %}">
+{% endblock %}
+
+{% block content %}
+
+<div class="container">
+    <nav class="breadcrumb">
+        <a href="{% url 'core:home' %}">Home</a>
+        <span>/</span>
+        <a href="{% url 'properties:search' %}">Search Results</a>
+        <span>/</span>
+        <span>Property Details</span>
+    </nav>
+
+    <div class="detail-topbar">
+        <span>Property ID: RP{{ property.id|stringformat:"08d" }}</span>
+        <button type="button" class="btn btn-secondary btn-sm">
+            Share
+            {% include "partials/icon.html" with name="share" cls="icon-sm" %}
+        </button>
+    </div>
+
+    <div class="detail-layout">
+        <!-- Main column -->
+        <div class="detail-main">
+            <!-- Gallery -->
+            <div class="gallery js-gallery">
+                <div class="gallery__hero">
+                    <img src="{{ gallery.0 }}" alt="{{ property.title }}" id="galleryHeroImg">
+                    {% if property.badge == "verified" or property.badge == "featured" or property.badge == "premium" %}
+                        <span class="badge badge-success property-card__badge">
+                            {% include "partials/icon.html" with name="shield-check" cls="icon" %}
+                            Verified Property
+                        </span>
+                    {% endif %}
+                    <button type="button" class="gallery__arrow gallery__arrow--prev" aria-label="Previous photo">
+                        {% include "partials/icon.html" with name="chevron-left" %}
+                    </button>
+                    <button type="button" class="gallery__arrow gallery__arrow--next" aria-label="Next photo">
+                        {% include "partials/icon.html" with name="chevron-right" %}
+                    </button>
+                    <button type="button" class="gallery__view-all">
+                        {% include "partials/icon.html" with name="grid" cls="icon-sm" %}
+                        View Photos &middot; {{ gallery|length }}
+                    </button>
+                </div>
+                <div class="gallery__thumbs">
+                    {% for img in gallery|slice:":5" %}
+                    <button type="button" class="gallery__thumb js-gallery-thumb {% if forloop.first %}is-active{% endif %}" data-src="{{ img }}">
+                        <img src="{{ img }}" alt="Photo {{ forloop.counter }}">
+                    </button>
+                    {% endfor %}
+                    {% if gallery|length > 5 %}
+                    <button type="button" class="gallery__thumb">
+                        <img src="{{ gallery.5 }}" alt="More photos">
+                        <span class="gallery__thumb-more">+{{ gallery|length|add:"-5" }}</span>
+                    </button>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Title / specs -->
+            <div class="detail-card">
+                <div class="detail-title-row">
+                    <h1 class="text-h1">{{ property.title }}</h1>
+                    {% if property.badge == "verified" %}
+                        <span class="badge badge-verified">{% include "partials/icon.html" with name="shield-check" cls="icon" %} Verified</span>
+                    {% elif property.badge %}
+                        <span class="badge badge-{{ property.badge }}">{% include "partials/icon.html" with name="star" cls="icon" %} {{ property.badge|title }}</span>
+                    {% endif %}
+                </div>
+                <div class="detail-location">
+                    {% include "partials/icon.html" with name="map-pin" cls="icon-sm" %}
+                    {{ property.location }}
+                    <a href="#">View on Map</a>
+                </div>
+                <div class="detail-specs">
+                    <span>{% include "partials/icon.html" with name="bed" cls="icon-sm" %} {{ property.beds }} Beds</span>
+                    <span>{% include "partials/icon.html" with name="bath" cls="icon-sm" %} {{ property.baths }} Baths</span>
+                    <span>{% include "partials/icon.html" with name="area" cls="icon-sm" %} {{ property.area }} sq.ft.</span>
+                    <span>{% include "partials/icon.html" with name="building" cls="icon-sm" %} {{ property.floor_label }}</span>
+                    <span>{% include "partials/icon.html" with name="sliders" cls="icon-sm" %} {{ property.furnishing }}</span>
+                    <span>{% include "partials/icon.html" with name="commercial" cls="icon-sm" %} {{ property.parking }}</span>
+                </div>
+            </div>
+
+            <!-- About -->
+            <div class="detail-card">
+                <h2 class="detail-section-title">About this property</h2>
+                <p class="about-text is-clamped" id="aboutText">
+                    Beautifully designed {{ property.beds }} BHK apartment located in the heart of {{ property.short_location }}. This
+                    fully furnished apartment comes with modern interiors, spacious bedrooms, modular kitchen,
+                    balcony with great ventilation and 24x7 security. Close to metro, markets, schools and IT parks.
+                </p>
+                <button type="button" class="read-more-toggle" id="readMoreToggle">
+                    Read more
+                    {% include "partials/icon.html" with name="chevron-down" cls="icon-sm" %}
+                </button>
+            </div>
+
+            <!-- Amenities -->
+            <div class="detail-card">
+                <div class="detail-section-head">
+                    <h2 class="detail-section-title" style="margin-bottom:0;">Amenities</h2>
+                    <a href="#" class="link-more">View All</a>
+                </div>
+                <div class="amenities-grid">
+                    {% for amenity in amenities %}
+                    <div class="amenity-pill">
+                        {% include "partials/icon.html" with name=amenity.icon cls="icon-sm" %}
+                        {{ amenity.label }}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Location -->
+            <div class="detail-card">
+                <h2 class="detail-section-title">Location</h2>
+                <p class="slate" style="font-size:14px; margin-bottom:var(--space-4);">{{ property.location }}</p>
+                <div class="location-grid">
+                    <div class="location-map">
+                        <div class="location-map__pin">
+                            {% include "partials/icon.html" with name="map-pin" %}
+                            <span>{{ property.short_location }}</span>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="prime-location-card">
+                            <h3>Prime Location</h3>
+                            <ul>
+                                {% for item in prime_location %}
+                                <li>{% include "partials/icon.html" with name="check" cls="icon-sm" %} {{ item }}</li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                        <div class="privacy-note">
+                            {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
+                            <span><strong>Privacy Protected</strong><br>Exact property address is hidden for privacy. It will be shared after your inquiry is approved by the owner.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reviews -->
+            <div class="detail-card">
+                <h2 class="detail-section-title">Reviews &amp; Ratings</h2>
+                <div class="rating-summary">
+                    <div class="rating-summary__score">
+                        <span class="num">{{ rating_average }}</span>
+                        <span class="stars">
+                            {% for _ in "12345"|make_list %}{% include "partials/icon.html" with name="star" %}{% endfor %}
+                        </span>
+                        <span class="count">({{ rating_count }} reviews)</span>
+                    </div>
+                    <div class="rating-bars">
+                        {% for row in rating_breakdown %}
+                        <div class="rating-bar-row">
+                            <span class="label">{{ row.stars }} {% include "partials/icon.html" with name="star" cls="icon-sm" %}</span>
+                            <span class="track"><span class="fill" style="width:{{ row.pct }}%;"></span></span>
+                            <span class="count">{{ row.count }}</span>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                {% for review in reviews %}
+                <div class="review-item">
+                    <img src="{{ review.avatar }}" alt="{{ review.name }}" class="review-item__avatar">
+                    <div style="flex:1;">
+                        <div class="review-item__head">
+                            <span class="review-item__name">{{ review.name }}</span>
+                            {% if review.verified %}<span class="badge badge-success-outline">Verified Tenant</span>{% endif %}
+                            <span class="review-item__date">{{ review.date }}</span>
+                        </div>
+                        <p class="review-item__comment">{{ review.comment }}</p>
+                        <div class="review-item__stars">
+                            {% for _ in review.rating|times %}{% include "partials/icon.html" with name="star" %}{% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+
+                <div style="text-align:center; margin-top:var(--space-4);">
+                    <a href="#" class="link-more">View All Reviews</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="detail-sidebar">
+            <div class="detail-card price-card">
+                <div class="price-row">
+                    <span class="amount">&#8377;{{ property.price|intcomma }}</span>
+                    <span class="slate">/month</span>
+                    {% if property.no_brokerage %}<span class="badge badge-success-outline" style="margin-left:auto;">No Brokerage</span>{% endif %}
+                </div>
+                <dl>
+                    <div class="drow"><dt>Security Deposit</dt><dd>&#8377;{{ rent_details.deposit|intcomma }}</dd></div>
+                    <div class="drow"><dt>Maintenance</dt><dd>&#8377;{{ rent_details.maintenance|intcomma }} /month</dd></div>
+                    <div class="drow"><dt>Available From</dt><dd>{{ rent_details.available_from }}</dd></div>
+                </dl>
+                <a href="#" class="btn btn-primary btn-block">
+                    {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
+                    Contact Owner
+                </a>
+                <a href="#" class="btn btn-secondary btn-block">
+                    {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
+                    Schedule Visit
+                </a>
+                <div class="price-card__quick-actions">
+                    <a href="#" class="js-save-toggle">{% include "partials/icon.html" with name="heart" %}Save Property</a>
+                    <a href="#">{% include "partials/icon.html" with name="share" %}Share Property</a>
+                    <a href="#">{% include "partials/icon.html" with name="flag" %}Report Listing</a>
+                </div>
+            </div>
+
+            <div class="detail-card owner-card">
+                <div class="owner-card__head">
+                    <img src="{{ owner.avatar }}" alt="{{ owner.name }}" class="owner-card__avatar">
+                    <div>
+                        <div class="owner-card__role">Property Owner</div>
+                        <div class="owner-card__name">{{ owner.name }} {% include "partials/icon.html" with name="shield-check" %}</div>
+                        <div class="owner-card__since">Member since {{ owner.member_since }}</div>
+                    </div>
+                </div>
+                <div class="owner-card__icons">
+                    <a href="#" aria-label="Call">{% include "partials/icon.html" with name="phone" cls="icon-sm" %}</a>
+                    <a href="#" aria-label="WhatsApp">{% include "partials/icon.html" with name="whatsapp" cls="icon-sm" %}</a>
+                    <a href="#" aria-label="Verified owner">{% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}</a>
+                </div>
+                <div class="owner-card__response">
+                    {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
+                    Response time: {{ owner.response_time }}
+                </div>
+                <h3>Preferred Contact Method</h3>
+                <div class="contact-methods">
+                    <a href="#">{% include "partials/icon.html" with name="chat" cls="icon-sm" %} Chat</a>
+                    <a href="#">{% include "partials/icon.html" with name="phone" cls="icon-sm" %} Call</a>
+                    <a href="#">{% include "partials/icon.html" with name="whatsapp" cls="icon-sm" %} WhatsApp</a>
+                </div>
+                <div class="locked-note">
+                    {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
+                    Contact details will be shared once your inquiry is approved by the owner.
+                </div>
+            </div>
+
+            <div class="detail-card">
+                <h2 class="detail-section-title">Property Details</h2>
+                <dl class="details-table">
+                    {% for label, value in property_details_table %}
+                    <div class="drow"><dt>{{ label }}</dt><dd>{{ value }}</dd></div>
+                    {% endfor %}
+                </dl>
+            </div>
+
+            <div class="detail-card">
+                <div class="detail-section-head">
+                    <h2 class="detail-section-title" style="margin-bottom:0;">Similar Properties</h2>
+                    <a href="#" class="link-more">View All</a>
+                </div>
+                {% for sp in similar_properties %}
+                <div class="similar-property">
+                    <img src="{{ sp.image }}" alt="{{ sp.title }}" class="similar-property__img">
+                    <div class="similar-property__body">
+                        {% if sp.badge %}<span class="badge badge-{{ sp.badge }}" style="margin-bottom:4px;">{{ sp.badge|title }}</span>{% endif %}
+                        <div class="similar-property__title"><a href="{% url 'properties:detail' sp.id %}">{{ sp.title }}</a></div>
+                        <div class="similar-property__location">{% include "partials/icon.html" with name="map-pin" %} {{ sp.short_location }}</div>
+                        <div class="similar-property__price">&#8377;{{ sp.price|intcomma }}/month</div>
+                        {% if sp.no_brokerage %}<span class="badge badge-success-outline" style="margin-top:4px;">No Brokerage</span>{% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="trust-footer-bar">
+        {% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}
+        Rentora ensures 100% verified properties and zero brokerage. Deal directly with owners.
+    </div>
+</div>
+
+{% endblock %}
+
+{% block after_tabbar %}
+<div class="detail-mobile-bar">
+    <div class="price">
+        <span class="amount">&#8377;{{ property.price|intcomma }}/mo</span>
+        <span class="label">{% if property.no_brokerage %}No Brokerage{% endif %}</span>
+    </div>
+    <a href="#" class="btn btn-secondary">
+        {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
+        Visit
+    </a>
+    <a href="#" class="btn btn-primary">
+        {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
+        Contact Owner
+    </a>
+</div>
+{% endblock %}

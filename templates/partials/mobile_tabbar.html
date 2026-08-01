@@ -1,0 +1,18 @@
+<nav class="mobile-tabbar">
+    <a href="{% url 'core:home' %}" class="mobile-tabbar__item {% if request.resolver_match.url_name == 'home' %}is-active{% endif %}">
+        {% include "partials/icon.html" with name="house" %}
+        <span>Home</span>
+    </a>
+    <a href="{% url 'properties:search' %}" class="mobile-tabbar__item {% if request.resolver_match.app_name == 'properties' %}is-active{% endif %}">
+        {% include "partials/icon.html" with name="search" %}
+        <span>Search</span>
+    </a>
+    <a href="#" class="mobile-tabbar__item">
+        {% include "partials/icon.html" with name="heart" %}
+        <span>Shortlist</span>
+    </a>
+    <a href="#" class="mobile-tabbar__item">
+        {% include "partials/icon.html" with name="user" %}
+        <span>Profile</span>
+    </a>
+</nav>

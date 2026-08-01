@@ -1,0 +1,86 @@
+{% load static %}
+<header class="site-header">
+    <div class="container site-header__bar">
+        <a href="{% url 'core:home' %}" class="brand">
+            <svg class="brand__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 11.5 12 4l9 7.5" />
+                <path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" />
+            </svg>
+            <span class="brand__text">
+                <span class="brand__name">Rentora</span>
+                <span class="brand__tagline">NO BROKERAGE. ONLY TRUST.</span>
+            </span>
+        </a>
+
+        <nav class="main-nav">
+            <a href="{% url 'core:home' %}" class="{% if request.resolver_match.url_name == 'home' %}is-active{% endif %}">Home</a>
+            <a href="{% url 'properties:search' %}" class="{% if request.resolver_match.app_name == 'properties' %}is-active{% endif %}">Search Properties</a>
+            <a href="#">Roommate Finder</a>
+            <a href="#">Hotels &amp; Homestays</a>
+            <a href="#">About Us</a>
+            <a href="#">Contact Us</a>
+        </nav>
+
+        <button type="button" class="nav-toggle" aria-label="Open menu" id="navToggle">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 7h16M4 12h16M4 17h16" />
+            </svg>
+        </button>
+
+        <div class="header-actions">
+            {% if demo_logged_in %}
+                {# TODO: replace demo_logged_in with request.user.is_authenticated once accounts app lands #}
+                <a href="#" class="btn btn-secondary btn-sm header-saved">
+                    {% include "partials/icon.html" with name="heart" cls="icon-sm" %}
+                    Saved
+                </a>
+                <a href="#" class="icon-btn icon-btn--bell" aria-label="Notifications">
+                    {% include "partials/icon.html" with name="bell" cls="icon-sm" %}
+                    <span class="notif-dot">3</span>
+                </a>
+                <a href="#" class="header-account">
+                    <img src="https://i.pravatar.cc/64?img=68" alt="" class="header-account__avatar">
+                    <span class="header-account__name">Hi, Rahul</span>
+                    {% include "partials/icon.html" with name="chevron-down" cls="icon-sm" %}
+                </a>
+            {% else %}
+                <a href="#" class="icon-btn icon-btn--wishlist" aria-label="Saved properties">
+                    {% include "partials/icon.html" with name="heart" cls="icon-sm" %}
+                </a>
+                <a href="#" class="icon-btn icon-btn--bell" aria-label="Notifications">
+                    {% include "partials/icon.html" with name="bell" cls="icon-sm" %}
+                    <span class="notif-dot">1</span>
+                </a>
+                <a href="#" class="btn btn-secondary btn-sm">Login</a>
+                <a href="#" class="btn btn-primary btn-sm">Register</a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="mobile-nav-backdrop" id="mobileNavBackdrop" hidden></div>
+    <nav class="mobile-nav" id="mobileNav">
+        <div class="mobile-nav__head">
+            <span class="brand__name">Rentora</span>
+            <button type="button" class="mobile-nav__close" id="mobileNavClose" aria-label="Close menu">
+                {% include "partials/icon.html" with name="x" cls="icon-sm" %}
+            </button>
+        </div>
+        <a href="{% url 'core:home' %}">Home</a>
+        <a href="{% url 'properties:search' %}">Search Properties</a>
+        <a href="#">Roommate Finder</a>
+        <a href="#">Hotels &amp; Homestays</a>
+        <a href="#">About Us</a>
+        <a href="#">Contact Us</a>
+        <div class="mobile-nav__actions">
+            {% if demo_logged_in %}
+                <a href="#" class="header-account header-account--mobile">
+                    <img src="https://i.pravatar.cc/64?img=68" alt="" class="header-account__avatar">
+                    <span class="header-account__name">Hi, Rahul</span>
+                </a>
+            {% else %}
+                <a href="#" class="btn btn-secondary btn-block">Login</a>
+                <a href="#" class="btn btn-primary btn-block">Register</a>
+            {% endif %}
+        </div>
+    </nav>
+</header>
