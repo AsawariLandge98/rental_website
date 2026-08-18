@@ -1,0 +1,83 @@
+{% extends "dashboard/_base.html" %}
+{% load static %}
+
+{% block title %}Help & Support | Rentora{% endblock %}
+{% block body_class %}page-dash-help{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/properties.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="info" %} Help &amp; Support</h1></div>
+    <p>We're here to help you. Find answers or reach out to our support team.</p>
+</div>
+
+<div class="help-cards">
+    <div class="help-card">
+        <span class="help-card__icon">{% include "partials/icon.html" with name="document" %}</span>
+        <h3>Help Center</h3>
+        <p>Browse the FAQs below for instant answers.</p>
+        <a href="#faqs" class="link-more">Browse FAQs &rarr;</a>
+    </div>
+    <div class="help-card">
+        <span class="help-card__icon">{% include "partials/icon.html" with name="chat" %}</span>
+        <h3>Raise a Support Ticket</h3>
+        <p>Describe your issue and we'll get back to you by email.</p>
+        <a href="#ticket-form" class="link-more">Submit Ticket &rarr;</a>
+    </div>
+    <div class="help-card">
+        <span class="help-card__icon">{% include "partials/icon.html" with name="headset" %}</span>
+        <h3>Contact Support</h3>
+        <p>Talk to our support team directly.</p>
+        <a href="tel:+919876543210" class="link-more">+91 98765 43210</a>
+    </div>
+    <div class="help-card">
+        <span class="help-card__icon">{% include "partials/icon.html" with name="envelope" %}</span>
+        <h3>Email Us</h3>
+        <p>Send us your questions any time.</p>
+        <a href="mailto:support@rentora.local" class="link-more">support@rentora.local</a>
+    </div>
+</div>
+
+<div class="dash-grid-2">
+    <div class="dash-section" id="faqs">
+        <h2 class="text-h3" style="margin-bottom: var(--space-4);">Frequently Asked Questions</h2>
+        {% for faq in faqs %}
+        <div class="filter-group is-collapsed">
+            <div class="filter-group__head">
+                <h3>{{ faq.question }}</h3>
+                {% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}
+            </div>
+            <div class="filter-group__body"><p class="slate" style="font-size:13px;">{{ faq.answer }}</p></div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="dash-section" id="ticket-form">
+        <h2 class="text-h3" style="margin-bottom: var(--space-2);">Raise a Support Ticket</h2>
+        <p class="slate" style="font-size:13px; margin-bottom: var(--space-4);">Tell us your issue and our team will help you.</p>
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div style="margin-bottom: var(--space-4);">
+                <label class="field-label" for="{{ form.subject.id_for_label }}">Subject</label>
+                {{ form.subject }}
+            </div>
+            <div style="margin-bottom: var(--space-4);">
+                <label class="field-label" for="{{ form.category.id_for_label }}">Category</label>
+                {{ form.category }}
+            </div>
+            <div style="margin-bottom: var(--space-4);">
+                <label class="field-label" for="{{ form.description.id_for_label }}">Description</label>
+                {{ form.description }}
+            </div>
+            <div style="margin-bottom: var(--space-4);">
+                <label class="field-label" for="{{ form.attachment.id_for_label }}">Attachment (Optional)</label>
+                {{ form.attachment }}
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">Submit Ticket</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard | Rentora{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/base.css' %}">
+    <link rel="stylesheet" href="{% static 'css/dashboard.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="dash-body {% block body_class %}{% endblock %}">
+    {% include "dashboard/_topbar.html" %}
+    <div class="dash-shell">
+        {% if user.role == "tenant" %}
+            {% include "dashboard/_sidebar_tenant.html" %}
+        {% elif user.role == "owner" or user.role == "hotel" %}
+            {% include "dashboard/_sidebar_owner.html" %}
+        {% else %}
+            {% include "dashboard/_sidebar_admin.html" %}
+        {% endif %}
+        <main class="dash-main">
+            {% include "partials/messages.html" %}
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+
+    <script src="{% static 'js/main.js' %}"></script>
+    <script src="{% static 'js/dashboard.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,44 @@
+{% with url_name=request.resolver_match.url_name app_name=request.resolver_match.app_name %}
+<aside class="dash-sidebar" id="dashSidebar">
+    <nav class="dash-sidebar__nav">
+        <a href="{{ user_dashboard_url }}" class="dash-sidebar__link {% if url_name == 'owner' or url_name == 'hotel' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="house" %} <span>Dashboard</span>
+        </a>
+        <a href="{% url 'properties:my_listings' %}" class="dash-sidebar__link {% if url_name == 'my_listings' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="building" %} <span>My Properties</span>
+        </a>
+        <a href="{% url 'properties:start_listing' %}" class="dash-sidebar__link {% if url_name == 'start_listing' or url_name == 'manage_step' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="plus-circle" %} <span>Add New Property</span>
+        </a>
+        <a href="{% url 'dashboard:owner_inquiries' %}" class="dash-sidebar__link {% if url_name == 'owner_inquiries' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="chat" %} <span>Tenant Inquiries</span>
+        </a>
+        <a href="{% url 'dashboard:owner_visits' %}" class="dash-sidebar__link {% if url_name == 'owner_visits' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="calendar" %} <span>Property Visits</span>
+        </a>
+        <a href="{% url 'subscriptions:plan_list' %}" class="dash-sidebar__link {% if app_name == 'subscriptions' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="star" %} <span>Subscription Plan</span>
+        </a>
+        <a href="{% url 'notifications:list' %}" class="dash-sidebar__link {% if app_name == 'notifications' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="bell" %} <span>Notifications</span>
+            {% if unread_notifications_count %}<span class="dash-sidebar__badge">{{ unread_notifications_count }}</span>{% endif %}
+        </a>
+        <a href="{% url 'dashboard:owner_profile' %}" class="dash-sidebar__link {% if url_name == 'owner_profile' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="user" %} <span>My Profile</span>
+        </a>
+        <a href="{% url 'dashboard:owner_settings' %}" class="dash-sidebar__link {% if url_name == 'owner_settings' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="sliders" %} <span>Settings</span>
+        </a>
+        <a href="{% url 'dashboard:owner_help' %}" class="dash-sidebar__link {% if url_name == 'owner_help' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="headset" %} <span>Help &amp; Support</span>
+        </a>
+    </nav>
+
+    <form method="post" action="{% url 'accounts:logout' %}" class="dash-sidebar__logout">
+        {% csrf_token %}
+        <button type="submit" class="dash-sidebar__link">
+            {% include "partials/icon.html" with name="logout" %} <span>Logout</span>
+        </button>
+    </form>
+</aside>
+{% endwith %}

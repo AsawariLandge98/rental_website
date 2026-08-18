@@ -1,0 +1,72 @@
+{% load static %}
+<header class="dash-topbar">
+    <button type="button" class="dash-topbar__hamburger" id="dashSidebarToggle" aria-label="Open menu" aria-expanded="false">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
+    </button>
+
+    <a href="{{ user_dashboard_url }}" class="brand dash-topbar__brand">
+        <svg class="brand__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 11.5 12 4l9 7.5" />
+            <path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" />
+        </svg>
+        <span class="brand__name">Rentora</span>
+    </a>
+
+    <form action="{% url 'properties:search' %}" method="get" class="dash-topbar__search">
+        {% include "partials/icon.html" with name="search" cls="icon-sm" %}
+        <input type="text" name="q" placeholder="Search by city, area, landmark or property name...">
+    </form>
+
+    <div class="dash-topbar__actions">
+        <div class="dash-notif">
+            <button type="button" class="icon-btn dash-notif__trigger" id="dashNotifTrigger" aria-label="Notifications" aria-expanded="false">
+                {% include "partials/icon.html" with name="bell" cls="icon-sm" %}
+                {% if unread_notifications_count %}<span class="notif-dot">{{ unread_notifications_count }}</span>{% endif %}
+            </button>
+            <div class="dash-notif__panel" id="dashNotifPanel">
+                <div class="dash-notif__head">
+                    <strong>Notifications</strong>
+                    <a href="{% url 'notifications:list' %}">View All</a>
+                </div>
+                {% for n in user.notifications.all|slice:":5" %}
+                <a href="{% url 'notifications:mark_read' n.pk %}" class="dash-notif__item {% if not n.is_read %}is-unread{% endif %}">
+                    <span>{{ n.message }}</span>
+                    <small>{{ n.created_at|timesince }} ago</small>
+                </a>
+                {% empty %}
+                <p class="dash-notif__empty">No notifications yet.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="dash-account">
+            <button type="button" class="dash-account__trigger" id="dashAccountTrigger" aria-expanded="false">
+                <span class="header-account__avatar header-account__avatar--initials">{{ user.full_name|first|upper }}</span>
+                <span class="dash-account__text">
+                    <span class="dash-account__hi">Hi, {{ user.full_name|truncatechars:16 }}</span>
+                    <span class="dash-account__role">{{ user.get_role_display }}</span>
+                </span>
+                {% include "partials/icon.html" with name="chevron-down" cls="icon-sm" %}
+            </button>
+            <div class="dash-account__menu" id="dashAccountMenu">
+                {% if user.role == "tenant" %}
+                <a href="{% url 'dashboard:tenant_profile' %}">{% include "partials/icon.html" with name="user" cls="icon-sm" %} My Profile</a>
+                <a href="{% url 'dashboard:tenant_settings' %}">{% include "partials/icon.html" with name="sliders" cls="icon-sm" %} Settings</a>
+                {% elif user.role == "owner" or user.role == "hotel" %}
+                <a href="{% url 'dashboard:owner_profile' %}">{% include "partials/icon.html" with name="user" cls="icon-sm" %} My Profile</a>
+                <a href="{% url 'dashboard:owner_settings' %}">{% include "partials/icon.html" with name="sliders" cls="icon-sm" %} Settings</a>
+                {% else %}
+                <a href="{% url 'dashboard:admin_profile' %}">{% include "partials/icon.html" with name="user" cls="icon-sm" %} My Profile</a>
+                <a href="{% url 'dashboard:admin_settings' %}">{% include "partials/icon.html" with name="sliders" cls="icon-sm" %} Settings</a>
+                {% endif %}
+                <form method="post" action="{% url 'accounts:logout' %}">
+                    {% csrf_token %}
+                    <button type="submit">{% include "partials/icon.html" with name="logout" cls="icon-sm" %} Log Out</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</header>
+<div class="dash-sidebar-backdrop" id="dashSidebarBackdrop"></div>

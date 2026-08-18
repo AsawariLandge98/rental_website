@@ -62,6 +62,20 @@
 
   /* Layout */
   --container-max: 1200px;
+
+  /* Motion */
+  --ease: cubic-bezier(.4, 0, .2, 1);
+  --transition-fast: 150ms;
+  --transition-base: 250ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ==========================================================================
@@ -230,6 +244,14 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
 .btn-block { width: 100%; }
 .btn-sm { padding: 8px 16px; font-size: 13px; }
 
+/* A button-shaped affordance for a feature that's honestly not built yet —
+   keeps card layouts consistent without pretending the action works. */
+.btn.is-disabled {
+  cursor: not-allowed;
+  opacity: .55;
+  pointer-events: none;
+}
+
 /* ==========================================================================
    Forms
    ========================================================================== */
@@ -247,6 +269,84 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
   box-shadow: 0 0 0 3px var(--color-blue-50);
 }
 .field::placeholder { color: var(--color-slate); }
+
+.field-with-icon { position: relative; display: flex; align-items: center; }
+.field-with-icon svg { position: absolute; left: 14px; color: var(--color-slate); pointer-events: none; }
+.field-with-icon .field { padding-left: 40px; }
+.field-with-icon .field-toggle {
+  position: absolute;
+  right: 4px;
+  background: none;
+  border: none;
+  padding: 8px;
+  color: var(--color-slate);
+  display: inline-flex;
+}
+.field-with-icon .field-toggle:hover { color: var(--color-ink); }
+.field-with-icon--toggle .field { padding-right: 40px; }
+
+.field-label { display: block; font: 600 13px var(--font-body); color: var(--color-ink); margin-bottom: var(--space-2); }
+
+.checkbox-row { display: flex; align-items: center; gap: var(--space-2); font-size: 14px; color: var(--color-ink); }
+.checkbox-row input { width: 16px; height: 16px; accent-color: var(--color-blue-500); flex-shrink: 0; }
+
+.field.is-invalid { border-color: var(--color-error); }
+.field-error {
+  display: block;
+  margin-top: 6px;
+  font: 500 12px var(--font-body);
+  color: var(--color-error);
+}
+.form-error-banner {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  border-radius: var(--radius-control);
+  background: #FDECEC;
+  border: 1px solid #F5C2C2;
+  color: var(--color-error);
+  font: 500 13px/20px var(--font-body);
+}
+.form-error-banner svg { flex-shrink: 0; width: 16px; height: 16px; }
+
+.messages { display: flex; flex-direction: column; gap: var(--space-2); }
+.alert {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-control);
+  font: 500 13px/20px var(--font-body);
+}
+.alert-success { background: #E9F9EF; border: 1px solid #BEEACD; color: var(--color-success); }
+.alert-error { background: #FDECEC; border: 1px solid #F5C2C2; color: var(--color-error); }
+.alert-info { background: var(--color-blue-50); border: 1px solid var(--color-blue-300); color: var(--color-blue-700); }
+.alert-warning { background: #FEF6E7; border: 1px solid #F6DFAB; color: #8A5A00; }
+
+/* Step indicator — used by Register, Forgot Password, and the Property
+   Listing wizard */
+.step-indicator { display: flex; align-items: flex-start; gap: var(--space-2); }
+.step-indicator__step { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.step-indicator__circle {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border);
+  color: var(--color-slate);
+  background: var(--color-white);
+  display: flex; align-items: center; justify-content: center;
+  font: 700 15px var(--font-heading);
+}
+.step-indicator__step.is-active .step-indicator__circle { border-color: var(--color-blue-500); background: var(--color-blue-500); color: var(--color-white); }
+.step-indicator__step.is-done .step-indicator__circle { border-color: var(--color-success); background: #E9F9EF; color: var(--color-success); }
+.step-indicator__label { font: 600 12px var(--font-body); color: var(--color-slate); white-space: nowrap; }
+.step-indicator__step.is-active .step-indicator__label { color: var(--color-blue-500); }
+.step-indicator__line { flex: 1; min-width: 40px; height: 2px; background: var(--color-border); margin-top: 19px; }
+
+.step-indicator--compact { gap: var(--space-1); }
+.step-indicator--compact .step-indicator__circle { width: 28px; height: 28px; font-size: 12px; border-width: 2px; }
+.step-indicator--compact .step-indicator__label { font-size: 10px; }
+.step-indicator--compact .step-indicator__line { min-width: 20px; margin-top: 13px; }
+
+.text-accent { color: var(--color-blue-500); }
 
 /* ==========================================================================
    Badges
@@ -281,9 +381,11 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
   box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
-  transition: box-shadow .15s ease, transform .15s ease;
+  transition: box-shadow var(--transition-base) var(--ease), transform var(--transition-base) var(--ease);
 }
-.property-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); }
+.property-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
+.property-card__media img { transition: transform .4s var(--ease); }
+.property-card:hover .property-card__media img { transform: scale(1.05); }
 
 .property-card__media {
   position: relative;
@@ -292,7 +394,29 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
 }
 .property-card__media img { width: 100%; height: 100%; object-fit: cover; }
 
-.property-card__badge { position: absolute; top: var(--space-3); left: var(--space-3); }
+.property-card__badges {
+  position: absolute;
+  top: var(--space-3);
+  left: var(--space-3);
+  right: 48px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.property-card__photo-count {
+  position: absolute;
+  right: var(--space-3);
+  bottom: var(--space-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(10, 38, 71, .75);
+  color: var(--color-white);
+  font: 600 11px var(--font-body);
+  padding: 4px 8px;
+  border-radius: var(--radius-pill);
+}
+.property-card__photo-count svg { width: 12px; height: 12px; }
 .property-card__ribbon {
   position: absolute;
   top: var(--space-3);
@@ -318,7 +442,10 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
   color: var(--color-slate);
   box-shadow: var(--shadow-card);
 }
-.property-card__save svg { width: 16px; height: 16px; }
+.property-card__save svg { width: 16px; height: 16px; transition: transform var(--transition-fast) var(--ease); }
+.property-card__save { transition: color var(--transition-fast) var(--ease), transform var(--transition-fast) var(--ease); }
+.property-card__save:hover { transform: scale(1.1); }
+.property-card__save:active svg { transform: scale(1.25); }
 .property-card__save.is-saved { color: var(--color-blue-500); }
 .property-card__save.is-saved svg { fill: currentColor; }
 
@@ -378,6 +505,14 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
     color: var(--color-blue-500);
     font: 600 13px var(--font-body);
   }
+
+  /* Price-forward card order on mobile — price is the first thing a thumb
+     scrolling a feed needs, title/location/specs follow. */
+  .property-card__footer { order: -4; border-top: none; padding-top: 0; }
+  .property-card__price .text-price-stat { font-size: 20px; }
+  .property-card__title { order: -3; }
+  .property-card__location { order: -2; }
+  .property-card__specs { order: -1; padding-top: var(--space-2); border-top: 1px solid var(--color-border); margin-top: 2px; }
 }
 
 /* ==========================================================================
@@ -454,6 +589,15 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
 }
 .header-account:hover { background: var(--color-blue-50); }
 .header-account__avatar { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
+.header-account__avatar--initials {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-blue-500);
+  color: var(--color-white);
+  font: 700 13px var(--font-body);
+  flex-shrink: 0;
+}
 .header-account__name { font: 600 14px var(--font-body); color: var(--color-ink); white-space: nowrap; }
 .header-account--mobile { border: none; padding: 0; }
 .icon-btn {
@@ -561,6 +705,7 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
   font: 500 15px var(--font-body);
   border-bottom: 1px solid var(--color-border);
 }
+.mobile-nav a.is-active { color: var(--color-blue-500); font-weight: 600; }
 .mobile-nav__actions {
   display: flex;
   gap: var(--space-3);
@@ -605,6 +750,38 @@ body.nav-open { overflow: hidden; }
   .mobile-tabbar__item span { font: 500 11px/1.2 var(--font-body); }
   .mobile-tabbar__item.is-active { color: var(--color-blue-500); }
 }
+
+/* ==========================================================================
+   Breadcrumb + Back Button (shared across all inner pages)
+   ========================================================================== */
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding-block: var(--space-3);
+  font-size: 13px;
+  color: var(--color-slate);
+}
+.breadcrumb a { color: var(--color-blue-500); }
+.breadcrumb a:hover { text-decoration: underline; }
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--color-border);
+  background: var(--color-white);
+  color: var(--color-navy-900);
+  margin-right: 4px;
+}
+.back-btn:hover { background: var(--color-blue-50); }
+.back-btn svg { width: 16px; height: 16px; }
+
+.auth-topbar__left { display: flex; align-items: center; gap: var(--space-3); }
 
 /* ==========================================================================
    Footer
@@ -669,3 +846,77 @@ body.nav-open { overflow: hidden; }
   .footer-grid { grid-template-columns: 1fr; }
   .footer-bottom { flex-direction: column; gap: var(--space-2); align-items: flex-start; }
 }
+
+/* ==========================================================================
+   Focus visibility (keyboard navigation) — applied sitewide
+   ========================================================================== */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--color-blue-500);
+  outline-offset: 2px;
+  border-radius: var(--radius-control);
+}
+.btn:focus-visible { outline-offset: 3px; }
+
+/* ==========================================================================
+   Interactive feedback — consistent hover/press motion for every button,
+   used sitewide so buttons feel alive without a JS framework.
+   ========================================================================== */
+.btn { transition: background var(--transition-fast) var(--ease), border-color var(--transition-fast) var(--ease), color var(--transition-fast) var(--ease), transform var(--transition-fast) var(--ease), box-shadow var(--transition-fast) var(--ease); }
+.btn:active { transform: scale(.97); }
+.icon-btn, .carousel-arrow, .back-btn {
+  transition: background var(--transition-fast) var(--ease), color var(--transition-fast) var(--ease), transform var(--transition-fast) var(--ease);
+}
+.icon-btn:hover, .carousel-arrow:hover, .back-btn:hover { transform: translateY(-1px); }
+.icon-btn:active, .carousel-arrow:active, .back-btn:active { transform: scale(.94); }
+
+/* Canonical card hover-lift — reused by any `.hover-lift` component so every
+   card across the site (property/roommate/stay/testimonial/etc.) shares the
+   exact same feel instead of slightly different hand-tuned values. */
+.hover-lift { transition: box-shadow var(--transition-base) var(--ease), transform var(--transition-base) var(--ease); }
+.hover-lift:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
+
+/* Round icon tiles (the "circle with an SVG in it" pattern repeated across
+   Home/About/Contact/Roommates/Hotels) — a subtle scale+tint on hover so
+   these otherwise-static decorative badges feel considered. */
+.icon-tile-hover { transition: background var(--transition-fast) var(--ease), transform var(--transition-fast) var(--ease); }
+.icon-tile-hover:hover { transform: scale(1.08); }
+
+/* ==========================================================================
+   Scroll-reveal — sections fade/rise into view on first scroll past them.
+   Applied via `data-reveal` (see initScrollReveal() in main.js); degrades to
+   fully visible with no JS, and is a no-op under prefers-reduced-motion.
+   ========================================================================== */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity .6s var(--ease), transform .6s var(--ease);
+}
+[data-reveal].is-visible { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] { opacity: 1; transform: none; transition: none; }
+}
+
+/* ==========================================================================
+   Empty state — shared across Search Results, Roommates, Hotels, and the
+   Tenant Dashboard for "nothing to show yet" moments.
+   ========================================================================== */
+.empty-state {
+  text-align: center;
+  padding: var(--space-16) var(--space-4);
+  color: var(--color-slate);
+}
+.empty-state__icon {
+  width: 64px; height: 64px; margin: 0 auto var(--space-4);
+  border-radius: 50%;
+  background: var(--color-blue-50);
+  color: var(--color-blue-300);
+  display: flex; align-items: center; justify-content: center;
+}
+.empty-state__icon svg { width: 30px; height: 30px; }
+.empty-state h3 { color: var(--color-ink); margin-bottom: var(--space-2); }
+.empty-state p { font-size: 14px; max-width: 42ch; margin-inline: auto; margin-bottom: var(--space-4); }

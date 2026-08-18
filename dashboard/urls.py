@@ -1,6 +1,77 @@
 from django.urls import path
 
+from . import views
+
 app_name = 'dashboard'
 
 urlpatterns = [
+    path('tenant/dashboard/', views.tenant_home, name='tenant'),
+    path('tenant/dashboard/saved/', views.saved_properties, name='tenant_saved'),
+    path('tenant/dashboard/profile/', views.profile, name='tenant_profile'),
+    path('tenant/dashboard/settings/', views.settings_home, name='tenant_settings'),
+    path('tenant/dashboard/settings/password/', views.settings_password, name='tenant_settings_password'),
+    path('tenant/dashboard/settings/notifications/', views.settings_notifications, name='tenant_settings_notifications'),
+    path('tenant/dashboard/settings/privacy/', views.settings_privacy, name='tenant_settings_privacy'),
+    path('tenant/dashboard/settings/language/', views.settings_language, name='tenant_settings_language'),
+    path('tenant/dashboard/settings/delete/', views.settings_delete_account, name='tenant_settings_delete'),
+    path('tenant/dashboard/help/', views.help_support, name='tenant_help'),
+
+    path('owner/dashboard/', views.owner_home, name='owner'),
+    path('hotel/dashboard/', views.owner_home, name='hotel'),
+    path('owner/dashboard/profile/', views.owner_profile, name='owner_profile'),
+    path('owner/dashboard/profile/password/', views.owner_profile_password, name='owner_profile_password'),
+    path('owner/dashboard/inquiries/', views.owner_coming_soon, {'section': 'inquiries'}, name='owner_inquiries'),
+    path('owner/dashboard/visits/', views.owner_coming_soon, {'section': 'visits'}, name='owner_visits'),
+    path('owner/dashboard/settings/', views.owner_coming_soon, {'section': 'settings'}, name='owner_settings'),
+    path('owner/dashboard/help/', views.owner_coming_soon, {'section': 'help'}, name='owner_help'),
+
+    path('admin/dashboard/', views.admin_home, name='admin'),
+    path('super-admin/dashboard/', views.admin_home, name='super_admin'),
+    path('admin/dashboard/users/', views.admin_users, name='admin_users'),
+    path('admin/dashboard/users/<int:pk>/block/', views.admin_user_set_active, {'active': False}, name='admin_user_block'),
+    path('admin/dashboard/users/<int:pk>/unblock/', views.admin_user_set_active, {'active': True}, name='admin_user_unblock'),
+    path('admin/dashboard/profile/', views.admin_profile, name='admin_profile'),
+    path('admin/dashboard/profile/password/', views.admin_profile_password, name='admin_profile_password'),
+    path('admin/dashboard/properties/', views.admin_properties, name='admin_properties'),
+    path('admin/dashboard/properties/<int:pk>/', views.admin_property_detail, name='admin_property_detail'),
+    path('admin/dashboard/properties/<int:pk>/approve/', views.admin_property_approve, name='admin_property_approve'),
+    path('admin/dashboard/properties/<int:pk>/reject/', views.admin_property_reject, name='admin_property_reject'),
+    path('admin/dashboard/properties/<int:pk>/status/<str:status>/', views.admin_property_set_status, name='admin_property_set_status'),
+    path('admin/dashboard/inquiries/', views.admin_inquiries, name='admin_inquiries'),
+    path('admin/dashboard/inquiries/<int:pk>/status/<str:status>/', views.admin_inquiry_set_status, name='admin_inquiry_set_status'),
+    path('admin/dashboard/visits/', views.admin_visits, name='admin_visits'),
+    path('admin/dashboard/visits/<int:pk>/cancel/', views.admin_visit_cancel, name='admin_visit_cancel'),
+    path('admin/dashboard/payments/', views.admin_payments, name='admin_payments'),
+    path('admin/dashboard/subscriptions/', views.admin_subscriptions, name='admin_subscriptions'),
+    path('admin/dashboard/subscriptions/new/', views.admin_subscription_plan_form, name='admin_subscription_plan_add'),
+    path('admin/dashboard/subscriptions/<int:pk>/edit/', views.admin_subscription_plan_form, name='admin_subscription_plan_edit'),
+    path('admin/dashboard/subscriptions/<int:pk>/toggle/', views.admin_subscription_plan_toggle, name='admin_subscription_plan_toggle'),
+    path('admin/dashboard/reports/', views.admin_reports, name='admin_reports'),
+    path('admin/dashboard/support/', views.admin_support, name='admin_support'),
+    path('admin/dashboard/support/<int:pk>/status/<str:status>/', views.admin_support_set_status, name='admin_support_set_status'),
+    path('admin/dashboard/cms/', views.admin_cms_faqs, name='admin_cms'),
+    path('admin/dashboard/cms/new/', views.admin_cms_faq_form, name='admin_cms_faq_add'),
+    path('admin/dashboard/cms/<int:pk>/edit/', views.admin_cms_faq_form, name='admin_cms_faq_edit'),
+    path('admin/dashboard/cms/<int:pk>/delete/', views.admin_cms_faq_delete, name='admin_cms_faq_delete'),
+    path('admin/dashboard/cms/<int:pk>/toggle/', views.admin_cms_faq_toggle, name='admin_cms_faq_toggle'),
+    path('admin/dashboard/audit-logs/', views.admin_audit_logs, name='admin_audit_logs'),
+    path('admin/dashboard/admin-users/', views.admin_internal_users, name='admin_internal_users'),
+    path('admin/dashboard/admin-users/new/', views.admin_user_create, name='admin_user_create'),
+    path(
+        'admin/dashboard/admin-users/<int:pk>/role/admin/', views.admin_user_set_role,
+        {'role': 'admin'}, name='admin_user_set_role_admin',
+    ),
+    path(
+        'admin/dashboard/admin-users/<int:pk>/role/super_admin/', views.admin_user_set_role,
+        {'role': 'super_admin'}, name='admin_user_set_role_super_admin',
+    ),
+    path(
+        'admin/dashboard/admin-users/<int:pk>/activate/', views.admin_user_set_active_internal,
+        {'active': True}, name='admin_internal_user_activate',
+    ),
+    path(
+        'admin/dashboard/admin-users/<int:pk>/deactivate/', views.admin_user_set_active_internal,
+        {'active': False}, name='admin_internal_user_deactivate',
+    ),
+    path('admin/dashboard/settings/', views.admin_settings_stub, name='admin_settings'),
 ]

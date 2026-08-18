@@ -11,7 +11,9 @@
 {% block content %}
 
 <div class="container">
+    {% url 'properties:search' as search_url %}
     <nav class="breadcrumb">
+        {% include "partials/back_button.html" with fallback_url=search_url %}
         <a href="{% url 'core:home' %}">Home</a>
         <span>/</span>
         <a href="{% url 'properties:search' %}">Search Results</a>
@@ -34,12 +36,6 @@
             <div class="gallery js-gallery">
                 <div class="gallery__hero">
                     <img src="{{ gallery.0 }}" alt="{{ property.title }}" id="galleryHeroImg">
-                    {% if property.badge == "verified" or property.badge == "featured" or property.badge == "premium" %}
-                        <span class="badge badge-success property-card__badge">
-                            {% include "partials/icon.html" with name="shield-check" cls="icon" %}
-                            Verified Property
-                        </span>
-                    {% endif %}
                     <button type="button" class="gallery__arrow gallery__arrow--prev" aria-label="Previous photo">
                         {% include "partials/icon.html" with name="chevron-left" %}
                     </button>
@@ -70,9 +66,7 @@
             <div class="detail-card">
                 <div class="detail-title-row">
                     <h1 class="text-h1">{{ property.title }}</h1>
-                    {% if property.badge == "verified" %}
-                        <span class="badge badge-verified">{% include "partials/icon.html" with name="shield-check" cls="icon" %} Verified</span>
-                    {% elif property.badge %}
+                    {% if property.badge %}
                         <span class="badge badge-{{ property.badge }}">{% include "partials/icon.html" with name="star" cls="icon" %} {{ property.badge|title }}</span>
                     {% endif %}
                 </div>
@@ -94,11 +88,7 @@
             <!-- About -->
             <div class="detail-card">
                 <h2 class="detail-section-title">About this property</h2>
-                <p class="about-text is-clamped" id="aboutText">
-                    Beautifully designed {{ property.beds }} BHK apartment located in the heart of {{ property.short_location }}. This
-                    fully furnished apartment comes with modern interiors, spacious bedrooms, modular kitchen,
-                    balcony with great ventilation and 24x7 security. Close to metro, markets, schools and IT parks.
-                </p>
+                <p class="about-text is-clamped" id="aboutText">{{ property_description|default:"No description provided yet." }}</p>
                 <button type="button" class="read-more-toggle" id="readMoreToggle">
                     Read more
                     {% include "partials/icon.html" with name="chevron-down" cls="icon-sm" %}
@@ -133,6 +123,7 @@
                         </div>
                     </div>
                     <div>
+                        {% if prime_location %}
                         <div class="prime-location-card">
                             <h3>Prime Location</h3>
                             <ul>
@@ -141,15 +132,17 @@
                                 {% endfor %}
                             </ul>
                         </div>
+                        {% endif %}
                         <div class="privacy-note">
                             {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
-                            <span><strong>Privacy Protected</strong><br>Exact property address is hidden for privacy. It will be shared after your inquiry is approved by the owner.</span>
+                            <span><strong>Privacy Protected</strong><br>The exact address isn't shown publicly — contact the owner directly and they can share it with you.</span>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Reviews -->
+            {% if rating_count %}
             <div class="detail-card">
                 <h2 class="detail-section-title">Reviews &amp; Ratings</h2>
                 <div class="rating-summary">
@@ -192,31 +185,45 @@
                     <a href="#" class="link-more">View All Reviews</a>
                 </div>
             </div>
+            {% endif %}
         </div>
 
         <!-- Sidebar -->
         <div class="detail-sidebar">
             <div class="detail-card price-card">
                 <div class="price-row">
-                    <span class="amount">&#8377;{{ property.price|intcomma }}</span>
+                    <span class="amount">&#8377;{{ property.price|floatformat:"0"|intcomma }}</span>
                     <span class="slate">/month</span>
                     {% if property.no_brokerage %}<span class="badge badge-success-outline" style="margin-left:auto;">No Brokerage</span>{% endif %}
                 </div>
                 <dl>
-                    <div class="drow"><dt>Security Deposit</dt><dd>&#8377;{{ rent_details.deposit|intcomma }}</dd></div>
-                    <div class="drow"><dt>Maintenance</dt><dd>&#8377;{{ rent_details.maintenance|intcomma }} /month</dd></div>
+                    <div class="drow"><dt>Security Deposit</dt><dd>&#8377;{{ rent_details.deposit|floatformat:"0"|intcomma }}</dd></div>
+                    <div class="drow"><dt>Maintenance</dt><dd>&#8377;{{ rent_details.maintenance|floatformat:"0"|intcomma }} /month</dd></div>
                     <div class="drow"><dt>Available From</dt><dd>{{ rent_details.available_from }}</dd></div>
                 </dl>
-                <a href="#" class="btn btn-primary btn-block">
+                {% if contact_options %}
+                <button type="button" class="btn btn-primary btn-block js-contact-trigger" {% if user.is_authenticated and user.role == "tenant" %}data-inquiry-url="{% url 'properties:send_inquiry' property.id %}"{% endif %}>
                     {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
                     Contact Owner
-                </a>
-                <a href="#" class="btn btn-secondary btn-block">
+                </button>
+                {% endif %}
+                {% if user.is_authenticated and user.role == "tenant" %}
+                <button type="button" class="btn btn-secondary btn-block js-visit-trigger">
+                    {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
+                    Schedule Visit
+                </button>
+                {% else %}
+                <a href="{% url 'accounts:login' %}?next={% url 'properties:detail' property.id %}" class="btn btn-secondary btn-block">
                     {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
                     Schedule Visit
                 </a>
+                {% endif %}
                 <div class="price-card__quick-actions">
-                    <a href="#" class="js-save-toggle">{% include "partials/icon.html" with name="heart" %}Save Property</a>
+                    {% if user.is_authenticated and user.role == "tenant" %}
+                    <button type="button" class="js-save-toggle {% if property.is_saved %}is-saved{% endif %}" data-property-id="{{ property.id }}" data-save-url="{% url 'properties:toggle_saved' property.id %}">{% include "partials/icon.html" with name="heart" %}Save Property</button>
+                    {% else %}
+                    <a href="{% url 'accounts:login' %}?next={% url 'properties:detail' property.id %}">{% include "partials/icon.html" with name="heart" %}Save Property</a>
+                    {% endif %}
                     <a href="#">{% include "partials/icon.html" with name="share" %}Share Property</a>
                     <a href="#">{% include "partials/icon.html" with name="flag" %}Report Listing</a>
                 </div>
@@ -224,32 +231,23 @@
 
             <div class="detail-card owner-card">
                 <div class="owner-card__head">
-                    <img src="{{ owner.avatar }}" alt="{{ owner.name }}" class="owner-card__avatar">
+                    <span class="header-account__avatar header-account__avatar--initials" style="width:48px; height:48px; font-size:18px;">{{ owner.initials }}</span>
                     <div>
                         <div class="owner-card__role">Property Owner</div>
-                        <div class="owner-card__name">{{ owner.name }} {% include "partials/icon.html" with name="shield-check" %}</div>
+                        <div class="owner-card__name">{{ owner.name }}</div>
                         <div class="owner-card__since">Member since {{ owner.member_since }}</div>
                     </div>
                 </div>
-                <div class="owner-card__icons">
-                    <a href="#" aria-label="Call">{% include "partials/icon.html" with name="phone" cls="icon-sm" %}</a>
-                    <a href="#" aria-label="WhatsApp">{% include "partials/icon.html" with name="whatsapp" cls="icon-sm" %}</a>
-                    <a href="#" aria-label="Verified owner">{% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}</a>
-                </div>
-                <div class="owner-card__response">
-                    {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
-                    Response time: {{ owner.response_time }}
-                </div>
-                <h3>Preferred Contact Method</h3>
+                {% if contact_options %}
+                <h3>Contact Directly</h3>
                 <div class="contact-methods">
-                    <a href="#">{% include "partials/icon.html" with name="chat" cls="icon-sm" %} Chat</a>
-                    <a href="#">{% include "partials/icon.html" with name="phone" cls="icon-sm" %} Call</a>
-                    <a href="#">{% include "partials/icon.html" with name="whatsapp" cls="icon-sm" %} WhatsApp</a>
+                    {% for option in contact_options %}
+                    <a href="{{ option.href }}" {% if option.type == "whatsapp" %}target="_blank" rel="noopener"{% endif %}>
+                        {% include "partials/icon.html" with name=option.icon cls="icon-sm" %} {{ option.label }}
+                    </a>
+                    {% endfor %}
                 </div>
-                <div class="locked-note">
-                    {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
-                    Contact details will be shared once your inquiry is approved by the owner.
-                </div>
+                {% endif %}
             </div>
 
             <div class="detail-card">
@@ -264,7 +262,7 @@
             <div class="detail-card">
                 <div class="detail-section-head">
                     <h2 class="detail-section-title" style="margin-bottom:0;">Similar Properties</h2>
-                    <a href="#" class="link-more">View All</a>
+                    <a href="{% url 'properties:search' %}" class="link-more">View All</a>
                 </div>
                 {% for sp in similar_properties %}
                 <div class="similar-property">
@@ -273,7 +271,7 @@
                         {% if sp.badge %}<span class="badge badge-{{ sp.badge }}" style="margin-bottom:4px;">{{ sp.badge|title }}</span>{% endif %}
                         <div class="similar-property__title"><a href="{% url 'properties:detail' sp.id %}">{{ sp.title }}</a></div>
                         <div class="similar-property__location">{% include "partials/icon.html" with name="map-pin" %} {{ sp.short_location }}</div>
-                        <div class="similar-property__price">&#8377;{{ sp.price|intcomma }}/month</div>
+                        <div class="similar-property__price">&#8377;{{ sp.price|floatformat:"0"|intcomma }}/month</div>
                         {% if sp.no_brokerage %}<span class="badge badge-success-outline" style="margin-top:4px;">No Brokerage</span>{% endif %}
                     </div>
                 </div>
@@ -293,16 +291,70 @@
 {% block after_tabbar %}
 <div class="detail-mobile-bar">
     <div class="price">
-        <span class="amount">&#8377;{{ property.price|intcomma }}/mo</span>
+        <span class="amount">&#8377;{{ property.price|floatformat:"0"|intcomma }}/mo</span>
         <span class="label">{% if property.no_brokerage %}No Brokerage{% endif %}</span>
     </div>
-    <a href="#" class="btn btn-secondary">
+    {% if user.is_authenticated and user.role == "tenant" %}
+    <button type="button" class="btn btn-secondary js-visit-trigger">
+        {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
+        Visit
+    </button>
+    {% else %}
+    <a href="{% url 'accounts:login' %}?next={% url 'properties:detail' property.id %}" class="btn btn-secondary">
         {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
         Visit
     </a>
-    <a href="#" class="btn btn-primary">
+    {% endif %}
+    {% if contact_options %}
+    <button type="button" class="btn btn-primary js-contact-trigger" {% if user.is_authenticated and user.role == "tenant" %}data-inquiry-url="{% url 'properties:send_inquiry' property.id %}"{% endif %}>
         {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
         Contact Owner
-    </a>
+    </button>
+    {% endif %}
 </div>
+
+{% if user.is_authenticated and user.role == "tenant" %}
+<div class="contact-sheet-backdrop" id="visitSheetBackdrop"></div>
+<div class="contact-sheet" id="visitSheet">
+    <div class="contact-sheet__handle"></div>
+    <div class="contact-sheet__head">
+        <h3>Schedule a Visit</h3>
+        <button type="button" class="contact-sheet__close" id="visitSheetClose" aria-label="Close">
+            {% include "partials/icon.html" with name="x" cls="icon-sm" %}
+        </button>
+    </div>
+    <form method="post" action="{% url 'properties:schedule_visit' property.id %}">
+        {% csrf_token %}
+        <label class="field-label" for="visitDateTime">Pick a date &amp; time</label>
+        <input type="datetime-local" name="scheduled_at" id="visitDateTime" class="field" required min="{% now "Y-m-d\TH:i" %}" style="margin-bottom: var(--space-4);">
+        <button type="submit" class="btn btn-primary btn-block">Confirm Visit</button>
+    </form>
+</div>
+{% endif %}
+
+{% if contact_options %}
+<div class="contact-sheet-backdrop" id="contactSheetBackdrop"></div>
+<div class="contact-sheet" id="contactSheet">
+    <div class="contact-sheet__handle"></div>
+    <div class="contact-sheet__head">
+        <h3>Contact {{ owner.name }}</h3>
+        <button type="button" class="contact-sheet__close" id="contactSheetClose" aria-label="Close">
+            {% include "partials/icon.html" with name="x" cls="icon-sm" %}
+        </button>
+    </div>
+    <div class="contact-sheet__options">
+        {% for option in contact_options %}
+        <a href="{{ option.href }}" class="contact-sheet__option" {% if option.type == "whatsapp" %}target="_blank" rel="noopener"{% endif %}>
+            <span class="contact-sheet__option-icon contact-sheet__option-icon--{{ option.type }}">
+                {% include "partials/icon.html" with name=option.icon %}
+            </span>
+            <span>
+                <strong>{{ option.label }}</strong>
+                <small>{{ option.sublabel }}</small>
+            </span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
 {% endblock %}

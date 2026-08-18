@@ -1,0 +1,44 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}{% if faq %}Edit FAQ{% else %}Add FAQ{% endif %} | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-cms-form{% endblock %}
+
+{% block content %}
+<div class="dash-breadcrumb"><a href="{% url 'dashboard:admin_cms' %}">&larr; Back to CMS Management</a></div>
+
+<div class="dash-page-head">
+    <h1 class="text-h2">{% if faq %}Edit FAQ{% else %}Add New FAQ{% endif %}</h1>
+</div>
+
+<div class="dash-section" style="max-width: 640px;">
+    <form method="post">
+        {% csrf_token %}
+        <div style="margin-bottom: var(--space-4);">
+            <label class="field-label" for="{{ form.question.id_for_label }}">Question</label>
+            {{ form.question }}
+        </div>
+        <div style="margin-bottom: var(--space-4);">
+            <label class="field-label" for="{{ form.answer.id_for_label }}">Answer</label>
+            {{ form.answer }}
+        </div>
+        <div class="profile-form-grid">
+            <div>
+                <label class="field-label" for="{{ form.placement.id_for_label }}">Shown On</label>
+                {{ form.placement }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ form.order.id_for_label }}">Display Order</label>
+                {{ form.order }}
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap: var(--space-2); margin: var(--space-2) 0 var(--space-4);">
+            {{ form.is_published }}
+            <label class="field-label" for="{{ form.is_published.id_for_label }}" style="margin:0;">Published (visible to visitors)</label>
+        </div>
+        <div style="display:flex; gap: var(--space-3);">
+            <button type="submit" class="btn btn-primary">{% if faq %}Save Changes{% else %}Create FAQ{% endif %}</button>
+            <a href="{% url 'dashboard:admin_cms' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,121 @@
+{% extends "auth_base.html" %}
+{% load static %}
+
+{% block title %}Internal Login | Rentora{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+
+{% block content %}
+<div class="admin-login-shell">
+    <aside class="admin-login-aside" style="background-image:url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=60');">
+        <div class="admin-login-aside__scrim"></div>
+        <div class="admin-login-aside__inner">
+            <a href="{% url 'core:home' %}" class="brand brand--on-dark">
+                <svg class="brand__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M3 11.5 12 4l9 7.5" />
+                    <path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" />
+                </svg>
+                <span class="brand__text">
+                    <span class="brand__name">Rentora</span>
+                    <span class="brand__tagline">NO BROKERAGE. ONLY TRUST.</span>
+                </span>
+            </a>
+
+            <div class="admin-login-aside__body">
+                <span class="admin-login-aside__icon">{% include "partials/icon.html" with name="lock" %}</span>
+                <h1>Internal Access Only</h1>
+                <p>This login is for authorized Rentora team members only. Please use your assigned credentials to access the admin panel.</p>
+
+                <div class="admin-login-aside__features">
+                    {% for f in features %}
+                    <div class="admin-feature-item">
+                        <span class="admin-feature-item__icon">{% include "partials/icon.html" with name=f.icon cls="icon-sm" %}</span>
+                        <div><strong>{{ f.title }}</strong><p>{{ f.text }}</p></div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <p class="admin-login-aside__copyright">&copy; {% now "Y" %} Rentora. All rights reserved.</p>
+        </div>
+    </aside>
+
+    <main class="admin-login-main">
+        <a href="{% url 'core:home' %}" class="brand admin-login-main__brand">
+            <svg class="brand__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 11.5 12 4l9 7.5" />
+                <path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" />
+            </svg>
+            <span class="brand__text">
+                <span class="brand__name">Rentora</span>
+                <span class="brand__tagline">NO BROKERAGE. ONLY TRUST.</span>
+            </span>
+        </a>
+        <div class="admin-login-card">
+            <span class="admin-login-card__icon">{% include "partials/icon.html" with name="lock" %}</span>
+            <h1>Internal Login</h1>
+            <p class="slate">Super Admin / Admin Portal</p>
+
+            <div class="role-toggle" id="roleToggle">
+                <button type="button" class="{% if form.role.value == 'super_admin' %}is-active{% endif %}" data-role="super_admin">
+                    {% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}
+                    Super Admin
+                </button>
+                <button type="button" class="{% if form.role.value == 'admin' %}is-active{% endif %}" data-role="admin">
+                    {% include "partials/icon.html" with name="user" cls="icon-sm" %}
+                    Admin
+                </button>
+            </div>
+
+            <form class="auth-form" method="post" novalidate>
+                {% csrf_token %}
+                {{ form.role }}
+
+                {% if form.non_field_errors %}
+                <div class="form-error-banner">
+                    {% include "partials/icon.html" with name="info" cls="icon-sm" %}
+                    {{ form.non_field_errors.0 }}
+                </div>
+                {% endif %}
+
+                <label class="field-label" for="adminEmail">Email Address</label>
+                <div class="field-with-icon">
+                    {% include "partials/icon.html" with name="envelope" cls="icon-sm" %}
+                    {{ form.email }}
+                </div>
+                {% if form.email.errors %}<span class="field-error">{{ form.email.errors.0 }}</span>{% endif %}
+
+                <label class="field-label" for="adminPassword">Password</label>
+                <div class="field-with-icon field-with-icon--toggle">
+                    {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
+                    {{ form.password }}
+                    <button type="button" class="field-toggle js-password-toggle" aria-label="Show password">{% include "partials/icon.html" with name="eye" cls="icon-sm" %}</button>
+                </div>
+                {% if form.password.errors %}<span class="field-error">{{ form.password.errors.0 }}</span>{% endif %}
+
+                <div class="auth-form__row">
+                    <span></span>
+                    <a href="{% url 'accounts:forgot_password' %}" class="link-more">Forgot Password?</a>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
+                    Login
+                </button>
+            </form>
+
+            <div class="auth-divider"><span>Secure Access</span></div>
+
+            <div class="admin-warning-note">
+                {% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}
+                Unauthorized access is strictly prohibited and may be subject to legal action.
+            </div>
+        </div>
+
+        <p class="admin-login-help">Need help? <a href="{% url 'core:contact' %}" class="link-more">Contact Super Admin</a></p>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/auth.js' %}"></script>
+{% endblock %}

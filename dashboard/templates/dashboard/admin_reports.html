@@ -1,0 +1,97 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}Reports & Analytics | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-reports{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="bar-chart" %} Reports &amp; Analytics</h1></div>
+    <p>Real platform activity, computed live from the database.</p>
+</div>
+
+<div class="dash-stats">
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="users" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total_users }}</div><div class="dash-stat-card__label">Total Users</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="building" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total_properties }}</div><div class="dash-stat-card__label">Total Properties</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="chat" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total_inquiries }}</div><div class="dash-stat-card__label">Total Inquiries</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="calendar" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total_visits }}</div><div class="dash-stat-card__label">Total Visits</div></div>
+    </div>
+</div>
+
+<div class="dash-grid-2">
+    <div>
+        <div class="dash-section">
+            <h2 class="text-h3" style="margin-bottom: var(--space-2);">New Users (Last 8 Weeks)</h2>
+            <p class="slate" style="font-size:12px; margin-bottom: var(--space-2);">Tenant, Owner and Hotel/Homestay sign-ups, by the Monday of each week.</p>
+            <div class="mini-chart">
+                {% for week in user_growth %}
+                <div class="mini-chart__col">
+                    <span class="mini-chart__value">{{ week.count }}</span>
+                    <div class="mini-chart__bar" style="height: {{ week.pct }}%;"></div>
+                    <span class="mini-chart__label">{{ week.label }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="dash-section">
+            <h2 class="text-h3" style="margin-bottom: var(--space-2);">Inquiries (Last 8 Weeks)</h2>
+            <div class="mini-chart">
+                {% for week in inquiry_trend %}
+                <div class="mini-chart__col">
+                    <span class="mini-chart__value">{{ week.count }}</span>
+                    <div class="mini-chart__bar" style="height: {{ week.pct }}%;"></div>
+                    <span class="mini-chart__label">{{ week.label }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="dash-section">
+            <h2 class="text-h3" style="margin-bottom: var(--space-3);">Properties by Status</h2>
+            {% if property_status_breakdown %}
+            <div class="bar-list">
+                {% for item in property_status_breakdown %}
+                <div class="bar-list__row">
+                    <span class="bar-list__label">{{ item.label }}</span>
+                    <div class="bar-list__track"><div class="bar-list__fill" style="width: {{ item.pct }}%;"></div></div>
+                    <span class="bar-list__count">{{ item.count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="slate" style="font-size:13px;">No properties yet.</p>
+            {% endif %}
+        </div>
+
+        <div class="dash-section">
+            <h2 class="text-h3" style="margin-bottom: var(--space-3);">Top Cities (By Properties)</h2>
+            {% if top_cities %}
+            <div class="bar-list">
+                {% for city in top_cities %}
+                <div class="bar-list__row">
+                    <span class="bar-list__label">{{ city.city }}</span>
+                    <div class="bar-list__track"><div class="bar-list__fill" style="width: {{ city.pct }}%;"></div></div>
+                    <span class="bar-list__count">{{ city.count }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="slate" style="font-size:13px;">No properties with a city set yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

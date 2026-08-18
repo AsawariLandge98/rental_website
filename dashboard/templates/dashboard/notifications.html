@@ -1,0 +1,37 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}Notifications | Rentora{% endblock %}
+{% block body_class %}page-dash-notifications{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="bell" %} Notifications</h1></div>
+    <p>Updates about your inquiries, visits and support tickets.</p>
+</div>
+
+<div class="dash-section">
+    {% if notifications %}
+    <div class="dash-section__head">
+        <span class="slate" style="font-size:13px;">{{ notifications|length }} notification{{ notifications|length|pluralize }}</span>
+        <form method="post" action="{% url 'notifications:mark_all_read' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary btn-sm">Mark All Read</button>
+        </form>
+    </div>
+    {% for n in notifications %}
+    <a href="{% url 'notifications:mark_read' n.pk %}" class="dash-notif-list-item" style="display:flex; text-decoration:none; {% if not n.is_read %}background: var(--color-blue-50); border-radius: var(--radius-control); padding-inline: var(--space-3);{% endif %}">
+        <span class="dash-stat-card__icon" style="width:36px;height:36px;flex-shrink:0;">{% include "partials/icon.html" with name="bell" cls="icon-sm" %}</span>
+        <div class="dash-visit-item__body">
+            <div style="font-size:14px; color: var(--color-ink);">{{ n.message }}</div>
+            <div class="dash-visit-item__meta">{{ n.created_at|timesince }} ago &middot; {{ n.get_category_display }}</div>
+        </div>
+    </a>
+    {% endfor %}
+    {% else %}
+    <div class="dash-empty">
+        {% include "partials/icon.html" with name="bell" %}
+        <p>No notifications yet.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

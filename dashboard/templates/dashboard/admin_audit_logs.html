@@ -1,0 +1,100 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}Audit Logs | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-audit-logs{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="shield-check" %} Audit Logs</h1></div>
+    <p>An append-only record of every admin moderation action on the platform.</p>
+</div>
+
+<div class="dash-stats">
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="document" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total }}</div><div class="dash-stat-card__label">Total Entries</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="clock" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.today }}</div><div class="dash-stat-card__label">Today</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="calendar" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.this_week }}</div><div class="dash-stat-card__label">This Week</div></div>
+    </div>
+</div>
+
+<div class="dash-section">
+    <form method="get" class="dash-filter-bar">
+        <div class="dash-filter-bar__search">
+            {% include "partials/icon.html" with name="search" cls="icon-sm" %}
+            <input type="text" name="q" value="{{ selected_q }}" placeholder="Search by action or admin name...">
+        </div>
+        <select name="target_type">
+            <option value="">All Types</option>
+            {% for value in target_type_options %}
+            <option value="{{ value }}" {% if value == selected_target_type %}selected{% endif %}>{{ value }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+        {% if selected_q or selected_target_type %}
+        <a href="{% url 'dashboard:admin_audit_logs' %}" class="btn btn-secondary btn-sm">Reset</a>
+        {% endif %}
+    </form>
+
+    {% if logs %}
+    <table class="record-table">
+        <thead>
+            <tr><th>Admin</th><th>Action</th><th>Type</th><th>Time</th></tr>
+        </thead>
+        <tbody>
+        {% for log in logs %}
+            <tr>
+                <td data-label="Admin">{{ log.admin.full_name|default:"Deleted admin account" }}</td>
+                <td data-label="Action">
+                    {% if log.target_type == "Property" and log.target_id %}
+                    <a href="{% url 'dashboard:admin_property_detail' log.target_id %}">{{ log.message }}</a>
+                    {% else %}
+                    {{ log.message }}
+                    {% endif %}
+                </td>
+                <td data-label="Type">{% if log.target_type %}<span class="status-pill status-pill--draft">{{ log.target_type }}</span>{% else %}—{% endif %}</td>
+                <td data-label="Time">{{ log.created_at|date:"d M Y, g:i A" }}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination">
+        <div class="pagination__pages">
+            {% if page_obj.has_previous %}
+            <a href="?{{ carry_qs }}&page={{ page_obj.previous_page_number }}" aria-label="Previous page">{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</a>
+            {% else %}
+            <button type="button" aria-label="Previous page" disabled>{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</button>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                <button type="button" class="is-active">{{ num }}</button>
+                {% else %}
+                <a href="?{{ carry_qs }}&page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?{{ carry_qs }}&page={{ page_obj.next_page_number }}" aria-label="Next page">{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</a>
+            {% else %}
+            <button type="button" aria-label="Next page" disabled>{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</button>
+            {% endif %}
+        </div>
+        <span class="slate" style="font-size:13px;">Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} entries</span>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="dash-empty">
+        {% include "partials/icon.html" with name="shield-check" %}
+        <p>No audit log entries yet — they'll appear here as admins moderate users, properties, inquiries, visits and tickets.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

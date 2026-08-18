@@ -1,14 +1,61 @@
 document.addEventListener('DOMContentLoaded', () => {
   initMobileNav();
+  initBackButtons();
   initHeroSlider();
-  initHeroMobileSlider();
   initSaveToggle();
   initPropertyGallery();
   initReadMore();
   initFilterAccordion();
   initMobileFilterDrawer();
   initBudgetRangeSlider();
+  initSingleRangeSliders();
+  initContactSheet();
+  initVisitSheet();
+  initScrollReveal();
+  initSortSelect();
 });
+
+function initSortSelect() {
+  const select = document.getElementById('sortSelect');
+  if (!select) return;
+  select.addEventListener('change', () => {
+    const params = new URLSearchParams(window.location.search);
+    params.set('sort', select.value);
+    params.delete('page');
+    window.location.search = params.toString();
+  });
+}
+
+function initScrollReveal() {
+  const targets = document.querySelectorAll('[data-reveal]');
+  if (!targets.length) return;
+
+  if (!('IntersectionObserver' in window) || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    targets.forEach((el) => el.classList.add('is-visible'));
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('is-visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+  targets.forEach((el) => observer.observe(el));
+
+  // Safety net: content must never stay invisible if something goes wrong
+  // (a slow/odd scroll container, a browser quirk, etc.) — force everything
+  // visible after a few seconds no matter what.
+  setTimeout(() => targets.forEach((el) => el.classList.add('is-visible')), 4000);
+}
+
+function getCsrfToken() {
+  const match = document.cookie.match(/(?:^|; )csrftoken=([^;]+)/);
+  return match ? decodeURIComponent(match[1]) : '';
+}
 
 function initMobileNav() {
   const toggle = document.getElementById('navToggle');
@@ -40,6 +87,86 @@ function initMobileNav() {
   backdrop.addEventListener('click', close);
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape' && nav.classList.contains('is-open')) close();
+  });
+}
+
+function initBackButtons() {
+  document.querySelectorAll('.js-back-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const fallback = btn.dataset.fallback;
+      const cameFromSameSite = document.referrer && document.referrer.startsWith(window.location.origin);
+      if (cameFromSameSite && window.history.length > 1) {
+        window.history.back();
+      } else if (fallback) {
+        window.location.href = fallback;
+      } else {
+        window.history.back();
+      }
+    });
+  });
+}
+
+function initContactSheet() {
+  const sheet = document.getElementById('contactSheet');
+  const backdrop = document.getElementById('contactSheetBackdrop');
+  const closeBtn = document.getElementById('contactSheetClose');
+  const triggers = document.querySelectorAll('.js-contact-trigger');
+  if (!sheet || !backdrop || !triggers.length) return;
+
+  let inquiryLogged = false;
+  function open() {
+    sheet.classList.add('is-open');
+    backdrop.classList.add('is-open');
+    document.body.classList.add('nav-open');
+    if (!inquiryLogged) {
+      const inquiryUrl = triggers[0].dataset.inquiryUrl;
+      if (inquiryUrl) {
+        inquiryLogged = true;
+        fetch(inquiryUrl, {
+          method: 'POST',
+          headers: { 'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: '',
+        }).catch(() => {});
+      }
+    }
+  }
+  function close() {
+    sheet.classList.remove('is-open');
+    backdrop.classList.remove('is-open');
+    document.body.classList.remove('nav-open');
+  }
+
+  triggers.forEach((btn) => btn.addEventListener('click', open));
+  backdrop.addEventListener('click', close);
+  if (closeBtn) closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sheet.classList.contains('is-open')) close();
+  });
+}
+
+function initVisitSheet() {
+  const sheet = document.getElementById('visitSheet');
+  const backdrop = document.getElementById('visitSheetBackdrop');
+  const closeBtn = document.getElementById('visitSheetClose');
+  const triggers = document.querySelectorAll('.js-visit-trigger');
+  if (!sheet || !backdrop || !triggers.length) return;
+
+  function open() {
+    sheet.classList.add('is-open');
+    backdrop.classList.add('is-open');
+    document.body.classList.add('nav-open');
+  }
+  function close() {
+    sheet.classList.remove('is-open');
+    backdrop.classList.remove('is-open');
+    document.body.classList.remove('nav-open');
+  }
+
+  triggers.forEach((btn) => btn.addEventListener('click', open));
+  backdrop.addEventListener('click', close);
+  if (closeBtn) closeBtn.addEventListener('click', close);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && sheet.classList.contains('is-open')) close();
   });
 }
 
@@ -76,79 +203,24 @@ function initHeroSlider() {
   });
 }
 
-function initHeroMobileSlider() {
-  const slider = document.querySelector('.js-hero-mobile-slider');
-  if (!slider) return;
-
-  const track = slider.querySelector('.hero-mobile__track');
-  if (!track) return;
-
-  const slides = Array.from(track.children);
-  const dots = Array.from(slider.querySelectorAll('.hero__media-dots button'));
-  const prevBtn = slider.querySelector('.js-hero-mobile-prev');
-  const nextBtn = slider.querySelector('.js-hero-mobile-next');
-  let current = 0;
-  let ticking = false;
-
-  function currentIndex() {
-    return Math.round(track.scrollLeft / track.clientWidth);
-  }
-
-  function setActiveDot() {
-    current = currentIndex();
-    dots.forEach((dot, i) => dot.classList.toggle('is-active', i === current));
-    ticking = false;
-  }
-
-  function goTo(index) {
-    const clamped = (index + slides.length) % slides.length;
-    slides[clamped].scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
-  }
-
-  track.addEventListener('scroll', () => {
-    if (!ticking) {
-      requestAnimationFrame(setActiveDot);
-      ticking = true;
-    }
-  });
-
-  dots.forEach((dot, i) => {
-    dot.addEventListener('click', () => { goTo(i); restartAutoplay(); });
-  });
-
-  if (prevBtn) prevBtn.addEventListener('click', () => { goTo(currentIndex() - 1); restartAutoplay(); });
-  if (nextBtn) nextBtn.addEventListener('click', () => { goTo(currentIndex() + 1); restartAutoplay(); });
-
-  // Auto-advance every 4s; pause while the user is actively swiping/touching,
-  // and stop entirely once they leave the tab so it doesn't run needlessly.
-  let autoplayTimer = null;
-  function startAutoplay() {
-    stopAutoplay();
-    autoplayTimer = setInterval(() => goTo(currentIndex() + 1), 4000);
-  }
-  function stopAutoplay() {
-    if (autoplayTimer) clearInterval(autoplayTimer);
-    autoplayTimer = null;
-  }
-  function restartAutoplay() {
-    stopAutoplay();
-    startAutoplay();
-  }
-
-  track.addEventListener('touchstart', stopAutoplay, { passive: true });
-  track.addEventListener('touchend', restartAutoplay, { passive: true });
-  document.addEventListener('visibilitychange', () => {
-    if (document.hidden) stopAutoplay();
-    else startAutoplay();
-  });
-
-  startAutoplay();
-}
-
 function initSaveToggle() {
   document.querySelectorAll('.js-save-toggle').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      btn.classList.toggle('is-saved');
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const url = btn.dataset.saveUrl;
+      if (!url) {
+        btn.classList.toggle('is-saved');
+        return;
+      }
+      btn.disabled = true;
+      fetch(url, {
+        method: 'POST',
+        headers: { 'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `next=${encodeURIComponent(window.location.pathname + window.location.search)}`,
+      })
+        .then(() => { btn.classList.toggle('is-saved'); })
+        .catch(() => {})
+        .finally(() => { btn.disabled = false; });
     });
   });
 }
@@ -257,4 +329,23 @@ function initBudgetRangeSlider() {
   minInput.addEventListener('input', render);
   maxInput.addEventListener('input', render);
   render();
+}
+
+function initSingleRangeSliders() {
+  document.querySelectorAll('.range-slider--single').forEach((wrap) => {
+    const input = wrap.querySelector('input[type="range"]');
+    const fill = wrap.querySelector('.range-slider__fill');
+    if (!input || !fill) return;
+
+    function render() {
+      const min = Number(input.min) || 0;
+      const max = Number(input.max) || 100;
+      const pct = ((Number(input.value) - min) / (max - min)) * 100;
+      fill.style.left = '0';
+      fill.style.width = pct + '%';
+    }
+
+    input.addEventListener('input', render);
+    render();
+  });
 }

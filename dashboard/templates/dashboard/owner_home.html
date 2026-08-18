@@ -1,0 +1,134 @@
+{% extends "dashboard/_base.html" %}
+{% load humanize %}
+
+{% block title %}Dashboard | Rentora{% endblock %}
+{% block body_class %}page-dash-owner-home{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <h1 class="text-h2">Welcome back, {{ user.full_name|default:user.email|truncatechars:20 }} 👋</h1>
+    <p>Here's what's happening with your properties today.</p>
+</div>
+
+<div class="dash-stats">
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="building" %}</span>
+        <div>
+            <div class="dash-stat-card__value">{{ stats.total_listings }}</div>
+            <div class="dash-stat-card__label">Total Listings</div>
+        </div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="check" %}</span>
+        <div>
+            <div class="dash-stat-card__value">{{ stats.active_listings }}</div>
+            <div class="dash-stat-card__label">Active Listings</div>
+        </div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="document" %}</span>
+        <div>
+            <div class="dash-stat-card__value">{{ stats.draft_listings }}</div>
+            <div class="dash-stat-card__label">Draft Listings</div>
+        </div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="chat" %}</span>
+        <div>
+            <div class="dash-stat-card__value">{{ stats.total_inquiries }}</div>
+            <div class="dash-stat-card__label">Total Inquiries</div>
+        </div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="calendar" %}</span>
+        <div>
+            <div class="dash-stat-card__value">{{ stats.scheduled_visits }}</div>
+            <div class="dash-stat-card__label">Scheduled Visits</div>
+        </div>
+    </div>
+</div>
+
+<div class="dash-grid-2">
+    <div>
+        <div class="dash-section">
+            <div class="dash-section__head">
+                <h2 class="text-h3">Recent Properties</h2>
+                <a href="{% url 'properties:my_listings' %}" class="link-more">View All</a>
+            </div>
+            {% if recent_properties %}
+            {% for property in recent_properties %}
+            <div class="dash-visit-item">
+                {% if property.cover_photo %}
+                <img src="{{ property.cover_photo.image.url }}" alt="" class="dash-visit-item__thumb">
+                {% endif %}
+                <div class="dash-visit-item__body">
+                    <div class="dash-visit-item__title">{{ property.title|default:"Untitled draft" }}</div>
+                    <div class="dash-visit-item__meta">{{ property.short_location }}{% if property.monthly_rent %} &middot; &#8377;{{ property.monthly_rent|floatformat:"0"|intcomma }}/month{% endif %}</div>
+                </div>
+                <span class="status-pill status-pill--{{ property.status }}">{{ property.get_status_display }}</span>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="dash-empty">
+                {% include "partials/icon.html" with name="building" %}
+                <p>You haven't listed a property yet.</p>
+                <a href="{% url 'properties:start_listing' %}" class="btn btn-primary btn-sm">Add New Property</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="dash-section">
+            <h2 class="text-h3" style="margin-bottom: var(--space-4);">Quick Actions</h2>
+            <div class="dash-quick-actions">
+                <a href="{% url 'properties:start_listing' %}">{% include "partials/icon.html" with name="plus-circle" %}Add Property</a>
+                <a href="{% url 'properties:my_listings' %}">{% include "partials/icon.html" with name="building" %}My Properties</a>
+                <a href="{% url 'dashboard:owner_inquiries' %}">{% include "partials/icon.html" with name="chat" %}View Inquiries</a>
+                <a href="{% url 'dashboard:owner_visits' %}">{% include "partials/icon.html" with name="calendar" %}Property Visits</a>
+                <a href="{% url 'subscriptions:plan_list' %}">{% include "partials/icon.html" with name="star" %}Upgrade Plan</a>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="dash-section">
+            <div class="dash-section__head">
+                <h2 class="text-h3">Recent Inquiries</h2>
+                <a href="{% url 'dashboard:owner_inquiries' %}" class="link-more">View All</a>
+            </div>
+            {% for inquiry in recent_inquiries %}
+            <div class="dash-notif-list-item">
+                <span class="dash-stat-card__icon" style="width:32px;height:32px;">{% include "partials/icon.html" with name="chat" cls="icon-sm" %}</span>
+                <div class="dash-visit-item__body">
+                    <div style="font-size:13px;"><strong>{{ inquiry.tenant.full_name }}</strong> &middot; {{ inquiry.property.title|default:"Untitled draft" }}</div>
+                    <div class="dash-visit-item__meta">{{ inquiry.created_at|timesince }} ago</div>
+                </div>
+                <span class="status-pill status-pill--{{ inquiry.status }}">{{ inquiry.get_status_display }}</span>
+            </div>
+            {% empty %}
+            <p class="slate" style="font-size:13px;">No inquiries yet.</p>
+            {% endfor %}
+        </div>
+
+        <div class="dash-section">
+            <div class="dash-section__head">
+                <h2 class="text-h3">Upcoming Visits</h2>
+                <a href="{% url 'dashboard:owner_visits' %}" class="link-more">View All</a>
+            </div>
+            {% for visit in upcoming_visits %}
+            <div class="dash-visit-item">
+                {% if visit.property.cover_photo %}
+                <img src="{{ visit.property.cover_photo.image.url }}" alt="" class="dash-visit-item__thumb">
+                {% endif %}
+                <div class="dash-visit-item__body">
+                    <div class="dash-visit-item__title">{{ visit.tenant.full_name }}</div>
+                    <div class="dash-visit-item__meta">{{ visit.property.title|default:"Untitled draft" }}</div>
+                    <div class="dash-visit-item__meta">{{ visit.scheduled_at|date:"d M Y \a\t g:i A" }}</div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="slate" style="font-size:13px;">No visits scheduled yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

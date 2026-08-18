@@ -6,4 +6,7 @@ app_name = 'core'
 
 urlpatterns = [
     path('', views.home, name='home'),
+    path('about/', views.about, name='about'),
+    path('contact/', views.contact, name='contact'),
+    path('newsletter/subscribe/', views.subscribe_newsletter, name='subscribe_newsletter'),
 ]

@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Contact Us | Rentora{% endblock %}
+{% block body_class %}page-contact{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/properties.css' %}">
+<link rel="stylesheet" href="{% static 'css/pages.css' %}">
+{% endblock %}
+
+{% block content %}
+
+{% url 'core:home' as home_url %}
+<div class="container">
+    <nav class="breadcrumb">
+        {% include "partials/back_button.html" with fallback_url=home_url %}
+        <a href="{% url 'core:home' %}">Home</a>
+        <span>/</span>
+        <span>Contact Us</span>
+    </nav>
+</div>
+
+<!-- Intro -->
+<section class="about-intro">
+    <div class="container about-intro__grid">
+        <div class="about-intro__copy">
+            <span class="eyebrow">Contact Us</span>
+            <h1>We're Here to <span class="text-accent">Help You</span></h1>
+            <p>Have questions or need assistance? Our support team is always ready to help you with your rental journey.</p>
+        </div>
+        <div class="about-intro__img" style="background-image:url('https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?auto=format&fit=crop&w=900&q=60');"></div>
+    </div>
+</section>
+
+<div class="container">
+    <div class="contact-layout">
+        <!-- Form -->
+        <div class="contact-card">
+            <h2>Send Us a Message</h2>
+            <p class="slate">Fill out the form below and we'll get back to you as soon as possible.</p>
+            <form class="contact-form" method="post">
+                {% csrf_token %}
+                {% if form.errors %}
+                <div class="form-error-banner">
+                    {% include "partials/icon.html" with name="info" cls="icon-sm" %}
+                    <span>{% for field in form %}{% for error in field.errors %}{{ error }} {% endfor %}{% endfor %}Please check the form and try again.</span>
+                </div>
+                {% endif %}
+                <div class="contact-form__row">
+                    <label class="contact-field">
+                        {% include "partials/icon.html" with name="user" cls="icon-sm" %}
+                        {{ form.name }}
+                    </label>
+                    <label class="contact-field">
+                        {% include "partials/icon.html" with name="envelope" cls="icon-sm" %}
+                        {{ form.email }}
+                    </label>
+                </div>
+                <div class="contact-form__row">
+                    <label class="contact-field">
+                        {% include "partials/icon.html" with name="phone" cls="icon-sm" %}
+                        {{ form.phone }}
+                    </label>
+                    <label class="contact-field">
+                        {% include "partials/icon.html" with name="flag" cls="icon-sm" %}
+                        {{ form.subject }}
+                    </label>
+                </div>
+                {{ form.message.errors }}
+                {{ form.message }}
+                <button type="submit" class="btn btn-primary btn-block">
+                    {% include "partials/icon.html" with name="send" cls="icon-sm" %}
+                    Send Message
+                </button>
+                <p class="contact-form__note">
+                    {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
+                    Your information is safe with us. We never share your details.
+                </p>
+            </form>
+
+            <div class="contact-trust-row">
+                <div><span class="contact-trust-row__icon">{% include "partials/icon.html" with name="shield-check" %}</span><strong>Quick Response</strong><p>We reply within 24 hours</p></div>
+                <div><span class="contact-trust-row__icon">{% include "partials/icon.html" with name="headset" %}</span><strong>Expert Support</strong><p>Get help from our rental experts</p></div>
+                <div><span class="contact-trust-row__icon">{% include "partials/icon.html" with name="shield-check" %}</span><strong>100% Secure</strong><p>Your data is safe and protected</p></div>
+                <div><span class="contact-trust-row__icon">{% include "partials/icon.html" with name="check" %}</span><strong>Customer First</strong><p>We care about your rental experience</p></div>
+            </div>
+        </div>
+
+        <!-- Info -->
+        <div class="contact-side">
+            <div class="contact-card">
+                <h2>Contact Information</h2>
+                <div class="contact-info-item">
+                    <span class="contact-info-item__icon">{% include "partials/icon.html" with name="map-pin" %}</span>
+                    <div><strong>Our Office</strong><p>Rentora Technologies Pvt. Ltd.<br>302, 5th Floor, Urban Tower,<br>Koramangala 4th Block,<br>Bengaluru, Karnataka 560034</p></div>
+                </div>
+                <div class="contact-info-item">
+                    <span class="contact-info-item__icon">{% include "partials/icon.html" with name="phone" %}</span>
+                    <div><strong>Call Us</strong><p>+91 80 1234 5678<br>+91 98765 43210<br>(Mon - Sat: 9:00 AM - 7:00 PM)</p></div>
+                </div>
+                <div class="contact-info-item">
+                    <span class="contact-info-item__icon">{% include "partials/icon.html" with name="envelope" %}</span>
+                    <div><strong>Email Us</strong><p>support@rentora.com<br>info@rentora.com</p></div>
+                </div>
+                <div class="contact-info-item">
+                    <span class="contact-info-item__icon">{% include "partials/icon.html" with name="headset" %}</span>
+                    <div><strong>Customer Support</strong><p>24/7 Support Available<br>We're here to help, anytime.</p></div>
+                </div>
+            </div>
+
+            <div class="location-map">
+                <div class="location-map__pin">
+                    {% include "partials/icon.html" with name="map-pin" %}
+                    <span>Rentora Office &bull; Koramangala 4th Block</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FAQ -->
+    <section class="section section--tight" data-reveal>
+        <h2 class="section-title-center">Frequently Asked Questions</h2>
+        <div class="contact-faq">
+            {% for faq in faqs %}
+            <div class="filter-group contact-faq__item is-collapsed">
+                <div class="filter-group__head">
+                    <h3>{{ faq.question }}</h3>
+                    {% include "partials/icon.html" with name="chevron-down" cls="icon-sm" %}
+                </div>
+                <div class="filter-group__body"><p>{{ faq.answer }}</p></div>
+            </div>
+            {% endfor %}
+        </div>
+    </section>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.contact-faq__item .filter-group__head').forEach((head) => {
+    head.addEventListener('click', () => head.closest('.contact-faq__item').classList.toggle('is-collapsed'));
+});
+</script>
+{% endblock %}

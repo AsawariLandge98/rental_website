@@ -92,63 +92,59 @@
   border-radius: var(--radius-pill);
 }
 
-/* Mobile hero: image with an overlaid badge/heading, hidden until 767px */
-.hero-mobile { display: none; }
-.hero-mobile__track {
-  display: flex;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
+/* Mobile-only hero extras: a single tap-into-search card + a compact 2-up
+   feature tile row, both hidden on desktop (which uses .hero__actions /
+   .hero__trust / the photo carousel instead). */
+.mobile-search-card {
+  display: none;
+  align-items: center;
+  gap: var(--space-3);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-6);
+  transition: box-shadow var(--transition-base) var(--ease), border-color var(--transition-base) var(--ease);
 }
-.hero-mobile__track::-webkit-scrollbar { display: none; }
-.hero-mobile__slide { flex: 0 0 100%; scroll-snap-align: start; aspect-ratio: 3 / 2; }
-.hero-mobile__slide img { width: 100%; height: 100%; object-fit: cover; }
-.hero-mobile__scrim {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 85%;
-  background: linear-gradient(to top, rgba(10, 38, 71, .9), rgba(10, 38, 71, 0));
-  pointer-events: none;
+.mobile-search-card:hover, .mobile-search-card:focus-visible { box-shadow: var(--shadow-lg); border-color: var(--color-blue-300); }
+.mobile-search-card__icon {
+  width: 36px; height: 36px; flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-blue-50);
+  color: var(--color-blue-500);
+  display: inline-flex; align-items: center; justify-content: center;
 }
-.hero-mobile__overlay {
-  position: absolute;
-  left: var(--space-4);
-  right: var(--space-4);
-  bottom: var(--space-4);
-}
-.hero__badge--on-image { background: rgba(255, 255, 255, .95); }
-.hero-mobile__title {
+.mobile-search-card__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mobile-search-card__label { font: 700 11px var(--font-body); text-transform: uppercase; letter-spacing: .04em; color: var(--color-slate); }
+.mobile-search-card__value { font: 600 14px var(--font-body); color: var(--color-ink); }
+.mobile-search-card__filter {
+  width: 40px; height: 40px; flex-shrink: 0;
+  border-radius: var(--radius-control);
+  background: var(--color-blue-500);
   color: var(--color-white);
-  font: 700 clamp(1.375rem, 1.1rem + 1.4vw, 1.75rem)/1.15 var(--font-heading);
-  letter-spacing: -0.01em;
-  margin-top: var(--space-2);
-}
-.hero-mobile__subtitle {
-  color: var(--color-blue-50);
-  font-size: 12px;
-  line-height: 17px;
-  margin-top: var(--space-1);
+  display: inline-flex; align-items: center; justify-content: center;
 }
 
-.hero-actions-mobile { display: none; }
-.hero__media-dots {
+.mobile-feature-tiles { display: none; }
+.mobile-feature-tile {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
   display: flex;
-  justify-content: center;
-  gap: 6px;
-  margin-top: 26px;
+  flex-direction: column;
+  gap: 2px;
 }
-.hero__media-dots button {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--color-border);
-  border: none;
-  padding: 0;
+.mobile-feature-tile__icon {
+  width: 32px; height: 32px;
+  border-radius: var(--radius-control);
+  background: var(--color-blue-50);
+  color: var(--color-blue-500);
+  display: inline-flex; align-items: center; justify-content: center;
+  margin-bottom: var(--space-2);
 }
-.hero__media-dots button.is-active { background: var(--color-blue-500); width: 18px; border-radius: var(--radius-pill); }
+.mobile-feature-tile strong { font-size: 13px; color: var(--color-ink); }
+.mobile-feature-tile span { font-size: 12px; color: var(--color-slate); }
 
 /* ==========================================================================
    Quick Search
@@ -174,8 +170,11 @@
   gap: var(--space-2);
   padding-inline: var(--space-3);
   border-right: 1px solid var(--color-border);
+  border-radius: var(--radius-control);
+  transition: background var(--transition-fast) var(--ease);
 }
 .quick-search__field:last-of-type { border-right: none; }
+.quick-search__field:focus-within, .quick-search__field:hover { background: var(--color-offwhite); }
 .quick-search__field svg { width: 18px; height: 18px; color: var(--color-blue-500); flex-shrink: 0; }
 .quick-search__field select {
   border: none;
@@ -187,53 +186,6 @@
 .quick-search__field select:focus { outline: none; }
 .quick-search__field-label { display: flex; flex-direction: column; width: 100%; }
 .quick-search__field-label span:first-child { font: 600 13px var(--font-body); color: var(--color-ink); }
-
-/* Mobile search bar + trust grid — hidden until the 767px block */
-.hero-search-mobile { display: none; }
-.hero-search-mobile__bar {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-control);
-  box-shadow: var(--shadow-lg);
-  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
-}
-.hero-search-mobile__bar svg { color: var(--color-slate); flex-shrink: 0; }
-.hero-search-mobile__input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  background: transparent;
-  font: inherit;
-  font-size: 14px;
-  color: var(--color-ink);
-  height: 40px;
-}
-.hero-search-mobile__input:focus { outline: none; }
-.hero-search-mobile__input::placeholder { color: var(--color-slate); }
-
-.hero-trust-mobile {
-  display: none;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-2);
-  text-align: center;
-}
-.trust-item-mobile { display: flex; flex-direction: column; align-items: center; gap: 4px; }
-.trust-item-mobile__icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--color-blue-50);
-  color: var(--color-blue-500);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-}
-.trust-item-mobile__icon svg { width: 18px; height: 18px; }
-.trust-item-mobile__label { font: 700 11px var(--font-body); color: var(--color-ink); }
-.trust-item-mobile__sub { font-size: 10px; color: var(--color-slate); line-height: 1.3; }
 
 /* ==========================================================================
    Browse by Property Type
@@ -253,7 +205,8 @@
   border-radius: var(--radius-card);
   border: 1px solid transparent;
 }
-.property-type-tile:hover { background: var(--color-blue-50); border-color: var(--color-border); }
+.property-type-tile { transition: background var(--transition-base) var(--ease), border-color var(--transition-base) var(--ease), transform var(--transition-base) var(--ease); }
+.property-type-tile:hover { background: var(--color-blue-50); border-color: var(--color-border); transform: translateY(-2px); }
 .property-type-tile__icon {
   width: 48px;
   height: 48px;
@@ -263,7 +216,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: transform var(--transition-base) var(--ease);
 }
+.property-type-tile:hover .property-type-tile__icon { transform: scale(1.1) rotate(-4deg); }
 .property-type-tile__icon svg { width: 22px; height: 22px; }
 .property-type-tile__icon--blue { background: var(--category-blue-bg); color: var(--category-blue); }
 .property-type-tile__icon--purple { background: var(--category-purple-bg); color: var(--category-purple); }
@@ -320,7 +275,9 @@
   align-items: center;
   justify-content: center;
   box-shadow: var(--shadow-card);
+  transition: transform var(--transition-base) var(--ease), box-shadow var(--transition-base) var(--ease);
 }
+.why-tile:hover .why-tile__icon { transform: translateY(-4px) scale(1.06); box-shadow: var(--shadow-lg); }
 .why-tile__icon svg { width: 24px; height: 24px; }
 .why-tile h3 { margin-bottom: 2px; }
 .why-tile p { color: var(--color-slate); font-size: 13px; line-height: 19px; }
@@ -355,7 +312,9 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: transform var(--transition-base) var(--ease), box-shadow var(--transition-base) var(--ease);
 }
+.step:hover .step__circle { transform: scale(1.1); box-shadow: 0 6px 16px rgba(32, 82, 149, .35); }
 .step__circle svg { width: 20px; height: 20px; }
 .step h3 { font-size: 15px; }
 .step p { color: var(--color-slate); font-size: 12px; line-height: 17px; max-width: 16ch; }
@@ -376,7 +335,9 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-4);
+  transition: box-shadow var(--transition-base) var(--ease), transform var(--transition-base) var(--ease), border-color var(--transition-base) var(--ease);
 }
+.testimonial-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); border-color: var(--color-blue-300); }
 .testimonial-card__quote { font-size: 14px; line-height: 22px; color: var(--color-ink); }
 .testimonial-card__person { display: flex; align-items: center; gap: var(--space-3); }
 .testimonial-card__avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
@@ -453,31 +414,27 @@
 @media (max-width: 767px) {
   .section { padding-block: var(--space-8); }
   .section--tight { padding-block: var(--space-6); }
-  .hero { padding: 0; }
+  .hero { padding-block: var(--space-6) var(--space-2); }
 
-  /* Desktop/tablet hero (text column + framed photo) hands off entirely to
-     the mobile hero below: full-bleed photo with the badge/heading
-     overlaid directly on it. */
-  .hero__grid { display: none; }
-  .hero-mobile {
-    display: block;
-    position: relative;
-    overflow: hidden;
-  }
+  /* No photo on mobile — plain badge/heading/subtitle on white, same
+     .hero__intro content as desktop, just the framed photo column drops. */
+  .hero__grid { grid-template-columns: 1fr; gap: 0; }
+  .hero__media { display: none; }
 
   .section-head { align-items: flex-start; }
 
-  /* CTA buttons, search bar, and trust grid sit in normal flow below the photo */
-  .hero-actions-mobile { display: flex; flex-direction: column; gap: var(--space-3); margin-top: var(--space-4); }
-  .hero-search-mobile { display: block; margin-top: var(--space-4); }
-  .hero-trust-mobile { display: grid; margin-top: var(--space-4); }
+  .hero__actions { flex-direction: column; margin-bottom: var(--space-4); }
+  .hero__actions .btn { width: 100%; }
+  .mobile-search-card { display: flex; }
+  .hero__trust { display: none; }
+  .mobile-feature-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); margin-bottom: var(--space-2); }
 
-  /* Browse by Property Type: swipeable icon chips */
+  /* Browse by Property Type: swipeable pill chips (icon inline + label) */
   .property-types {
     display: flex;
     grid-template-columns: none;
     overflow-x: auto;
-    gap: var(--space-3);
+    gap: var(--space-2);
     scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none;
@@ -485,7 +442,21 @@
     padding-inline: var(--space-4);
   }
   .property-types::-webkit-scrollbar { display: none; }
-  .property-type-tile { flex: 0 0 76px; scroll-snap-align: start; }
+  .property-type-tile {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-pill);
+    border-color: var(--color-border);
+    white-space: nowrap;
+  }
+  .property-type-tile:first-child { background: var(--color-navy-900); border-color: var(--color-navy-900); }
+  .property-type-tile:first-child span:last-child { color: var(--color-white); }
+  .property-type-tile__icon { width: 28px; height: 28px; }
+  .property-type-tile:first-child .property-type-tile__icon { background: rgba(255, 255, 255, .15); color: var(--color-white); }
 
   /* Featured Properties: a plain vertical list on mobile, not a carousel —
      this is the page's primary content, users scroll through it linearly. */

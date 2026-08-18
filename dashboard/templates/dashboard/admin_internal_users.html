@@ -1,0 +1,94 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}Admin Users | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-internal-users{% endblock %}
+
+{% block content %}
+<div class="dash-page-head listings-head">
+    <div>
+        <h1 class="text-h2">{% include "partials/icon.html" with name="id-card" %} Admin Users</h1>
+        <p>Manage who has Admin or Super Admin access to this dashboard.</p>
+    </div>
+    <a href="{% url 'dashboard:admin_user_create' %}" class="btn btn-primary">
+        {% include "partials/icon.html" with name="plus-circle" cls="icon-sm" %}
+        Add New Admin
+    </a>
+</div>
+
+<div class="dash-stats">
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="id-card" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total }}</div><div class="dash-stat-card__label">Total Admins</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="check" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.active }}</div><div class="dash-stat-card__label">Active</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="shield-check" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.super_admins }}</div><div class="dash-stat-card__label">Super Admins</div></div>
+    </div>
+</div>
+
+<div class="dash-section">
+    <table class="record-table">
+        <thead>
+            <tr><th>Admin</th><th>Role</th><th>Status</th><th>Joined</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for admin_user in admins %}
+            <tr>
+                <td data-label="Admin">
+                    <div class="record-property">
+                        <span class="header-account__avatar header-account__avatar--initials" style="width:40px;height:40px;flex-shrink:0;">{{ admin_user.full_name|first|upper }}</span>
+                        <div>
+                            <div class="record-property__title">{{ admin_user.full_name }}{% if admin_user.pk == current_user_id %} <span class="slate" style="font-size:12px;">(you)</span>{% endif %}</div>
+                            <div class="record-property__loc">{{ admin_user.email }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Role">{{ admin_user.get_role_display }}</td>
+                <td data-label="Status">
+                    {% if admin_user.is_active %}
+                    <span class="status-pill status-pill--published">Active</span>
+                    {% else %}
+                    <span class="status-pill status-pill--archived">Deactivated</span>
+                    {% endif %}
+                </td>
+                <td data-label="Joined">{{ admin_user.date_joined|date:"d M Y" }}</td>
+                <td data-label="Actions">
+                    {% if admin_user.pk == current_user_id %}
+                    <span class="slate" style="font-size:12px;">Ask another Super Admin to change your account</span>
+                    {% else %}
+                    <div class="record-actions">
+                        {% if admin_user.role == "admin" %}
+                        <form method="post" action="{% url 'dashboard:admin_user_set_role_super_admin' admin_user.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm">Make Super Admin</button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'dashboard:admin_user_set_role_admin' admin_user.pk %}" onsubmit="return confirm('Demote {{ admin_user.full_name }} to Admin?');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm">Demote to Admin</button>
+                        </form>
+                        {% endif %}
+                        {% if admin_user.is_active %}
+                        <form method="post" action="{% url 'dashboard:admin_internal_user_deactivate' admin_user.pk %}" onsubmit="return confirm('Deactivate {{ admin_user.full_name }}? They will not be able to log in.');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm" style="color:var(--color-error);">Deactivate</button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'dashboard:admin_internal_user_activate' admin_user.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-sm">Activate</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

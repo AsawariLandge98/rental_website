@@ -1,0 +1,122 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}Support Tickets | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-support{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="headset" %} Support Tickets</h1></div>
+    <p>Every support ticket submitted on the platform.</p>
+</div>
+
+<div class="dash-stats">
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="headset" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total }}</div><div class="dash-stat-card__label">Total Tickets</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="clock" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.open }}</div><div class="dash-stat-card__label">Open</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="check" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.resolved }}</div><div class="dash-stat-card__label">Resolved</div></div>
+    </div>
+</div>
+
+<div class="dash-section">
+    <form method="get" class="dash-filter-bar">
+        <div class="dash-filter-bar__search">
+            {% include "partials/icon.html" with name="search" cls="icon-sm" %}
+            <input type="text" name="q" value="{{ selected_q }}" placeholder="Search by subject, name or email...">
+        </div>
+        <select name="category">
+            <option value="">All Categories</option>
+            {% for value, label in category_options %}
+            <option value="{{ value }}" {% if value == selected_category %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="status">
+            <option value="">All Status</option>
+            {% for value, label in status_options %}
+            <option value="{{ value }}" {% if value == selected_status %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+        {% if selected_q or selected_category or selected_status %}
+        <a href="{% url 'dashboard:admin_support' %}" class="btn btn-secondary btn-sm">Reset</a>
+        {% endif %}
+    </form>
+
+    {% if tickets %}
+    <table class="record-table">
+        <thead>
+            <tr><th>Subject</th><th>User</th><th>Category</th><th>Submitted</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for ticket in tickets %}
+            <tr>
+                <td data-label="Subject">
+                    <div class="record-property__title">{{ ticket.subject }}</div>
+                    <div class="record-property__loc">{{ ticket.description|truncatechars:80 }}</div>
+                </td>
+                <td data-label="User">{{ ticket.user.full_name }}<br><span class="slate" style="font-size:12px;">{{ ticket.user.email }}</span></td>
+                <td data-label="Category">{{ ticket.get_category_display }}</td>
+                <td data-label="Submitted">{{ ticket.created_at|date:"d M Y, g:i A" }}</td>
+                <td data-label="Status"><span class="status-pill status-pill--{{ ticket.status }}">{{ ticket.get_status_display }}</span></td>
+                <td data-label="Actions">
+                    <div class="record-actions">
+                        {% if ticket.attachment %}
+                        <a href="{{ ticket.attachment.url }}" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">Attachment</a>
+                        {% endif %}
+                        {% if ticket.status == "open" %}
+                        <form method="post" action="{% url 'dashboard:admin_support_set_status' ticket.pk 'resolved' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-sm">Resolve</button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'dashboard:admin_support_set_status' ticket.pk 'open' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm">Reopen</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination">
+        <div class="pagination__pages">
+            {% if page_obj.has_previous %}
+            <a href="?{{ carry_qs }}&page={{ page_obj.previous_page_number }}" aria-label="Previous page">{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</a>
+            {% else %}
+            <button type="button" aria-label="Previous page" disabled>{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</button>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                <button type="button" class="is-active">{{ num }}</button>
+                {% else %}
+                <a href="?{{ carry_qs }}&page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?{{ carry_qs }}&page={{ page_obj.next_page_number }}" aria-label="Next page">{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</a>
+            {% else %}
+            <button type="button" aria-label="Next page" disabled>{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</button>
+            {% endif %}
+        </div>
+        <span class="slate" style="font-size:13px;">Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} tickets</span>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="dash-empty">
+        {% include "partials/icon.html" with name="headset" %}
+        <p>No tickets match your filters.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

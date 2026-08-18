@@ -1,0 +1,148 @@
+{% extends "dashboard/_base.html" %}
+{% load static humanize %}
+
+{% block title %}Properties | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-properties{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/properties.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="building" %} Properties</h1></div>
+    <p>Review and moderate every listing on the platform.</p>
+</div>
+
+<div class="dash-stats">
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="building" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total }}</div><div class="dash-stat-card__label">Total Properties</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="check" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.active }}</div><div class="dash-stat-card__label">Active</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="clock" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.pending_review }}</div><div class="dash-stat-card__label">Pending Review</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="x" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.rejected }}</div><div class="dash-stat-card__label">Rejected</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="document" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.draft }}</div><div class="dash-stat-card__label">Draft</div></div>
+    </div>
+</div>
+
+<div class="dash-section">
+    <form method="get" class="dash-filter-bar">
+        <div class="dash-filter-bar__search">
+            {% include "partials/icon.html" with name="search" cls="icon-sm" %}
+            <input type="text" name="q" value="{{ selected_q }}" placeholder="Search by title, city or owner...">
+        </div>
+        <select name="status">
+            <option value="">All Status</option>
+            {% for value, label in status_options %}
+            <option value="{{ value }}" {% if value == selected_status %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="verification">
+            <option value="">All Verification</option>
+            <option value="pending" {% if selected_verification == "pending" %}selected{% endif %}>Pending Review</option>
+            <option value="verified" {% if selected_verification == "verified" %}selected{% endif %}>Verified</option>
+            <option value="rejected" {% if selected_verification == "rejected" %}selected{% endif %}>Rejected</option>
+        </select>
+        <select name="property_type">
+            <option value="">All Type</option>
+            {% for value, label in property_type_options %}
+            <option value="{{ value }}" {% if value == selected_property_type %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+        {% if selected_q or selected_status or selected_verification or selected_property_type %}
+        <a href="{% url 'dashboard:admin_properties' %}" class="btn btn-secondary btn-sm">Reset</a>
+        {% endif %}
+    </form>
+
+    {% if properties %}
+    <table class="record-table">
+        <thead>
+            <tr><th>Property</th><th>Owner</th><th>Type</th><th>Location</th><th>Status</th><th>Verification</th><th>Price</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for property in properties %}
+            <tr>
+                <td class="record-property-cell">
+                    <div class="record-property">
+                        {% if property.cover_photo %}
+                        <img src="{{ property.cover_photo.image.url }}" alt="">
+                        {% else %}
+                        <span class="record-property__thumb-placeholder">{% include "partials/icon.html" with name="camera" cls="icon-sm" %}</span>
+                        {% endif %}
+                        <div>
+                            <div class="record-property__title">{{ property.title|default:"Untitled draft" }}</div>
+                            <div class="record-property__loc">Property ID: PRP{{ property.pk|stringformat:"04d" }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Owner">{{ property.owner.full_name }}<br><span class="slate" style="font-size:12px;">{{ property.owner.email }}</span></td>
+                <td data-label="Type">{{ property.get_property_type_display|default:property.get_category_display }}</td>
+                <td data-label="Location">{{ property.short_location|default:"—" }}</td>
+                <td data-label="Status"><span class="status-pill status-pill--{{ property.status }}">{{ property.get_status_display }}</span></td>
+                <td data-label="Verification">
+                    {% if property.verification_state == "verified" %}
+                    <span class="status-pill status-pill--verify-verified">Verified</span>
+                    {% elif property.verification_state == "rejected" %}
+                    <span class="status-pill status-pill--verify-rejected">Rejected</span>
+                    {% else %}
+                    <span class="status-pill status-pill--verify-pending">Pending Review</span>
+                    {% endif %}
+                </td>
+                <td data-label="Price">{% if property.monthly_rent %}&#8377;{{ property.monthly_rent|floatformat:"0"|intcomma }}/month{% else %}—{% endif %}</td>
+                <td data-label="Actions">
+                    <div class="record-actions">
+                        <a href="{% url 'dashboard:admin_property_detail' property.pk %}" class="btn btn-secondary btn-sm">View</a>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination">
+        <div class="pagination__pages">
+            {% if page_obj.has_previous %}
+            <a href="?{{ carry_qs }}&page={{ page_obj.previous_page_number }}" aria-label="Previous page">{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</a>
+            {% else %}
+            <button type="button" aria-label="Previous page" disabled>{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</button>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                <button type="button" class="is-active">{{ num }}</button>
+                {% else %}
+                <a href="?{{ carry_qs }}&page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?{{ carry_qs }}&page={{ page_obj.next_page_number }}" aria-label="Next page">{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</a>
+            {% else %}
+            <button type="button" aria-label="Next page" disabled>{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</button>
+            {% endif %}
+        </div>
+        <span class="slate" style="font-size:13px;">Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} properties</span>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="dash-empty">
+        {% include "partials/icon.html" with name="building" %}
+        <p>No properties match your filters.</p>
+        <a href="{% url 'dashboard:admin_properties' %}" class="btn btn-primary btn-sm">Clear Filters</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

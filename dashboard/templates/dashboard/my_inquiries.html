@@ -1,0 +1,56 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}My Inquiries | Rentora{% endblock %}
+{% block body_class %}page-dash-inquiries{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="chat" %} My Inquiries</h1></div>
+    <p>Properties you've reached out to owners about. Owner contact details are always visible on the property page — no approval wait.</p>
+</div>
+
+<div class="dash-section">
+    {% if inquiries %}
+    <table class="record-table">
+        <thead>
+            <tr><th>Property</th><th>Owner</th><th>Sent</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            {% for inquiry in inquiries %}
+            <tr>
+                <td class="record-property-cell">
+                    <div class="record-property">
+                        {% if inquiry.property.cover_photo %}<img src="{{ inquiry.property.cover_photo.image.url }}" alt="">{% endif %}
+                        <div>
+                            <div class="record-property__title"><a href="{% url 'properties:detail' inquiry.property.id %}">{{ inquiry.property.title }}</a></div>
+                            <div class="record-property__loc">{{ inquiry.property.short_location }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Owner">{{ inquiry.property.owner.full_name }}</td>
+                <td data-label="Sent">{{ inquiry.created_at|date:"d M Y, g:i A" }}</td>
+                <td data-label="Status"><span class="status-pill status-pill--{{ inquiry.status }}">{{ inquiry.get_status_display }}</span></td>
+                <td data-label="Actions">
+                    <div class="record-actions">
+                        <a href="{% url 'properties:detail' inquiry.property.id %}" class="btn btn-secondary btn-sm">View</a>
+                        {% if inquiry.status == "open" %}
+                        <form method="post" action="{% url 'inquiries:close_inquiry' inquiry.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm">Close</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="dash-empty">
+        {% include "partials/icon.html" with name="chat" %}
+        <p>You haven't sent any inquiries yet.</p>
+        <a href="{% url 'properties:search' %}" class="btn btn-primary btn-sm">Browse Properties</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

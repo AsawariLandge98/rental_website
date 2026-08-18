@@ -1,0 +1,136 @@
+{% extends "dashboard/_base.html" %}
+{% load humanize %}
+
+{% block title %}Dashboard | Rentora{% endblock %}
+{% block body_class %}page-dash-home{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <h1 class="text-h2">Welcome back, {{ user.full_name|default:user.email|truncatechars:20 }} 👋</h1>
+    <p>Find your perfect rental home and manage your activities easily.</p>
+</div>
+
+<div class="dash-stats">
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="heart" %}</span>
+        <div>
+            <div class="dash-stat-card__value">{{ saved_count }}</div>
+            <div class="dash-stat-card__label">Saved Properties</div>
+        </div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="chat" %}</span>
+        <div>
+            <div class="dash-stat-card__value">{{ active_inquiries_count }}</div>
+            <div class="dash-stat-card__label">Active Inquiries</div>
+        </div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="calendar" %}</span>
+        <div>
+            <div class="dash-stat-card__value">{{ scheduled_visits_count }}</div>
+            <div class="dash-stat-card__label">Scheduled Visits</div>
+        </div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="bell" %}</span>
+        <div>
+            <div class="dash-stat-card__value">{{ unread_notifications_count }}</div>
+            <div class="dash-stat-card__label">New Notifications</div>
+        </div>
+    </div>
+</div>
+
+<div class="dash-grid-2">
+    <div>
+        <div class="dash-section">
+            <div class="dash-section__head">
+                <h2 class="text-h3">Recently Viewed Properties</h2>
+                <a href="{% url 'properties:search' %}" class="link-more">View All</a>
+            </div>
+            {% if recently_viewed %}
+            <div class="dash-property-grid">
+                {% for property in recently_viewed %}
+                {% include "partials/property_card.html" with property=property %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="dash-empty">
+                {% include "partials/icon.html" with name="eye" %}
+                <p>Properties you view will show up here.</p>
+                <a href="{% url 'properties:search' %}" class="btn btn-primary btn-sm">Browse Properties</a>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="dash-section">
+            <div class="dash-section__head">
+                <h2 class="text-h3">Recommended For You</h2>
+                <a href="{% url 'properties:search' %}" class="link-more">View All</a>
+            </div>
+            {% if recommended %}
+            <div class="dash-property-grid">
+                {% for property in recommended %}
+                {% include "partials/property_card.html" with property=property %}
+                {% endfor %}
+            </div>
+            {% else %}
+            <p class="slate" style="font-size:13px;">No recommendations yet — save a few properties so we can tailor suggestions.</p>
+            {% endif %}
+        </div>
+
+        <div class="dash-section">
+            <h2 class="text-h3" style="margin-bottom: var(--space-4);">Quick Actions</h2>
+            <div class="dash-quick-actions">
+                <a href="{% url 'properties:search' %}">{% include "partials/icon.html" with name="search" %}Search Property</a>
+                <a href="{% url 'dashboard:tenant_saved' %}">{% include "partials/icon.html" with name="heart" %}Saved Properties</a>
+                <a href="{% url 'inquiries:my_inquiries' %}">{% include "partials/icon.html" with name="chat" %}My Inquiries</a>
+                <a href="{% url 'visits:my_visits' %}">{% include "partials/icon.html" with name="calendar" %}My Visits</a>
+                <a href="{% url 'dashboard:tenant_profile' %}">{% include "partials/icon.html" with name="user" %}Update Profile</a>
+                <a href="{% url 'dashboard:tenant_help' %}">{% include "partials/icon.html" with name="headset" %}Help &amp; Support</a>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <div class="dash-section">
+            <div class="dash-section__head">
+                <h2 class="text-h3">Upcoming Visits</h2>
+                <a href="{% url 'visits:my_visits' %}" class="link-more">View All</a>
+            </div>
+            {% for visit in upcoming_visits %}
+            <div class="dash-visit-item">
+                {% if visit.property.cover_photo %}
+                <img src="{{ visit.property.cover_photo.image.url }}" alt="" class="dash-visit-item__thumb">
+                {% endif %}
+                <div class="dash-visit-item__body">
+                    <div class="dash-visit-item__title">{{ visit.property.title }}</div>
+                    <div class="dash-visit-item__meta">{{ visit.property.short_location }}</div>
+                    <div class="dash-visit-item__meta">{{ visit.scheduled_at|date:"d M Y \a\t g:i A" }}</div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="slate" style="font-size:13px;">No visits scheduled yet.</p>
+            {% endfor %}
+        </div>
+
+        <div class="dash-section">
+            <div class="dash-section__head">
+                <h2 class="text-h3">Latest Notifications</h2>
+                <a href="{% url 'notifications:list' %}" class="link-more">View All</a>
+            </div>
+            {% for n in latest_notifications %}
+            <div class="dash-notif-list-item">
+                <span class="dash-stat-card__icon" style="width:32px;height:32px;">{% include "partials/icon.html" with name="bell" cls="icon-sm" %}</span>
+                <div class="dash-visit-item__body">
+                    <div style="font-size:13px;">{{ n.message }}</div>
+                    <div class="dash-visit-item__meta">{{ n.created_at|timesince }} ago</div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="slate" style="font-size:13px;">No notifications yet.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

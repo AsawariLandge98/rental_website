@@ -2,31 +2,47 @@
 {% comment %}
 Usage: {% include "partials/property_card.html" with property=p %}
 Expects a dict/object with: id, title, location, beds, baths, area, price, image, no_brokerage
-Optional: badge = "verified" | "featured" | "premium"
+Optional: badge = "featured" | "premium" (derived from the listing's plan — never a verification claim, since verification isn't implemented)
+Optional: photo_count = total photos (renders a "1/N" pill on the cover image if present)
 Optional: show_actions=True renders View Details / Contact Owner buttons (search results)
 {% endcomment %}
 <article class="property-card">
     <div class="property-card__media">
         <img src="{{ property.image }}" alt="{{ property.title }}" loading="lazy">
-        {% if property.badge == "featured" %}
-            <span class="badge badge-featured property-card__badge">
-                {% include "partials/icon.html" with name="star" cls="icon" %}
-                Featured
-            </span>
-        {% elif property.badge == "premium" %}
-            <span class="badge badge-premium property-card__badge">
-                {% include "partials/icon.html" with name="star" cls="icon" %}
-                Premium
-            </span>
-        {% elif property.badge == "verified" %}
-            <span class="badge badge-success property-card__badge">
-                {% include "partials/icon.html" with name="shield-check" cls="icon" %}
-                Verified
-            </span>
-        {% endif %}
-        <button type="button" class="property-card__save js-save-toggle" aria-label="Save property">
+        <div class="property-card__badges">
+            {% if property.badge == "featured" %}
+                <span class="badge badge-featured">
+                    {% include "partials/icon.html" with name="star" cls="icon" %}
+                    Featured
+                </span>
+            {% elif property.badge == "premium" %}
+                <span class="badge badge-premium">
+                    {% include "partials/icon.html" with name="star" cls="icon" %}
+                    Premium
+                </span>
+            {% endif %}
+            {% if property.no_brokerage %}
+                <span class="badge badge-success">
+                    {% include "partials/icon.html" with name="key" cls="icon" %}
+                    Zero Brokerage
+                </span>
+            {% endif %}
+        </div>
+        {% if user.is_authenticated and user.role == "tenant" %}
+        <button type="button" class="property-card__save js-save-toggle {% if property.is_saved %}is-saved{% endif %}" aria-label="Save property" data-property-id="{{ property.id }}" data-save-url="{% url 'properties:toggle_saved' property.id %}">
             {% include "partials/icon.html" with name="heart" %}
         </button>
+        {% elif not user.is_authenticated %}
+        <a href="{% url 'accounts:login' %}?next={% url 'properties:detail' property.id %}" class="property-card__save" aria-label="Log in to save property">
+            {% include "partials/icon.html" with name="heart" %}
+        </a>
+        {% endif %}
+        {% if property.photo_count %}
+        <span class="property-card__photo-count">
+            {% include "partials/icon.html" with name="camera" cls="icon-sm" %}
+            1/{{ property.photo_count }}
+        </span>
+        {% endif %}
     </div>
     <div class="property-card__body">
         <h3 class="property-card__title">
@@ -43,12 +59,9 @@ Optional: show_actions=True renders View Details / Contact Owner buttons (search
         </div>
         <div class="property-card__footer">
             <div class="property-card__price">
-                <span class="text-price-stat">&#8377;{{ property.price|intcomma }}</span>
+                <span class="text-price-stat">&#8377;{{ property.price|floatformat:"0"|intcomma }}</span>
                 <span>/month</span>
             </div>
-            {% if property.no_brokerage %}
-                <span class="badge badge-success-outline">No Brokerage</span>
-            {% endif %}
         </div>
         {% if show_actions %}
         <div class="property-card__actions">

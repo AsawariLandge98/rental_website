@@ -14,11 +14,11 @@
 
         <nav class="main-nav">
             <a href="{% url 'core:home' %}" class="{% if request.resolver_match.url_name == 'home' %}is-active{% endif %}">Home</a>
-            <a href="{% url 'properties:search' %}" class="{% if request.resolver_match.app_name == 'properties' %}is-active{% endif %}">Search Properties</a>
-            <a href="#">Roommate Finder</a>
-            <a href="#">Hotels &amp; Homestays</a>
-            <a href="#">About Us</a>
-            <a href="#">Contact Us</a>
+            <a href="{% url 'properties:search' %}" class="{% if request.resolver_match.app_name == 'properties' %}is-active{% endif %}">Properties</a>
+            <a href="{% url 'roommates:list' %}" class="{% if request.resolver_match.app_name == 'roommates' %}is-active{% endif %}">Roommates</a>
+            <a href="{% url 'hotels:list' %}" class="{% if request.resolver_match.app_name == 'hotels' %}is-active{% endif %}">Hotels</a>
+            <a href="{% url 'core:about' %}" class="{% if request.resolver_match.url_name == 'about' %}is-active{% endif %}">About</a>
+            <a href="{% url 'core:contact' %}" class="{% if request.resolver_match.url_name == 'contact' %}is-active{% endif %}">Contact</a>
         </nav>
 
         <button type="button" class="nav-toggle" aria-label="Open menu" id="navToggle">
@@ -28,8 +28,7 @@
         </button>
 
         <div class="header-actions">
-            {% if demo_logged_in %}
-                {# TODO: replace demo_logged_in with request.user.is_authenticated once accounts app lands #}
+            {% if user.is_authenticated %}
                 <a href="#" class="btn btn-secondary btn-sm header-saved">
                     {% include "partials/icon.html" with name="heart" cls="icon-sm" %}
                     Saved
@@ -38,11 +37,16 @@
                     {% include "partials/icon.html" with name="bell" cls="icon-sm" %}
                     <span class="notif-dot">3</span>
                 </a>
-                <a href="#" class="header-account">
-                    <img src="https://i.pravatar.cc/64?img=68" alt="" class="header-account__avatar">
-                    <span class="header-account__name">Hi, Rahul</span>
-                    {% include "partials/icon.html" with name="chevron-down" cls="icon-sm" %}
+                <a href="{{ user_dashboard_url|default:'/' }}" class="header-account">
+                    <span class="header-account__avatar header-account__avatar--initials">{{ user.full_name|first|upper }}</span>
+                    <span class="header-account__name">Hi, {{ user.full_name|default:user.email|truncatechars:16 }}</span>
                 </a>
+                <form method="post" action="{% url 'accounts:logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="icon-btn" aria-label="Log out">
+                        {% include "partials/icon.html" with name="logout" cls="icon-sm" %}
+                    </button>
+                </form>
             {% else %}
                 <a href="#" class="icon-btn icon-btn--wishlist" aria-label="Saved properties">
                     {% include "partials/icon.html" with name="heart" cls="icon-sm" %}
@@ -51,8 +55,8 @@
                     {% include "partials/icon.html" with name="bell" cls="icon-sm" %}
                     <span class="notif-dot">1</span>
                 </a>
-                <a href="#" class="btn btn-secondary btn-sm">Login</a>
-                <a href="#" class="btn btn-primary btn-sm">Register</a>
+                <a href="{% url 'accounts:login' %}" class="btn btn-secondary btn-sm">Login</a>
+                <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">Register</a>
             {% endif %}
         </div>
     </div>
@@ -65,21 +69,28 @@
                 {% include "partials/icon.html" with name="x" cls="icon-sm" %}
             </button>
         </div>
-        <a href="{% url 'core:home' %}">Home</a>
-        <a href="{% url 'properties:search' %}">Search Properties</a>
-        <a href="#">Roommate Finder</a>
-        <a href="#">Hotels &amp; Homestays</a>
-        <a href="#">About Us</a>
-        <a href="#">Contact Us</a>
+        <a href="{% url 'core:home' %}" class="{% if request.resolver_match.url_name == 'home' %}is-active{% endif %}">Home</a>
+        <a href="{% url 'properties:search' %}" class="{% if request.resolver_match.app_name == 'properties' %}is-active{% endif %}">Properties</a>
+        <a href="{% url 'roommates:list' %}" class="{% if request.resolver_match.app_name == 'roommates' %}is-active{% endif %}">Roommates</a>
+        <a href="{% url 'hotels:list' %}" class="{% if request.resolver_match.app_name == 'hotels' %}is-active{% endif %}">Hotels</a>
+        <a href="{% url 'core:about' %}" class="{% if request.resolver_match.url_name == 'about' %}is-active{% endif %}">About</a>
+        <a href="{% url 'core:contact' %}" class="{% if request.resolver_match.url_name == 'contact' %}is-active{% endif %}">Contact</a>
         <div class="mobile-nav__actions">
-            {% if demo_logged_in %}
-                <a href="#" class="header-account header-account--mobile">
-                    <img src="https://i.pravatar.cc/64?img=68" alt="" class="header-account__avatar">
-                    <span class="header-account__name">Hi, Rahul</span>
+            {% if user.is_authenticated %}
+                <a href="{{ user_dashboard_url|default:'/' }}" class="header-account header-account--mobile">
+                    <span class="header-account__avatar header-account__avatar--initials">{{ user.full_name|first|upper }}</span>
+                    <span class="header-account__name">Hi, {{ user.full_name|default:user.email|truncatechars:20 }}</span>
                 </a>
+                <form method="post" action="{% url 'accounts:logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-secondary btn-block">
+                        {% include "partials/icon.html" with name="logout" cls="icon-sm" %}
+                        Log Out
+                    </button>
+                </form>
             {% else %}
-                <a href="#" class="btn btn-secondary btn-block">Login</a>
-                <a href="#" class="btn btn-primary btn-block">Register</a>
+                <a href="{% url 'accounts:login' %}" class="btn btn-secondary btn-block">Login</a>
+                <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-block">Register</a>
             {% endif %}
         </div>
     </nav>

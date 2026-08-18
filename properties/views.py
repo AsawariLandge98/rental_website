@@ -1,234 +1,239 @@
+from urllib.parse import quote
+
+from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Q
 from django.http import Http404
-from django.shortcuts import render
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 
-# Placeholder listings until real Property/Amenity/Review models exist.
-# id=1 is the fully detailed demo property; the rest exist to populate the
-# search results grid and "Similar Properties" panel.
-PROPERTIES = {
-    1: {
-        "id": 1,
-        "title": "2 BHK Apartment for Rent in Koramangala",
-        "location": "Koramangala 4th Block, Bengaluru, Karnataka 560034",
-        "short_location": "Koramangala, Bengaluru",
-        "beds": 2,
-        "baths": 2,
-        "area": 1200,
-        "floor_label": "2nd Floor",
-        "furnishing": "Fully Furnished",
-        "parking": "1 Car Parking",
-        "price": 24000,
-        "badge": "featured",
-        "no_brokerage": True,
-        "image": "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=800&q=60",
-    },
-    2: {
-        "id": 2,
-        "title": "2.5 BHK Apartment",
-        "location": "Koramangala 4th Block, Bengaluru",
-        "short_location": "Koramangala 4th Block, Bengaluru",
-        "beds": 2,
-        "baths": 2,
-        "area": 1350,
-        "price": 25000,
-        "badge": "featured",
-        "no_brokerage": True,
-        "image": "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=60",
-    },
-    3: {
-        "id": 3,
-        "title": "2 BHK Independent House",
-        "location": "Koramangala 8th Block, Bengaluru",
-        "short_location": "Koramangala 8th Block, Bengaluru",
-        "beds": 2,
-        "baths": 2,
-        "area": 1100,
-        "price": 20000,
-        "badge": "verified",
-        "no_brokerage": True,
-        "image": "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&q=60",
-    },
-    4: {
-        "id": 4,
-        "title": "2 BHK Apartment",
-        "location": "Koramangala, Bengaluru",
-        "short_location": "Koramangala, Bengaluru",
-        "beds": 2,
-        "baths": 2,
-        "area": 1180,
-        "price": 28000,
-        "badge": "premium",
-        "no_brokerage": True,
-        "image": "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=60",
-    },
-    5: {
-        "id": 5,
-        "title": "2 BHK Apartment",
-        "location": "Koramangala 5th Block, Bengaluru",
-        "short_location": "Koramangala 5th Block, Bengaluru",
-        "beds": 2,
-        "baths": 2,
-        "area": 1150,
-        "price": 19500,
-        "badge": "verified",
-        "no_brokerage": True,
-        "image": "https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?auto=format&fit=crop&w=800&q=60",
-    },
-    6: {
-        "id": 6,
-        "title": "2 BHK Apartment",
-        "location": "Koramangala 6th Block, Bengaluru",
-        "short_location": "Koramangala 6th Block, Bengaluru",
-        "beds": 2,
-        "baths": 2,
-        "area": 1200,
-        "price": 24000,
-        "badge": "verified",
-        "no_brokerage": True,
-        "image": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=60",
-    },
-    7: {
-        "id": 7,
-        "title": "2 BHK Builder Floor",
-        "location": "Koramangala 7th Block, Bengaluru",
-        "short_location": "Koramangala 7th Block, Bengaluru",
-        "beds": 2,
-        "baths": 2,
-        "area": 1050,
-        "price": 18000,
-        "badge": "featured",
-        "no_brokerage": True,
-        "image": "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=60",
-    },
-    8: {
-        "id": 8,
-        "title": "2 BHK Apartment",
-        "location": "Koramangala, Bengaluru",
-        "short_location": "Koramangala, Bengaluru",
-        "beds": 2,
-        "baths": 2,
-        "area": 1220,
-        "price": 26000,
-        "badge": "verified",
-        "no_brokerage": True,
-        "image": "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=800&q=60",
-    },
-}
+from dashboard.decorators import tenant_required
+from .models import Property, SavedProperty
 
-AMENITIES = [
-    {"icon": "building", "label": "Lift"},
-    {"icon": "commercial", "label": "Car Parking"},
-    {"icon": "bolt", "label": "Power Backup"},
-    {"icon": "shield-check", "label": "24x7 Security"},
-    {"icon": "camera", "label": "CCTV"},
-    {"icon": "wifi", "label": "Wi-Fi"},
-    {"icon": "snowflake", "label": "AC"},
-    {"icon": "grid", "label": "Washing Machine"},
-    {"icon": "droplet", "label": "Water Supply"},
-    {"icon": "flag", "label": "Gas Pipeline"},
-    {"icon": "house", "label": "Modular Kitchen"},
-    {"icon": "rows", "label": "Fridge"},
-    {"icon": "bed", "label": "Sofa"},
-    {"icon": "apartment", "label": "Microwave"},
-    {"icon": "droplet", "label": "Geyser"},
+CITY_OPTIONS = ['Bengaluru', 'Hyderabad', 'Mumbai', 'Pune']
+
+BUDGET_OPTIONS = [
+    ('0-15000', 'Under ₹15,000'),
+    ('15000-30000', '₹15,000 - ₹30,000'),
+    ('30000-50000', '₹30,000 - ₹50,000'),
+    ('50000-100000', '₹50,000 - ₹1,00,000'),
+    ('100000-', 'Above ₹1,00,000'),
 ]
 
-PRIME_LOCATION = [
-    "500 m to Koramangala Metro Station",
-    "1.2 km to Forum Mall",
-    "1.5 km to St. John's Hospital",
-    "2.0 km to Sony World Signal",
-]
 
-PROPERTY_DETAILS_TABLE = [
-    ("Property Type", "Apartment"),
-    ("Bedrooms", "2"),
-    ("Bathrooms", "2"),
-    ("Balcony", "1"),
-    ("Carpet Area", "1100 sq.ft."),
-    ("Built-up Area", "1200 sq.ft."),
-    ("Floor", "2 of 5"),
-    ("Property Age", "3 - 5 Years"),
-    ("Facing", "North"),
-    ("Furnishing", "Fully Furnished"),
-    ("Tenant Preference", "Family / Bachelor"),
-    ("Pet Allowed", "No"),
-]
+def _property_card_context(property_obj, saved_ids=frozenset()):
+    """Shapes a Property instance into the dict shape partials/property_card.html
+    and property_detail.html already expect (built for the old dummy data)."""
+    cover = property_obj.cover_photo
+    return {
+        'id': property_obj.pk,
+        'title': property_obj.title,
+        'location': property_obj.display_location,
+        'short_location': property_obj.short_location,
+        'beds': property_obj.bedrooms or 0,
+        'baths': property_obj.bathrooms or 0,
+        'area': property_obj.total_area or 0,
+        'floor_label': property_obj.floor_label,
+        'furnishing': property_obj.get_furnishing_status_display() if property_obj.furnishing_status else '',
+        'parking': property_obj.get_parking_display() if property_obj.parking else '',
+        'price': property_obj.monthly_rent or 0,
+        'badge': property_obj.badge,
+        'no_brokerage': property_obj.no_brokerage,
+        'image': cover.image.url if cover else '',
+        'is_saved': property_obj.pk in saved_ids,
+        'photo_count': len(property_obj.photos.all()),
+    }
 
-RATING_BREAKDOWN = [
-    {"stars": 5, "count": 24, "pct": 75},
-    {"stars": 4, "count": 5, "pct": 16},
-    {"stars": 3, "count": 2, "pct": 6},
-    {"stars": 2, "count": 1, "pct": 3},
-    {"stars": 1, "count": 0, "pct": 0},
-]
 
-REVIEWS = [
-    {
-        "name": "Priya N.",
-        "avatar": "https://i.pravatar.cc/64?img=47",
-        "verified": True,
-        "date": "2 months ago",
-        "rating": 5,
-        "comment": "Great place to stay! Well maintained apartment and owner is very responsive.",
-    },
-    {
-        "name": "Rohit K.",
-        "avatar": "https://i.pravatar.cc/64?img=13",
-        "verified": True,
-        "date": "4 months ago",
-        "rating": 4,
-        "comment": "Very good location and facilities. Highly recommended.",
-    },
-]
+def _saved_ids_for(user):
+    if not user.is_authenticated:
+        return frozenset()
+    return frozenset(SavedProperty.objects.filter(tenant=user).values_list('property_id', flat=True))
+
+
+def _phone_digits(mobile_number):
+    """Normalizes a stored mobile number into bare digits for tel:/wa.me
+    links, assuming a 10-digit number is an Indian number missing its
+    country code."""
+    digits = ''.join(ch for ch in mobile_number if ch.isdigit())
+    if len(digits) == 10:
+        digits = '91' + digits
+    return digits
+
+
+def _owner_contact_options(property_obj):
+    """Real Call / WhatsApp / Email links for the owner — visible directly,
+    with no inquiry-approval step (there's no Inquiries feature built yet,
+    and the owner explicitly asked for contact details to be visible
+    without one). Only shows the channels the owner opted into; if they
+    didn't pick any, falls back to offering all three."""
+    owner_user = property_obj.owner
+    prefs = property_obj.contact_preferences or ['call', 'whatsapp', 'email']
+    options = []
+
+    if 'call' in prefs and owner_user.mobile_number:
+        digits = _phone_digits(owner_user.mobile_number)
+        options.append({
+            'type': 'call', 'icon': 'phone', 'label': 'Call',
+            'sublabel': owner_user.mobile_number, 'href': f'tel:+{digits}',
+        })
+    if 'whatsapp' in prefs and owner_user.mobile_number:
+        digits = _phone_digits(owner_user.mobile_number)
+        message = quote(f"Hi, I'm interested in your property \"{property_obj.title}\" on Rentora.")
+        options.append({
+            'type': 'whatsapp', 'icon': 'whatsapp', 'label': 'WhatsApp',
+            'sublabel': 'Chat instantly', 'href': f'https://wa.me/{digits}?text={message}',
+        })
+    if 'email' in prefs and owner_user.email:
+        options.append({
+            'type': 'email', 'icon': 'envelope', 'label': 'Email',
+            'sublabel': owner_user.email, 'href': f'mailto:{owner_user.email}',
+        })
+    return options
 
 
 def search_results(request):
+    queryset = Property.objects.filter(status=Property.Status.PUBLISHED).prefetch_related('photos')
+
+    q = request.GET.get('q', '').strip()
+    city = request.GET.get('city')
+    area = request.GET.get('area')
+    property_type = request.GET.get('property_type')
+    budget = request.GET.get('budget')
+
+    if q:
+        queryset = queryset.filter(
+            Q(title__icontains=q) | Q(city__icontains=q) | Q(area_locality__icontains=q) | Q(landmark__icontains=q)
+        )
+    if city:
+        queryset = queryset.filter(city__iexact=city)
+    if area:
+        queryset = queryset.filter(area_locality__icontains=area)
+    if property_type:
+        queryset = queryset.filter(property_type=property_type)
+    if budget:
+        low, _, high = budget.partition('-')
+        if low:
+            queryset = queryset.filter(monthly_rent__gte=int(low))
+        if high:
+            queryset = queryset.filter(monthly_rent__lte=int(high))
+
+    sort = request.GET.get('sort', 'newest')
+    sort_field = {'newest': '-created_at', 'price_asc': 'monthly_rent', 'price_desc': '-monthly_rent'}.get(sort, '-created_at')
+    queryset = queryset.order_by(sort_field)
+
+    per_page = request.GET.get('per_page', '12')
+    per_page = per_page if per_page in ('12', '24', '48') else '12'
+    paginator = Paginator(queryset, int(per_page))
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    saved_ids = _saved_ids_for(request.user)
+    properties = [_property_card_context(p, saved_ids) for p in page_obj]
+
+    carry_params = request.GET.copy()
+    carry_params.pop('page', None)
+
     context = {
-        "demo_logged_in": True,
-        "properties": list(PROPERTIES.values()),
-        "result_count": "1,248",
+        'properties': properties,
+        'result_count': paginator.count,
+        'page_obj': page_obj,
+        'carry_qs': carry_params.urlencode(),
+        'selected_per_page': per_page,
+        'selected_sort': sort,
+        'city_options': CITY_OPTIONS,
+        'property_type_options': Property.PropertyType.choices,
+        'budget_options': BUDGET_OPTIONS,
+        'selected_q': q,
+        'selected_city': city or '',
+        'selected_area': area or '',
+        'selected_property_type': property_type or '',
+        'selected_budget': budget or '',
     }
     return render(request, "properties/search_results.html", context)
 
 
 def property_detail(request, pk):
-    property_obj = PROPERTIES.get(pk)
-    if not property_obj:
+    try:
+        property_obj = Property.objects.prefetch_related('photos', 'amenities').get(
+            pk=pk, status=Property.Status.PUBLISHED,
+        )
+    except Property.DoesNotExist:
         raise Http404("Property not found")
 
-    gallery = [
-        "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=1200&q=70",
-        "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=1200&q=70",
-        "https://images.unsplash.com/photo-1560185893-a55cbc8c57e8?auto=format&fit=crop&w=1200&q=70",
-        "https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=70",
-        "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=70",
-        "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=1200&q=70",
+    if request.user.is_authenticated:
+        recent = request.session.get('recently_viewed_property_ids', [])
+        recent = [pid for pid in recent if pid != property_obj.pk]
+        recent.insert(0, property_obj.pk)
+        request.session['recently_viewed_property_ids'] = recent[:10]
+
+    gallery = [photo.image.url for photo in property_obj.photos.all()]
+    saved_ids = _saved_ids_for(request.user)
+
+    similar_properties = [
+        _property_card_context(p, saved_ids) for p in Property.objects.filter(
+            status=Property.Status.PUBLISHED, city=property_obj.city,
+        ).exclude(pk=pk).prefetch_related('photos')[:2]
     ]
 
-    similar_properties = [p for p in PROPERTIES.values() if p["id"] != pk][:2]
+    property_details_table = [
+        (label, value) for label, value in [
+            ('Property Type', property_obj.get_property_type_display() if property_obj.property_type else ''),
+            ('Bedrooms', property_obj.bedrooms),
+            ('Bathrooms', property_obj.bathrooms),
+            ('Balconies', property_obj.balconies),
+            ('Carpet Area', f'{property_obj.carpet_area} sq.ft.' if property_obj.carpet_area else ''),
+            ('Built-up Area', f'{property_obj.built_up_area} sq.ft.' if property_obj.built_up_area else ''),
+            ('Floor', property_obj.floor_label),
+            ('Property Age', property_obj.get_property_age_display() if property_obj.property_age else ''),
+            ('Facing', property_obj.get_facing_display() if property_obj.facing else ''),
+            ('Furnishing', property_obj.get_furnishing_status_display() if property_obj.furnishing_status else ''),
+            ('Tenant Preference', ', '.join(
+                dict(Property.TenantPreference.choices).get(p, p) for p in property_obj.tenant_preferences
+            )),
+        ] if value not in (None, '')
+    ]
+
+    amenities = [{'icon': a.icon, 'label': a.name} for a in property_obj.amenities.all()]
 
     context = {
-        "demo_logged_in": True,
-        "property": property_obj,
+        "property": _property_card_context(property_obj, saved_ids) | {'id': property_obj.pk},
+        "property_description": property_obj.description,
+        "contact_options": _owner_contact_options(property_obj),
         "gallery": gallery,
-        "amenities": AMENITIES,
-        "prime_location": PRIME_LOCATION,
-        "property_details_table": PROPERTY_DETAILS_TABLE,
-        "rating_average": 4.6,
-        "rating_count": 32,
-        "rating_breakdown": RATING_BREAKDOWN,
-        "reviews": REVIEWS,
+        "amenities": amenities,
+        "prime_location": [],
+        "property_details_table": property_details_table,
+        "rating_average": 0,
+        "rating_count": 0,
+        "rating_breakdown": [],
+        "reviews": [],
         "similar_properties": similar_properties,
         "owner": {
-            "name": "Amit Sharma",
-            "avatar": "https://i.pravatar.cc/96?img=68",
-            "member_since": "June 2022",
-            "response_time": "Within a few hours",
+            "name": property_obj.owner.full_name,
+            "initials": (property_obj.owner.full_name or '?')[0].upper(),
+            "member_since": property_obj.owner.date_joined.strftime('%B %Y'),
         },
         "rent_details": {
-            "deposit": 48000,
-            "maintenance": 2000,
-            "available_from": "15 Jun 2024",
+            "deposit": property_obj.security_deposit or 0,
+            "maintenance": property_obj.maintenance_charges or 0,
+            "available_from": property_obj.available_from.strftime('%d %b %Y') if property_obj.available_from else 'Immediately',
         },
     }
     return render(request, "properties/property_detail.html", context)
+
+
+@tenant_required
+@require_POST
+def toggle_saved(request, pk):
+    property_obj = get_object_or_404(Property, pk=pk, status=Property.Status.PUBLISHED)
+    saved, created = SavedProperty.objects.get_or_create(tenant=request.user, property=property_obj)
+    if not created:
+        saved.delete()
+        messages.success(request, 'Removed from saved properties.')
+    else:
+        messages.success(request, 'Saved to your dashboard.')
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or ''
+    if not url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}):
+        next_url = 'properties:search'
+    return redirect(next_url)

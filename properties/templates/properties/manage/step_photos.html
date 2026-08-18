@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Photos & Media | Add Listing | Rentora{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/properties.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="container wizard-shell">
+    {% include "properties/manage/_wizard_head.html" %}
+
+    <div class="wizard-card">
+        <h1 class="text-h2">Photos &amp; Media</h1>
+        <p class="wizard-card__subtitle">
+            Add at least {{ property.MIN_PHOTOS_TO_PUBLISH }} photos before publishing (cover photo, living room, bedroom, kitchen, bathroom work well). Up to {{ property.MAX_PHOTOS }} photos total — {{ remaining_slots }} more can be added right now.
+        </p>
+
+        {% if remaining_slots > 0 %}
+        <form method="post" enctype="multipart/form-data" class="photo-upload-drop">
+            {% csrf_token %}
+            {% include "partials/icon.html" with name="camera" %}
+            <p>Choose photos from your device (JPG, PNG or WEBP).</p>
+            <input type="file" name="images" accept="image/png,image/jpeg,image/webp" multiple>
+            <div style="margin-top:var(--space-4);">
+                <button type="submit" class="btn btn-primary">Upload</button>
+            </div>
+        </form>
+        {% endif %}
+
+        {% if photos %}
+        <div class="photo-grid">
+            {% for photo in photos %}
+            <div class="photo-grid__item">
+                <img src="{{ photo.image.url }}" alt="{{ photo.caption }}">
+                {% if photo.is_cover %}<span class="badge badge-blue">Cover</span>{% endif %}
+                <div class="photo-grid__actions">
+                    {% if not photo.is_cover %}
+                    <form method="post" action="{% url 'properties:set_cover_photo' property.pk photo.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="js-set-cover">Set as cover</button>
+                    </form>
+                    {% endif %}
+                    <form method="post" action="{% url 'properties:delete_photo' property.pk photo.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="js-delete-photo">Delete</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="slate">No photos uploaded yet.</p>
+        {% endif %}
+
+        <div class="wizard-actions">
+            <a href="{{ prev_url }}" class="btn btn-secondary">
+                {% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}
+                Back
+            </a>
+            <div class="wizard-actions__right">
+                <a href="{% url 'properties:manage_step' property.pk 'contact' %}" class="btn btn-primary">
+                    Save &amp; Continue
+                    {% include "partials/icon.html" with name="arrow-right" cls="icon-sm" %}
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

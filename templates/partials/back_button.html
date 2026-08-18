@@ -1,0 +1,8 @@
+{% comment %}
+Usage: {% include "partials/back_button.html" with fallback_url=some_url %}
+Goes to the previous page in history; if there's no useful history
+(e.g. opened in a new tab), falls back to fallback_url.
+{% endcomment %}
+<button type="button" class="back-btn js-back-btn" data-fallback="{{ fallback_url }}" aria-label="Go back">
+    {% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}
+</button>

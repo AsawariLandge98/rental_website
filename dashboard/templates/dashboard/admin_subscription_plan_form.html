@@ -1,0 +1,52 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}{% if plan %}Edit Plan{% else %}Add Plan{% endif %} | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-subscription-form{% endblock %}
+
+{% block content %}
+<div class="dash-breadcrumb"><a href="{% url 'dashboard:admin_subscriptions' %}">&larr; Back to Subscription Plans</a></div>
+
+<div class="dash-page-head">
+    <h1 class="text-h2">{% if plan %}Edit Plan{% else %}Add New Plan{% endif %}</h1>
+</div>
+
+<div class="dash-section" style="max-width: 640px;">
+    <form method="post">
+        {% csrf_token %}
+        <div class="profile-form-grid">
+            <div>
+                <label class="field-label" for="{{ form.name.id_for_label }}">Plan Name</label>
+                {{ form.name }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ form.price.id_for_label }}">Price (&#8377;/month)</label>
+                {{ form.price }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ form.listing_limit.id_for_label }}">Listing Limit (blank = unlimited)</label>
+                {{ form.listing_limit }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ form.order.id_for_label }}">Display Order</label>
+                {{ form.order }}
+            </div>
+        </div>
+        <div style="margin-bottom: var(--space-4);">
+            <label class="field-label" for="{{ form.features.id_for_label }}">Extra Features</label>
+            {{ form.features }}
+        </div>
+        <div style="display:flex; align-items:center; gap: var(--space-2); margin-bottom: var(--space-3);">
+            {{ form.priority_listing }}
+            <label class="field-label" for="{{ form.priority_listing.id_for_label }}" style="margin:0;">Priority placement</label>
+        </div>
+        <div style="display:flex; align-items:center; gap: var(--space-2); margin-bottom: var(--space-4);">
+            {{ form.is_active }}
+            <label class="field-label" for="{{ form.is_active.id_for_label }}" style="margin:0;">Active (visible to owners)</label>
+        </div>
+        <div style="display:flex; gap: var(--space-3);">
+            <button type="submit" class="btn btn-primary">{% if plan %}Save Changes{% else %}Create Plan{% endif %}</button>
+            <a href="{% url 'dashboard:admin_subscriptions' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

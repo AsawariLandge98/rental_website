@@ -15,20 +15,32 @@
         <div class="hero__intro">
             <span class="hero__badge">
                 {% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}
-                Verified Properties. Zero Brokerage.
+Zero Brokerage. Direct Owner Contact.
             </span>
             <h1 class="hero__title">Find Your Perfect Place to <span class="accent">Call Home</span></h1>
-            <p class="hero__subtitle">Discover verified rental properties across India. Connect directly with owners. No brokerage. No hidden fees.</p>
+            <p class="hero__subtitle">Discover real rental properties across India. Connect directly with owners. No brokerage. No hidden fees.</p>
             <div class="hero__actions">
-                <a href="#" class="btn btn-primary">
+                <a href="{% url 'properties:search' %}" class="btn btn-primary">
                     {% include "partials/icon.html" with name="search" %}
-                    Search Property
+                    Search Properties
                 </a>
-                <a href="#" class="btn btn-secondary">
+                <a href="{% url 'accounts:register' %}" class="btn btn-secondary">
                     {% include "partials/icon.html" with name="list" %}
                     List Your Property
                 </a>
             </div>
+
+            <!-- Mobile-only: single tap-target into the real search page instead of
+                 cramming the full filter form on a small screen -->
+            <a href="{% url 'properties:search' %}" class="mobile-search-card">
+                <span class="mobile-search-card__icon">{% include "partials/icon.html" with name="map-pin" cls="icon-sm" %}</span>
+                <span class="mobile-search-card__text">
+                    <span class="mobile-search-card__label">Location</span>
+                    <span class="mobile-search-card__value">Select City &amp; Area</span>
+                </span>
+                <span class="mobile-search-card__filter">{% include "partials/icon.html" with name="sliders" cls="icon-sm" %}</span>
+            </a>
+
             <div class="hero__trust">
                 <div class="trust-item">
                     <span class="trust-item__icon">{% include "partials/icon.html" with name="heart" %}</span>
@@ -38,10 +50,10 @@
                     </span>
                 </div>
                 <div class="trust-item">
-                    <span class="trust-item__icon">{% include "partials/icon.html" with name="shield-check" %}</span>
+                    <span class="trust-item__icon">{% include "partials/icon.html" with name="chat" %}</span>
                     <span>
-                        <span class="trust-item__label">100%</span>
-                        <span class="trust-item__sub">Verified Properties</span>
+                        <span class="trust-item__label">Direct</span>
+                        <span class="trust-item__sub">Owner Contact</span>
                     </span>
                 </div>
                 <div class="trust-item">
@@ -52,11 +64,25 @@
                     </span>
                 </div>
                 <div class="trust-item">
-                    <span class="trust-item__icon">{% include "partials/icon.html" with name="chat" %}</span>
+                    <span class="trust-item__icon">{% include "partials/icon.html" with name="calendar" %}</span>
                     <span>
-                        <span class="trust-item__label">Direct</span>
-                        <span class="trust-item__sub">Owner Contact</span>
+                        <span class="trust-item__label">Instant</span>
+                        <span class="trust-item__sub">Visit Scheduling</span>
                     </span>
+                </div>
+            </div>
+
+            <!-- Mobile-only: compact 2-up version of .hero__trust above -->
+            <div class="mobile-feature-tiles">
+                <div class="mobile-feature-tile">
+                    <span class="mobile-feature-tile__icon">{% include "partials/icon.html" with name="heart" %}</span>
+                    <strong>Zero Brokerage</strong>
+                    <span>Save on fees</span>
+                </div>
+                <div class="mobile-feature-tile">
+                    <span class="mobile-feature-tile__icon">{% include "partials/icon.html" with name="chat" %}</span>
+                    <strong>Direct Contact</strong>
+                    <span>Talk to owners</span>
                 </div>
             </div>
         </div>
@@ -73,96 +99,20 @@
         </div>
 
     </div>
-
-    <!-- Mobile-only hero: image with overlaid badge/heading -->
-    <div class="hero-mobile js-hero-mobile-slider">
-        <div class="hero-mobile__track">
-            {% for img in hero_images %}
-            <div class="hero-mobile__slide"><img src="{{ img }}" alt="Property photo {{ forloop.counter }}"></div>
-            {% endfor %}
-        </div>
-        <button type="button" class="hero__media-arrow hero__media-arrow--prev js-hero-mobile-prev" aria-label="Previous photo">
-            {% include "partials/icon.html" with name="chevron-left" %}
-        </button>
-        <button type="button" class="hero__media-arrow hero__media-arrow--next js-hero-mobile-next" aria-label="Next photo">
-            {% include "partials/icon.html" with name="chevron-right" %}
-        </button>
-        <div class="hero-mobile__scrim"></div>
-        <div class="hero-mobile__overlay">
-            <span class="hero__badge hero__badge--on-image">
-                {% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}
-                Verified Properties. Zero Brokerage.
-            </span>
-            <h1 class="hero-mobile__title">Find Your Perfect Place to Call Home</h1>
-            <p class="hero-mobile__subtitle">Discover verified rental properties across India. Connect directly with owners. No brokerage. No hidden fees.</p>
-        </div>
-        <div class="hero__media-dots">
-            {% for img in hero_images %}
-            <button type="button" class="{% if forloop.first %}is-active{% endif %}" aria-label="Go to photo {{ forloop.counter }}"></button>
-            {% endfor %}
-        </div>
-    </div>
-
-    <!-- Mobile-only CTA buttons (match desktop's Search Property / List Your Property) -->
-    <div class="container hero-actions-mobile">
-        <a href="#" class="btn btn-primary btn-block">
-            {% include "partials/icon.html" with name="search" cls="icon-sm" %}
-            Search Property
-        </a>
-        <a href="#" class="btn btn-secondary btn-block">
-            {% include "partials/icon.html" with name="list" cls="icon-sm" %}
-            List Your Property
-        </a>
-    </div>
-
-    <!-- Mobile-only search bar -->
-    <div class="container hero-search-mobile">
-        <form class="hero-search-mobile__bar" action="{% url 'properties:search' %}" method="get">
-            {% include "partials/icon.html" with name="search" cls="icon-sm" %}
-            <input type="text" name="q" class="hero-search-mobile__input" placeholder="City or Property Type">
-            <button type="submit" class="btn btn-primary btn-sm">Search</button>
-        </form>
-    </div>
-
-    <!-- Mobile-only trust grid (same messages as .hero__trust, shown instead of hidden) -->
-    <div class="container hero-trust-mobile">
-        <div class="trust-item-mobile">
-            <span class="trust-item-mobile__icon">{% include "partials/icon.html" with name="heart" %}</span>
-            <span class="trust-item-mobile__label">Zero</span>
-            <span class="trust-item-mobile__sub">Brokerage</span>
-        </div>
-        <div class="trust-item-mobile">
-            <span class="trust-item-mobile__icon">{% include "partials/icon.html" with name="shield-check" %}</span>
-            <span class="trust-item-mobile__label">100%</span>
-            <span class="trust-item-mobile__sub">Verified</span>
-        </div>
-        <div class="trust-item-mobile">
-            <span class="trust-item-mobile__icon">{% include "partials/icon.html" with name="lock" %}</span>
-            <span class="trust-item-mobile__label">Secure</span>
-            <span class="trust-item-mobile__sub">&amp; Transparent</span>
-        </div>
-        <div class="trust-item-mobile">
-            <span class="trust-item-mobile__icon">{% include "partials/icon.html" with name="chat" %}</span>
-            <span class="trust-item-mobile__label">Direct</span>
-            <span class="trust-item-mobile__sub">Owner Contact</span>
-        </div>
-    </div>
 </section>
 
 <!-- Quick Search -->
 <div class="container quick-search">
-    <form class="quick-search__card" action="#" method="get">
+    <form class="quick-search__card" action="{% url 'properties:search' %}" method="get">
         <label class="quick-search__field">
             {% include "partials/icon.html" with name="map-pin" %}
             <span class="quick-search__field-label">
                 <span>City</span>
                 <select name="city">
                     <option value="">Select City</option>
-                    <option value="hyderabad">Hyderabad</option>
-                    <option value="bengaluru">Bengaluru</option>
-                    <option value="mumbai">Mumbai</option>
-                    <option value="pune">Pune</option>
-                    <option value="gurugram">Gurugram</option>
+                    {% for c in city_options %}
+                    <option value="{{ c }}">{{ c }}</option>
+                    {% endfor %}
                 </select>
             </span>
         </label>
@@ -170,9 +120,7 @@
             {% include "partials/icon.html" with name="map-pin" %}
             <span class="quick-search__field-label">
                 <span>Area / Locality</span>
-                <select name="area">
-                    <option value="">Select Area</option>
-                </select>
+                <input type="text" name="area" placeholder="e.g. Koramangala" style="border:none; outline:none; font:600 14px var(--font-body); width:100%; background:transparent;">
             </span>
         </label>
         <label class="quick-search__field">
@@ -181,10 +129,9 @@
                 <span>Property Type</span>
                 <select name="property_type">
                     <option value="">Select Type</option>
-                    <option value="flat">Flat / Apartment</option>
-                    <option value="house">Independent House</option>
-                    <option value="pg">PG / Hostel</option>
-                    <option value="villa">Villa</option>
+                    {% for value, label in property_type_options %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
                 </select>
             </span>
         </label>
@@ -194,10 +141,9 @@
                 <span>Budget</span>
                 <select name="budget">
                     <option value="">Any Budget</option>
-                    <option value="0-15000">Under &#8377;15,000</option>
-                    <option value="15000-30000">&#8377;15,000 - &#8377;30,000</option>
-                    <option value="30000-60000">&#8377;30,000 - &#8377;60,000</option>
-                    <option value="60000+">&#8377;60,000+</option>
+                    {% for value, label in budget_options %}
+                    <option value="{{ value }}">{{ label }}</option>
+                    {% endfor %}
                 </select>
             </span>
         </label>
@@ -209,15 +155,15 @@
 </div>
 
 <!-- Browse by Property Type -->
-<section class="section section--tight">
+<section class="section section--tight" data-reveal>
     <div class="container">
         <div class="section-head">
             <h2>Browse by Property Type</h2>
-            <a href="#" class="link-more">View All</a>
+            <a href="{% url 'properties:search' %}" class="link-more">View All</a>
         </div>
         <div class="property-types">
             {% for type in property_types %}
-            <a href="#" class="property-type-tile">
+            <a href="{% url 'properties:search' %}" class="property-type-tile">
                 <span class="property-type-tile__icon property-type-tile__icon--{{ type.color }}">{% include "partials/icon.html" with name=type.icon %}</span>
                 <span>{{ type.label }}</span>
             </a>
@@ -227,31 +173,31 @@
 </section>
 
 <!-- Featured Properties -->
-<section class="section section--tight">
+<section class="section section--tight" data-reveal>
     <div class="container">
         <div class="section-head">
-            <h2>Featured Properties</h2>
-            <span class="icon-row">
-                <a href="#" class="link-more">View All Properties</a>
-                <span class="carousel-nav">
-                    <button type="button" class="carousel-arrow" aria-label="Previous">{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</button>
-                    <button type="button" class="carousel-arrow" aria-label="Next">{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</button>
-                </span>
-            </span>
+            <h2>Recommended For You</h2>
+            <a href="{% url 'properties:search' %}" class="link-more">View All</a>
         </div>
+        {% if featured_properties %}
         <div class="property-grid">
             {% for property in featured_properties %}
                 {% include "partials/property_card.html" with property=property %}
             {% endfor %}
         </div>
-        <div class="carousel-dots">
-            <span class="is-active"></span><span></span><span></span><span></span><span></span><span></span>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-state__icon">{% include "partials/icon.html" with name="house" %}</span>
+            <h3>No listings yet</h3>
+            <p>Be the first to list a property on Rentora.</p>
+            <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">List Your Property</a>
         </div>
+        {% endif %}
     </div>
 </section>
 
 <!-- Why Choose Rentora -->
-<section class="section">
+<section class="section" data-reveal>
     <div class="container">
         <div class="why-choose section--tint">
             <h2 class="why-choose__title">Why Choose Rentora?</h2>
@@ -269,7 +215,7 @@
 </section>
 
 <!-- How It Works -->
-<section class="section section--tight">
+<section class="section section--tight" data-reveal>
     <div class="container">
         <h2 class="how-it-works__title">How It Works?</h2>
         <div class="steps">
@@ -285,17 +231,10 @@
 </section>
 
 <!-- Testimonials -->
-<section class="section section--tight">
+<section class="section section--tight" data-reveal>
     <div class="container">
         <div class="section-head">
             <h2>What Our Users Say</h2>
-            <span class="icon-row">
-                <a href="#" class="link-more">View All Reviews</a>
-                <span class="carousel-nav">
-                    <button type="button" class="carousel-arrow" aria-label="Previous">{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</button>
-                    <button type="button" class="carousel-arrow" aria-label="Next">{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</button>
-                </span>
-            </span>
         </div>
         <div class="testimonials-grid">
             {% for t in testimonials %}
@@ -318,7 +257,7 @@
 </section>
 
 <!-- Newsletter -->
-<section class="section section--tight">
+<section class="section section--tight" data-reveal>
     <div class="container">
         <div class="newsletter section--navy">
             <div class="newsletter__intro">
@@ -328,7 +267,8 @@
                     <p>Subscribe to get latest properties, offers and updates straight to your inbox.</p>
                 </div>
             </div>
-            <form class="newsletter__form" action="#" method="post">
+            <form class="newsletter__form" action="{% url 'core:subscribe_newsletter' %}" method="post">
+                {% csrf_token %}
                 <input type="email" name="email" class="field" placeholder="Enter your email address" required>
                 <button type="submit" class="btn btn-primary">
                     {% include "partials/icon.html" with name="envelope" cls="icon-sm" %}

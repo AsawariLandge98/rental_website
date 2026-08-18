@@ -1,0 +1,137 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}User Management | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-users{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="users" %} User Management</h1></div>
+    <p>Manage tenant, owner and hotel/homestay accounts on the platform.</p>
+</div>
+
+<div class="dash-stats">
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="users" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total }}</div><div class="dash-stat-card__label">Total Users</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="check" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.active }}</div><div class="dash-stat-card__label">Active Users</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="plus-circle" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.new_this_month }}</div><div class="dash-stat-card__label">New This Month</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="x" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.blocked }}</div><div class="dash-stat-card__label">Blocked Users</div></div>
+    </div>
+</div>
+
+<div class="dash-section">
+    <form method="get" class="dash-filter-bar">
+        <div class="dash-filter-bar__search">
+            {% include "partials/icon.html" with name="search" cls="icon-sm" %}
+            <input type="text" name="q" value="{{ selected_q }}" placeholder="Search by name, email or phone...">
+        </div>
+        <select name="role">
+            <option value="">All Roles</option>
+            {% for value, label in role_options %}
+            <option value="{{ value }}" {% if value == selected_role %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <select name="status">
+            <option value="">All Status</option>
+            <option value="active" {% if selected_status == "active" %}selected{% endif %}>Active</option>
+            <option value="blocked" {% if selected_status == "blocked" %}selected{% endif %}>Blocked</option>
+        </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+        {% if selected_q or selected_role or selected_status %}
+        <a href="{% url 'dashboard:admin_users' %}" class="btn btn-secondary btn-sm">Reset</a>
+        {% endif %}
+    </form>
+
+    {% if users_page %}
+    <table class="record-table">
+        <thead>
+            <tr><th>User</th><th>Role</th><th>Email</th><th>Phone</th><th>Status</th><th>Joined</th><th>Properties</th><th>Inquiries</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for u in users_page %}
+            <tr>
+                <td class="record-property-cell">
+                    <div class="record-property">
+                        <span class="header-account__avatar header-account__avatar--initials" style="width:40px;height:40px;flex-shrink:0;">{{ u.full_name|first|upper }}</span>
+                        <div>
+                            <div class="record-property__title">{{ u.full_name }}</div>
+                            <div class="record-property__loc">User ID: USR{{ u.pk|stringformat:"04d" }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Role">{{ u.get_role_display }}</td>
+                <td data-label="Email">{{ u.email }}</td>
+                <td data-label="Phone">{{ u.mobile_number|default:"—" }}</td>
+                <td data-label="Status">
+                    {% if u.is_active %}
+                    <span class="status-pill status-pill--published">Active</span>
+                    {% else %}
+                    <span class="status-pill status-pill--archived">Blocked</span>
+                    {% endif %}
+                </td>
+                <td data-label="Joined">{{ u.date_joined|date:"d M Y" }}</td>
+                <td data-label="Properties">{{ u.properties_count }}</td>
+                <td data-label="Inquiries">{{ u.inquiries_count }}</td>
+                <td data-label="Actions">
+                    <div class="record-actions">
+                        {% if u.is_active %}
+                        <form method="post" action="{% url 'dashboard:admin_user_block' u.pk %}" onsubmit="return confirm('Block {{ u.full_name }}? They will not be able to log in until unblocked.');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm" style="color:var(--color-error);">Block</button>
+                        </form>
+                        {% else %}
+                        <form method="post" action="{% url 'dashboard:admin_user_unblock' u.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-sm">Unblock</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination">
+        <div class="pagination__pages">
+            {% if page_obj.has_previous %}
+            <a href="?{{ carry_qs }}&page={{ page_obj.previous_page_number }}" aria-label="Previous page">{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</a>
+            {% else %}
+            <button type="button" aria-label="Previous page" disabled>{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</button>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                <button type="button" class="is-active">{{ num }}</button>
+                {% else %}
+                <a href="?{{ carry_qs }}&page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?{{ carry_qs }}&page={{ page_obj.next_page_number }}" aria-label="Next page">{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</a>
+            {% else %}
+            <button type="button" aria-label="Next page" disabled>{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</button>
+            {% endif %}
+        </div>
+        <span class="slate" style="font-size:13px;">Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} users</span>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="dash-empty">
+        {% include "partials/icon.html" with name="users" %}
+        <p>No users match your filters.</p>
+        <a href="{% url 'dashboard:admin_users' %}" class="btn btn-primary btn-sm">Clear Filters</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

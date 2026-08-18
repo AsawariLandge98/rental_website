@@ -1,0 +1,74 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}Subscription Plans | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-subscriptions{% endblock %}
+
+{% block content %}
+<div class="dash-page-head listings-head">
+    <div>
+        <h1 class="text-h2">{% include "partials/icon.html" with name="star" %} Subscription Plans</h1>
+        <p>Manage the plans owners can subscribe to.</p>
+    </div>
+    <a href="{% url 'dashboard:admin_subscription_plan_add' %}" class="btn btn-primary">
+        {% include "partials/icon.html" with name="plus-circle" cls="icon-sm" %}
+        Add New Plan
+    </a>
+</div>
+
+<div class="dash-stats">
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="star" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total }}</div><div class="dash-stat-card__label">Total Plans</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="check" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.active }}</div><div class="dash-stat-card__label">Active Plans</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="users" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.active_subscribers }}</div><div class="dash-stat-card__label">Active Subscribers</div></div>
+    </div>
+</div>
+
+<div class="dash-section">
+    {% if plans %}
+    <table class="record-table">
+        <thead>
+            <tr><th>Plan</th><th>Price</th><th>Listing Limit</th><th>Priority</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for plan in plans %}
+            <tr>
+                <td data-label="Plan"><div class="record-property__title">{{ plan.name }}</div></td>
+                <td data-label="Price">&#8377;{{ plan.price|floatformat:"0" }}/month</td>
+                <td data-label="Listing Limit">{% if plan.listing_limit %}{{ plan.listing_limit }}{% else %}Unlimited{% endif %}</td>
+                <td data-label="Priority">{% if plan.priority_listing %}Yes{% else %}—{% endif %}</td>
+                <td data-label="Status">
+                    {% if plan.is_active %}
+                    <span class="status-pill status-pill--published">Active</span>
+                    {% else %}
+                    <span class="status-pill status-pill--draft">Inactive</span>
+                    {% endif %}
+                </td>
+                <td data-label="Actions">
+                    <div class="record-actions">
+                        <a href="{% url 'dashboard:admin_subscription_plan_edit' plan.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+                        <form method="post" action="{% url 'dashboard:admin_subscription_plan_toggle' plan.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm">{% if plan.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="dash-empty">
+        {% include "partials/icon.html" with name="star" %}
+        <p>No plans yet.</p>
+        <a href="{% url 'dashboard:admin_subscription_plan_add' %}" class="btn btn-primary btn-sm">Add New Plan</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

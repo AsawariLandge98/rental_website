@@ -48,6 +48,7 @@ DJANGO_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
+    'django.contrib.postgres',
 ]
 
 LOCAL_APPS = [
@@ -89,12 +90,25 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'accounts.context_processors.user_dashboard',
+                'notifications.context_processors.unread_notifications',
             ],
         },
     },
 ]
 
 WSGI_APPLICATION = 'rental_project.wsgi.application'
+
+AUTH_USER_MODEL = 'accounts.User'
+
+LOGIN_URL = 'accounts:login'
+LOGIN_REDIRECT_URL = 'core:home'
+LOGOUT_REDIRECT_URL = 'core:home'
+
+# Dev-only: password reset emails are printed to the runserver console
+# instead of being sent, since no real SMTP/SMS provider is configured yet.
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'Rentora <no-reply@rentora.local>'
 
 
 # Database
@@ -155,3 +169,9 @@ MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Razorpay (test mode) — Feature 12. Blank until a real test-mode account's
+# keys are added to .env; subscriptions/views.py handles the unconfigured
+# case with a clear message instead of crashing.
+RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
+RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')

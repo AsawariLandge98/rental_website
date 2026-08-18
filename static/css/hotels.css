@@ -1,0 +1,145 @@
+/* ==========================================================================
+   Hotels & Homestays — Hero
+   ========================================================================== */
+.hotel-hero {
+  position: relative;
+  height: 260px;
+  overflow: hidden;
+}
+.hotel-hero__img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+}
+.hotel-hero__scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(10, 38, 71, .82) 0%, rgba(10, 38, 71, .45) 55%, rgba(10, 38, 71, .15) 100%);
+}
+.hotel-hero__inner {
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: var(--color-white);
+}
+.hotel-hero__title { font: 700 clamp(1.5rem, 1.2rem + 1.4vw, 2rem) var(--font-heading); margin-bottom: var(--space-2); }
+.hotel-hero__subtitle { font-size: 15px; color: var(--color-blue-50); }
+
+/* Search bar */
+.hotel-search {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+  background: var(--color-white);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-3);
+  margin-top: calc(-1 * var(--space-8));
+  position: relative;
+  z-index: 5;
+}
+.hotel-search__field {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-inline: var(--space-3);
+  border-right: 1px solid var(--color-border);
+}
+.hotel-search__field:last-of-type { border-right: none; }
+.hotel-search__field svg { width: 16px; height: 16px; color: var(--color-blue-500); flex-shrink: 0; }
+.hotel-search__field-label { display: flex; flex-direction: column; width: 100%; min-width: 0; }
+.hotel-search__field-label span:first-child { font: 600 12px var(--font-body); color: var(--color-ink); }
+.hotel-search__field select { border: none; background: transparent; width: 100%; color: var(--color-ink); font: inherit; font-size: 13px; }
+.hotel-search__field select:focus { outline: none; }
+.hotel-search__submit { flex-shrink: 0; }
+
+/* ==========================================================================
+   Layout: filters + results + sidebar
+   (the shared 3-column `.hotel-layout`/`.listing-sidebar` rules live in
+   properties.css since Roommates reuses the same classes)
+   ========================================================================== */
+.filter-show-more {
+  align-self: flex-start;
+  border: none;
+  background: none;
+  padding: 0;
+  font: 600 13px var(--font-body);
+  color: var(--color-blue-500);
+}
+
+/* ==========================================================================
+   Stay card (horizontal)
+   ========================================================================== */
+.stay-list { display: flex; flex-direction: column; gap: var(--space-4); }
+
+.stay-card {
+  display: flex;
+  gap: var(--space-4);
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-3);
+  transition: box-shadow var(--transition-base) var(--ease), transform var(--transition-base) var(--ease);
+}
+.stay-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
+
+.stay-card__media { position: relative; flex-shrink: 0; width: 220px; border-radius: var(--radius-control); overflow: hidden; }
+.stay-card__media img { width: 100%; height: 100%; object-fit: cover; aspect-ratio: 4 / 3; transition: transform .4s var(--ease); }
+.stay-card:hover .stay-card__media img { transform: scale(1.05); }
+.stay-card__tag { position: absolute; top: var(--space-2); left: var(--space-2); color: var(--color-white); }
+.stay-card__tag--gold { background: var(--color-premium-gold); color: var(--color-navy-900); }
+.stay-card__tag--green { background: var(--color-success); }
+.stay-card__tag--blue { background: var(--color-blue-500); }
+
+.stay-card__body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.stay-card__top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.stay-card__title { display: flex; align-items: center; gap: 6px; font: 600 18px var(--font-heading); }
+.stay-card__verified { color: var(--color-blue-500); flex-shrink: 0; }
+.stay-card__price { text-align: right; flex-shrink: 0; }
+.stay-card__price span:last-child { font-size: 11px; color: var(--color-slate); line-height: 1.3; }
+.stay-card__location { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--color-slate); }
+.stay-card__location svg { width: 14px; height: 14px; flex-shrink: 0; }
+.stay-card__rating { display: flex; align-items: center; gap: var(--space-2); font-size: 13px; }
+.rating-pill {
+  background: var(--color-premium-gold);
+  color: var(--color-navy-900);
+  font: 700 12px var(--font-body);
+  padding: 2px 8px;
+  border-radius: var(--radius-control);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+.stay-card__amenities { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-4); font-size: 12px; color: var(--color-slate); }
+.stay-card__amenities span { display: inline-flex; align-items: center; gap: 4px; }
+.stay-card__amenities svg { width: 14px; height: 14px; color: var(--color-blue-500); }
+.stay-card__cta { align-self: flex-end; margin-top: auto; }
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 1023px) {
+  .hotel-hero { height: 220px; }
+  .hotel-search { flex-wrap: wrap; margin-top: calc(-1 * var(--space-6)); }
+  .hotel-search__field { flex: 1 1 45%; border-right: none; border-bottom: 1px solid var(--color-border); padding-block: var(--space-2); }
+  .hotel-search__submit { flex: 1 1 100%; }
+}
+
+@media (max-width: 767px) {
+  .hotel-hero { height: 180px; }
+  .hotel-hero__title { font-size: 1.375rem; }
+  .hotel-hero__subtitle { font-size: 13px; }
+  .hotel-search { flex-direction: column; padding: var(--space-3); margin-top: calc(-1 * var(--space-8)); }
+  .hotel-search__field { border-bottom: 1px solid var(--color-border); }
+
+  .stay-card { flex-direction: column; }
+  .stay-card__media { width: auto; }
+  .stay-card__title { font-size: 16px; }
+  .stay-card__cta { align-self: stretch; text-align: center; }
+}

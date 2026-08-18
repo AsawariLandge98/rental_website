@@ -1,0 +1,56 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}My Visits | Rentora{% endblock %}
+{% block body_class %}page-dash-visits{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="calendar" %} My Visits</h1></div>
+    <p>Track your scheduled property visits. Visits are confirmed instantly when you book them.</p>
+</div>
+
+<div class="dash-section">
+    {% if visits %}
+    <table class="record-table">
+        <thead>
+            <tr><th>Property</th><th>Owner</th><th>Visit Date &amp; Time</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            {% for visit in visits %}
+            <tr>
+                <td class="record-property-cell">
+                    <div class="record-property">
+                        {% if visit.property.cover_photo %}<img src="{{ visit.property.cover_photo.image.url }}" alt="">{% endif %}
+                        <div>
+                            <div class="record-property__title"><a href="{% url 'properties:detail' visit.property.id %}">{{ visit.property.title }}</a></div>
+                            <div class="record-property__loc">{{ visit.property.short_location }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Owner">{{ visit.property.owner.full_name }}</td>
+                <td data-label="Visit Date &amp; Time">{{ visit.scheduled_at|date:"d M Y, g:i A" }}</td>
+                <td data-label="Status"><span class="status-pill status-pill--{{ visit.status }}">{{ visit.get_status_display }}</span></td>
+                <td data-label="Actions">
+                    <div class="record-actions">
+                        <a href="{% url 'properties:detail' visit.property.id %}" class="btn btn-secondary btn-sm">View</a>
+                        {% if visit.status == "scheduled" %}
+                        <form method="post" action="{% url 'visits:cancel_visit' visit.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm">Cancel</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="dash-empty">
+        {% include "partials/icon.html" with name="calendar" %}
+        <p>No visits scheduled yet.</p>
+        <a href="{% url 'properties:search' %}" class="btn btn-primary btn-sm">Browse Properties</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

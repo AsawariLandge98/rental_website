@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Hotels & Homestays | Rentora{% endblock %}
+{% block body_class %}page-hotels{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/properties.css' %}">
+<link rel="stylesheet" href="{% static 'css/hotels.css' %}">
+{% endblock %}
+
+{% block content %}
+
+{% url 'core:home' as home_url %}
+<div class="container">
+    <nav class="breadcrumb">
+        {% include "partials/back_button.html" with fallback_url=home_url %}
+        <a href="{% url 'core:home' %}">Home</a>
+        <span>/</span>
+        <span>Hotels &amp; Homestays</span>
+    </nav>
+</div>
+
+<!-- Hero -->
+<section class="hotel-hero">
+    <div class="hotel-hero__img" style="background-image:url('https://images.unsplash.com/photo-1502784444187-359ac186c5bb?auto=format&fit=crop&w=1600&q=70');"></div>
+    <div class="hotel-hero__scrim"></div>
+    <div class="container hotel-hero__inner">
+        <h1 class="hotel-hero__title">Hotels, Homestays &amp; Guest Houses</h1>
+        <p class="hotel-hero__subtitle">Book comfortable stays directly with the host — zero brokerage.</p>
+    </div>
+</section>
+
+<!-- Search bar overlapping hero -->
+<div class="container">
+    <form class="hotel-search" action="{% url 'hotels:list' %}" method="get">
+        <label class="hotel-search__field">
+            {% include "partials/icon.html" with name="map-pin" %}
+            <span class="hotel-search__field-label">
+                <span>City</span>
+                <select name="city"><option>Manali</option><option>Manali</option><option>Goa</option><option>Shimla</option></select>
+            </span>
+        </label>
+        <label class="hotel-search__field">
+            {% include "partials/icon.html" with name="calendar" %}
+            <span class="hotel-search__field-label">
+                <span>Check-in</span>
+                <select name="checkin"><option>25 May, 2024</option></select>
+            </span>
+        </label>
+        <label class="hotel-search__field">
+            {% include "partials/icon.html" with name="calendar" %}
+            <span class="hotel-search__field-label">
+                <span>Check-out</span>
+                <select name="checkout"><option>27 May, 2024</option></select>
+            </span>
+        </label>
+        <label class="hotel-search__field">
+            {% include "partials/icon.html" with name="users" %}
+            <span class="hotel-search__field-label">
+                <span>Guests &amp; Rooms</span>
+                <select name="guests"><option>2 Guests, 1 Room</option></select>
+            </span>
+        </label>
+        <label class="hotel-search__field">
+            {% include "partials/icon.html" with name="key" %}
+            <span class="hotel-search__field-label">
+                <span>Budget (per night)</span>
+                <select name="budget"><option>&#8377;1,000 - &#8377;10,000+</option></select>
+            </span>
+        </label>
+        <button type="submit" class="btn btn-primary hotel-search__submit">
+            {% include "partials/icon.html" with name="search" %}
+            Search
+        </button>
+        <button type="button" class="btn btn-secondary search-toolbar__filters-trigger" id="filtersTrigger">
+            {% include "partials/icon.html" with name="sliders" cls="icon-sm" %}
+            Filters
+        </button>
+    </form>
+</div>
+
+<div class="container search-layout hotel-layout">
+    <!-- Filters -->
+    <div class="filters-panel" id="filtersPanel">
+        <div class="filters-panel__head">
+            <h3>Filters</h3>
+            <div class="icon-row">
+                <a href="{% url 'hotels:list' %}" class="link-more">Clear All</a>
+                <button type="button" class="filters-panel__close" id="filtersClose" aria-label="Close filters">
+                    {% include "partials/icon.html" with name="chevron-down" cls="icon-sm" %}
+                </button>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <div class="filter-group__head">
+                <h3>Price Range (per night)</h3>
+                {% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}
+            </div>
+            <div class="filter-group__body">
+                <div class="range-slider range-slider--single" id="priceSlider">
+                    <div class="range-slider__track"></div>
+                    <div class="range-slider__fill" style="left:0;width:15%"></div>
+                    <input type="range" min="1000" max="10000" step="200" value="2500">
+                </div>
+                <div class="range-slider__labels">
+                    <span>&#8377;1,000</span>
+                    <span>&#8377;10,000+</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <div class="filter-group__head">
+                <h3>Property Type</h3>
+                {% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}
+            </div>
+            <div class="filter-group__body">
+                <label class="checkbox-row"><input type="checkbox" checked> All Types</label>
+                <label class="checkbox-row"><input type="checkbox"> Hotels</label>
+                <label class="checkbox-row"><input type="checkbox"> Homestays</label>
+                <label class="checkbox-row"><input type="checkbox"> Guest Houses</label>
+                <label class="checkbox-row"><input type="checkbox"> Resorts</label>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <div class="filter-group__head">
+                <h3>Amenities</h3>
+                {% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}
+            </div>
+            <div class="filter-group__body">
+                <label class="checkbox-row"><input type="checkbox"> Free Wi-Fi</label>
+                <label class="checkbox-row"><input type="checkbox"> Breakfast Included</label>
+                <label class="checkbox-row"><input type="checkbox"> AC</label>
+                <label class="checkbox-row"><input type="checkbox"> Parking</label>
+                <label class="checkbox-row"><input type="checkbox"> Swimming Pool</label>
+                <button type="button" class="link-more filter-show-more">+ Show More</button>
+            </div>
+        </div>
+
+        <div class="filter-group">
+            <div class="filter-group__head">
+                <h3>Guest Rating</h3>
+                {% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}
+            </div>
+            <div class="filter-group__body">
+                <label class="checkbox-row"><input type="checkbox"> 4.5 &amp; above</label>
+                <label class="checkbox-row"><input type="checkbox"> 4.0 &amp; above</label>
+                <label class="checkbox-row"><input type="checkbox"> 3.5 &amp; above</label>
+                <label class="checkbox-row"><input type="checkbox"> 3.0 &amp; above</label>
+            </div>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-block" id="filtersApply">Show Results</button>
+    </div>
+    <div class="filters-panel__backdrop" id="filtersBackdrop"></div>
+
+    <!-- Results -->
+    <div class="results-main">
+        <div class="results-header">
+            <div class="results-count">{{ result_count }} Stays Found</div>
+            <div class="results-controls">
+                <select aria-label="Sort by">
+                    <option>Recommended</option>
+                    <option>Price: Low to High</option>
+                    <option>Price: High to Low</option>
+                    <option>Guest Rating</option>
+                </select>
+                <div class="view-toggle">
+                    <button type="button" class="is-active">
+                        {% include "partials/icon.html" with name="grid" cls="icon-sm" %}
+                        Grid
+                    </button>
+                    <button type="button">
+                        {% include "partials/icon.html" with name="rows" cls="icon-sm" %}
+                        List
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="stay-list">
+            {% for stay in stays %}
+            <article class="stay-card">
+                <div class="stay-card__media">
+                    <img src="{{ stay.image }}" alt="{{ stay.title }}" loading="lazy">
+                    <span class="badge stay-card__tag stay-card__tag--{{ stay.tag_color }}">{{ stay.tag }}</span>
+                    <button type="button" class="property-card__save js-save-toggle" aria-label="Save stay">
+                        {% include "partials/icon.html" with name="heart" %}
+                    </button>
+                </div>
+                <div class="stay-card__body">
+                    <div class="stay-card__top">
+                        <h3 class="stay-card__title">{{ stay.title }}</h3>
+                        <div class="stay-card__price">
+                            <span class="text-price-stat">&#8377;{{ stay.price }}</span>
+                            <span>/ night<br>+ Taxes</span>
+                        </div>
+                    </div>
+                    <div class="stay-card__location">
+                        {% include "partials/icon.html" with name="map-pin" %}
+                        {{ stay.location }} &bull; {{ stay.distance }}
+                    </div>
+                    <div class="stay-card__rating">
+                        <span class="rating-pill">{{ stay.rating }}</span>
+                        <span class="slate">({{ stay.reviews }} reviews)</span>
+                        <span class="badge badge-success-outline">{{ stay.rating_label }}</span>
+                    </div>
+                    <div class="stay-card__amenities">
+                        {% for a in stay.amenities %}
+                        <span>{% include "partials/icon.html" with name=a.icon cls="icon-sm" %} {{ a.label }}</span>
+                        {% endfor %}
+                    </div>
+                    <span class="btn btn-secondary btn-sm stay-card__cta is-disabled" title="Full stay details are coming soon" aria-disabled="true">Details Coming Soon</span>
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="listing-sidebar">
+        <div class="sidebar-card">
+            <h3>Why Book with Rentora?</h3>
+            <div class="sidebar-trust-list">
+                {% for item in why_book %}
+                <div class="sidebar-trust-item">
+                    <span class="sidebar-trust-item__icon">{% include "partials/icon.html" with name=item.icon %}</span>
+                    <div>
+                        <strong>{{ item.title }}</strong>
+                        <p>{{ item.text }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="sidebar-card sidebar-card--tint">
+            <h3>Plan Your Getaway</h3>
+            <p>Subscribe to get special offers on hotels and homestays.</p>
+            <form class="sidebar-subscribe" action="{% url 'core:subscribe_newsletter' %}" method="post">
+                {% csrf_token %}
+                <input type="email" name="email" class="field" placeholder="Enter your email" required>
+                <button type="submit" class="btn btn-primary">
+                    {% include "partials/icon.html" with name="envelope" cls="icon-sm" %}
+                    Subscribe
+                </button>
+            </form>
+        </div>
+
+        <div class="sidebar-card">
+            <h3>Safety Tips</h3>
+            <ul class="sidebar-checklist">
+                {% for tip in safety_tips %}
+                <li>{% include "partials/icon.html" with name="check" cls="icon-sm" %} {{ tip }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </aside>
+</div>
+
+{% endblock %}

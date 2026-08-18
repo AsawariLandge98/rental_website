@@ -1,0 +1,126 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}CMS Management | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-cms{% endblock %}
+
+{% block content %}
+<div class="dash-page-head listings-head">
+    <div>
+        <h1 class="text-h2">{% include "partials/icon.html" with name="document" %} CMS Management</h1>
+        <p>Manage the FAQs shown on the public Contact page and the Tenant Help &amp; Support page.</p>
+    </div>
+    <a href="{% url 'dashboard:admin_cms_faq_add' %}" class="btn btn-primary">
+        {% include "partials/icon.html" with name="plus-circle" cls="icon-sm" %}
+        Add New FAQ
+    </a>
+</div>
+
+<div class="dash-stats">
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="document" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total }}</div><div class="dash-stat-card__label">Total FAQs</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="check" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.published }}</div><div class="dash-stat-card__label">Published</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="envelope" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.contact }}</div><div class="dash-stat-card__label">Contact Page</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="headset" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.tenant_help }}</div><div class="dash-stat-card__label">Tenant Help</div></div>
+    </div>
+</div>
+
+<div class="dash-section">
+    <form method="get" class="dash-filter-bar">
+        <div class="dash-filter-bar__search">
+            {% include "partials/icon.html" with name="search" cls="icon-sm" %}
+            <input type="text" name="q" value="{{ selected_q }}" placeholder="Search question or answer...">
+        </div>
+        <select name="placement">
+            <option value="">All Placements</option>
+            {% for value, label in placement_options %}
+            <option value="{{ value }}" {% if value == selected_placement %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+        {% if selected_q or selected_placement %}
+        <a href="{% url 'dashboard:admin_cms' %}" class="btn btn-secondary btn-sm">Reset</a>
+        {% endif %}
+    </form>
+
+    {% if faqs %}
+    <table class="record-table">
+        <thead>
+            <tr><th>Question</th><th>Placement</th><th>Order</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for faq in faqs %}
+            <tr>
+                <td data-label="Question">
+                    <div class="record-property__title">{{ faq.question }}</div>
+                    <div class="record-property__loc">{{ faq.answer|truncatechars:90 }}</div>
+                </td>
+                <td data-label="Placement">{{ faq.get_placement_display }}</td>
+                <td data-label="Order">{{ faq.order }}</td>
+                <td data-label="Status">
+                    {% if faq.is_published %}
+                    <span class="status-pill status-pill--published">Published</span>
+                    {% else %}
+                    <span class="status-pill status-pill--draft">Unpublished</span>
+                    {% endif %}
+                </td>
+                <td data-label="Actions">
+                    <div class="record-actions">
+                        <a href="{% url 'dashboard:admin_cms_faq_edit' faq.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+                        <form method="post" action="{% url 'dashboard:admin_cms_faq_toggle' faq.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm">{% if faq.is_published %}Unpublish{% else %}Publish{% endif %}</button>
+                        </form>
+                        <form method="post" action="{% url 'dashboard:admin_cms_faq_delete' faq.pk %}" onsubmit="return confirm('Delete this FAQ? This cannot be undone.');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm" style="color:var(--color-error);">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination">
+        <div class="pagination__pages">
+            {% if page_obj.has_previous %}
+            <a href="?{{ carry_qs }}&page={{ page_obj.previous_page_number }}" aria-label="Previous page">{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</a>
+            {% else %}
+            <button type="button" aria-label="Previous page" disabled>{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</button>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                <button type="button" class="is-active">{{ num }}</button>
+                {% else %}
+                <a href="?{{ carry_qs }}&page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?{{ carry_qs }}&page={{ page_obj.next_page_number }}" aria-label="Next page">{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</a>
+            {% else %}
+            <button type="button" aria-label="Next page" disabled>{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</button>
+            {% endif %}
+        </div>
+        <span class="slate" style="font-size:13px;">Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} FAQs</span>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="dash-empty">
+        {% include "partials/icon.html" with name="document" %}
+        <p>No FAQs match your filters.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

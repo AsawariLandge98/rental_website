@@ -1,0 +1,61 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}My Profile | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-profile{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="user" %} My Profile</h1></div>
+    <p>Manage your account details.</p>
+</div>
+
+<div class="profile-head">
+    <span class="header-account__avatar header-account__avatar--initials profile-head__avatar" style="font-size:28px;">{{ user.full_name|first|upper }}</span>
+    <div>
+        <div class="profile-head__name"><h2 class="text-h3">{{ user.full_name }}</h2><span class="badge badge-blue">{{ user.get_role_display }}</span></div>
+        <div class="profile-head__meta">Member since {{ user.date_joined|date:"M Y" }}</div>
+    </div>
+</div>
+
+<form method="post">
+    {% csrf_token %}
+    <div class="dash-section">
+        <h2 class="text-h3" style="margin-bottom: var(--space-4);">Account Details</h2>
+        <div class="profile-form-grid">
+            <div>
+                <label class="field-label" for="{{ account_form.full_name.id_for_label }}">Full Name</label>
+                {{ account_form.full_name }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ account_form.mobile_number.id_for_label }}">Mobile Number</label>
+                {{ account_form.mobile_number }}
+            </div>
+            <div class="profile-form-grid-full">
+                <label class="field-label">Email Address</label>
+                <input type="email" class="field" value="{{ user.email }}" disabled>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: var(--space-2);">Save Changes</button>
+    </div>
+</form>
+
+<div class="dash-section">
+    <h2 class="text-h3" style="margin-bottom: var(--space-4);">Change Password</h2>
+    <form method="post" action="{% url 'dashboard:admin_profile_password' %}" style="max-width:400px;">
+        {% csrf_token %}
+        <div style="margin-bottom: var(--space-4);">
+            <label class="field-label" for="{{ password_form.old_password.id_for_label }}">Current Password</label>
+            {{ password_form.old_password }}
+        </div>
+        <div style="margin-bottom: var(--space-4);">
+            <label class="field-label" for="{{ password_form.new_password1.id_for_label }}">New Password</label>
+            {{ password_form.new_password1 }}
+        </div>
+        <div style="margin-bottom: var(--space-4);">
+            <label class="field-label" for="{{ password_form.new_password2.id_for_label }}">Confirm New Password</label>
+            {{ password_form.new_password2 }}
+        </div>
+        <button type="submit" class="btn btn-primary">Update Password</button>
+    </form>
+</div>
+{% endblock %}

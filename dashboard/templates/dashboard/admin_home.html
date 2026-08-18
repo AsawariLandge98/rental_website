@@ -1,0 +1,78 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}Dashboard | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-home{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <h1 class="text-h2">Welcome back, {{ user.full_name|default:user.email|truncatechars:20 }} 👋</h1>
+    <p>Here's what's happening across the platform today.</p>
+</div>
+
+<div class="dash-stats">
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="users" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total_users }}</div><div class="dash-stat-card__label">Total Users</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="check" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.active_users }}</div><div class="dash-stat-card__label">Active Users</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="plus-circle" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.new_users_this_month }}</div><div class="dash-stat-card__label">New Users This Month</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="x" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.blocked_users }}</div><div class="dash-stat-card__label">Blocked Users</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="building" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total_properties }}</div><div class="dash-stat-card__label">Total Properties</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="house" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.active_properties }}</div><div class="dash-stat-card__label">Active Properties</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="chat" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total_inquiries }}</div><div class="dash-stat-card__label">Total Inquiries</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="calendar" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.scheduled_visits }}</div><div class="dash-stat-card__label">Scheduled Visits</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="headset" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.open_tickets }}</div><div class="dash-stat-card__label">Open Support Tickets</div></div>
+    </div>
+</div>
+
+<div class="dash-section">
+    <div class="dash-section__head">
+        <h2 class="text-h3">Recent Activity</h2>
+    </div>
+    {% for item in recent_activity %}
+    <div class="dash-notif-list-item">
+        <span class="dash-stat-card__icon" style="width:32px;height:32px;">{% include "partials/icon.html" with name=item.icon cls="icon-sm" %}</span>
+        <div class="dash-visit-item__body">
+            <div style="font-size:13px;">{{ item.text }}</div>
+            <div class="dash-visit-item__meta">{{ item.at|timesince }} ago</div>
+        </div>
+    </div>
+    {% empty %}
+    <p class="slate" style="font-size:13px;">No activity yet.</p>
+    {% endfor %}
+</div>
+
+<div class="dash-section">
+    <h2 class="text-h3" style="margin-bottom: var(--space-4);">Quick Actions</h2>
+    <div class="dash-quick-actions">
+        <a href="{% url 'dashboard:admin_users' %}">{% include "partials/icon.html" with name="users" %}User Management</a>
+        <a href="{% url 'dashboard:admin_properties' %}">{% include "partials/icon.html" with name="building" %}Properties</a>
+        <a href="{% url 'dashboard:admin_support' %}">{% include "partials/icon.html" with name="headset" %}Support Tickets</a>
+        <a href="{% url 'dashboard:admin_reports' %}">{% include "partials/icon.html" with name="bar-chart" %}Reports</a>
+        <a href="{% url 'dashboard:admin_settings' %}">{% include "partials/icon.html" with name="sliders" %}Settings</a>
+    </div>
+</div>
+{% endblock %}

@@ -11,7 +11,7 @@
         {% include "partials/icon.html" with name="heart" %}
         <span>Shortlist</span>
     </a>
-    <a href="#" class="mobile-tabbar__item">
+    <a href="{% url 'accounts:login' %}" class="mobile-tabbar__item {% if request.resolver_match.app_name == 'accounts' %}is-active{% endif %}">
         {% include "partials/icon.html" with name="user" %}
         <span>Profile</span>
     </a>

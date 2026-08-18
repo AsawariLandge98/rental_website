@@ -10,7 +10,9 @@
 {% block content %}
 
 <div class="container">
+    {% url 'core:home' as home_url %}
     <nav class="breadcrumb">
+        {% include "partials/back_button.html" with fallback_url=home_url %}
         <a href="{% url 'core:home' %}">Home</a>
         <span>/</span>
         <span>Search Results</span>
@@ -26,10 +28,10 @@
                 <span class="search-toolbar__field-label">
                     <span>Location</span>
                     <select name="city">
-                        <option>Bengaluru</option>
-                        <option>Hyderabad</option>
-                        <option>Mumbai</option>
-                        <option>Pune</option>
+                        <option value="">Any City</option>
+                        {% for c in city_options %}
+                        <option value="{{ c }}" {% if c == selected_city %}selected{% endif %}>{{ c }}</option>
+                        {% endfor %}
                     </select>
                 </span>
             </label>
@@ -37,9 +39,7 @@
                 {% include "partials/icon.html" with name="map-pin" %}
                 <span class="search-toolbar__field-label">
                     <span>Area / Locality</span>
-                    <select name="area">
-                        <option>Koramangala</option>
-                    </select>
+                    <input type="text" name="area" value="{{ selected_area }}" placeholder="e.g. Koramangala" style="border:none; outline:none; font:600 14px var(--font-body); width:100%;">
                 </span>
             </label>
             <label class="search-toolbar__field">
@@ -47,9 +47,10 @@
                 <span class="search-toolbar__field-label">
                     <span>Property Type</span>
                     <select name="property_type">
-                        <option value="">Select Type</option>
-                        <option>Flat / Apartment</option>
-                        <option>Independent House</option>
+                        <option value="">Any Type</option>
+                        {% for value, label in property_type_options %}
+                        <option value="{{ value }}" {% if value == selected_property_type %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
                     </select>
                 </span>
             </label>
@@ -58,7 +59,10 @@
                 <span class="search-toolbar__field-label">
                     <span>Budget</span>
                     <select name="budget">
-                        <option>&#8377;10,000 - &#8377;30,000</option>
+                        <option value="">Any Budget</option>
+                        {% for value, label in budget_options %}
+                        <option value="{{ value }}" {% if value == selected_budget %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
                     </select>
                 </span>
             </label>
@@ -85,7 +89,7 @@
         <div class="filters-panel__head">
             <h3>Filters</h3>
             <div class="icon-row">
-                <a href="#" class="link-more">Clear All</a>
+                <a href="{% url 'properties:search' %}" class="link-more">Clear All</a>
                 <button type="button" class="filters-panel__close" id="filtersClose" aria-label="Close filters">
                     {% include "partials/icon.html" with name="chevron-down" cls="icon-sm" %}
                 </button>
@@ -152,18 +156,6 @@
             </div>
         </div>
 
-        <div class="filter-group">
-            <div class="filter-group__head">
-                <h3>Verification</h3>
-                {% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}
-            </div>
-            <div class="filter-group__body">
-                <label class="checkbox-row"><input type="checkbox"> Mobile Verified</label>
-                <label class="checkbox-row"><input type="checkbox"> Identity Verified</label>
-                <label class="checkbox-row"><input type="checkbox"> Property Verified</label>
-            </div>
-        </div>
-
         <button type="button" class="btn btn-primary btn-block" id="filtersApply">Show Results</button>
     </div>
     <div class="filters-panel__backdrop" id="filtersBackdrop"></div>
@@ -173,11 +165,10 @@
         <div class="results-header">
             <div class="results-count">{{ result_count }} Properties Found</div>
             <div class="results-controls">
-                <select aria-label="Sort by">
-                    <option>Newest First</option>
-                    <option>Price: Low to High</option>
-                    <option>Price: High to Low</option>
-                    <option>Most Viewed</option>
+                <select aria-label="Sort by" id="sortSelect">
+                    <option value="newest" {% if selected_sort == "newest" %}selected{% endif %}>Newest First</option>
+                    <option value="price_asc" {% if selected_sort == "price_asc" %}selected{% endif %}>Price: Low to High</option>
+                    <option value="price_desc" {% if selected_sort == "price_desc" %}selected{% endif %}>Price: High to Low</option>
                 </select>
                 <div class="view-toggle">
                     <button type="button" class="is-active">
@@ -196,17 +187,7 @@
             </div>
         </div>
 
-        <div class="info-banner">
-            <span class="info-banner__msg">
-                {% include "partials/icon.html" with name="info" cls="icon-sm" %}
-                Showing verified and active properties only
-            </span>
-            <a href="#">
-                {% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}
-                Learn more about verification
-            </a>
-        </div>
-
+        {% if properties %}
         <div class="results-grid">
             {% for property in properties %}
                 {% include "partials/property_card.html" with property=property show_actions=True %}
@@ -215,23 +196,49 @@
 
         <div class="pagination">
             <div class="pagination__pages">
-                <button type="button" aria-label="Previous page">{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</button>
-                <button type="button" class="is-active">1</button>
-                <button type="button">2</button>
-                <button type="button">3</button>
-                <span>&hellip;</span>
-                <button type="button">25</button>
-                <button type="button" aria-label="Next page">{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</button>
+                {% if page_obj.has_previous %}
+                <a href="?{{ carry_qs }}&page={{ page_obj.previous_page_number }}" aria-label="Previous page">{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</a>
+                {% else %}
+                <button type="button" aria-label="Previous page" disabled>{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</button>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if num == page_obj.number %}
+                    <button type="button" class="is-active">{{ num }}</button>
+                    {% elif num == 1 or num == page_obj.paginator.num_pages or num|add:"-1" == page_obj.number or num|add:"1" == page_obj.number %}
+                    <a href="?{{ carry_qs }}&page={{ num }}">{{ num }}</a>
+                    {% elif num == 2 and page_obj.number > 4 %}
+                    <span>&hellip;</span>
+                    {% elif num == page_obj.paginator.num_pages|add:"-1" and page_obj.number < page_obj.paginator.num_pages|add:"-3" %}
+                    <span>&hellip;</span>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <a href="?{{ carry_qs }}&page={{ page_obj.next_page_number }}" aria-label="Next page">{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</a>
+                {% else %}
+                <button type="button" aria-label="Next page" disabled>{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</button>
+                {% endif %}
             </div>
-            <div class="pagination__per-page">
+            <form class="pagination__per-page" method="get">
+                {% for key, value in request.GET.items %}{% if key != 'per_page' and key != 'page' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
                 <span>Show</span>
-                <select>
-                    <option>12</option>
-                    <option>24</option>
-                    <option>48</option>
+                <select name="per_page" onchange="this.form.submit()">
+                    <option value="12" {% if selected_per_page == "12" %}selected{% endif %}>12</option>
+                    <option value="24" {% if selected_per_page == "24" %}selected{% endif %}>24</option>
+                    <option value="48" {% if selected_per_page == "48" %}selected{% endif %}>48</option>
                 </select>
                 <span>per page</span>
-            </div>
+            </form>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-state__icon">{% include "partials/icon.html" with name="search" %}</span>
+            <h3>No properties match your search</h3>
+            <p>Try a different city, area or a wider budget range.</p>
+            <a href="{% url 'properties:search' %}" class="btn btn-primary btn-sm">Clear Filters</a>
+        </div>
+        {% endif %}
         </div>
     </div>
 </div>

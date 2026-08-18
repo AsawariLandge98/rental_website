@@ -1,0 +1,150 @@
+{% extends "auth_base.html" %}
+{% load static %}
+
+{% block title %}Create Account | Rentora{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+
+{% block content %}
+<div class="register-shell">
+    <aside class="register-aside">
+        <div class="register-aside__copy">
+            <h1>Create Your Account<br><span class="text-accent">Join Rentora Today!</span></h1>
+            <p>Choose your account type and get started. Find or list verified rental properties with ease.</p>
+        </div>
+
+        <div class="register-aside__perks">
+            {% for perk in perks %}
+            <div class="perk-item">
+                <span class="perk-item__icon">{% include "partials/icon.html" with name=perk.icon cls="icon-sm" %}</span>
+                <div><strong>{{ perk.title }}</strong><p>{{ perk.text }}</p></div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div class="register-aside__img" style="background-image:url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=60');"></div>
+    </aside>
+
+    <main class="register-main">
+        {% url 'core:home' as home_url %}
+        <div class="auth-topbar auth-topbar--plain">
+            <div class="auth-topbar__left">
+                {% include "partials/back_button.html" with fallback_url=home_url %}
+                <a href="{% url 'core:home' %}" class="brand">
+                    <svg class="brand__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 11.5 12 4l9 7.5" />
+                        <path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" />
+                    </svg>
+                    <span class="brand__text">
+                        <span class="brand__name">Rentora</span>
+                        <span class="brand__tagline">NO BROKERAGE. ONLY TRUST.</span>
+                    </span>
+                </a>
+            </div>
+            <a href="{% url 'accounts:login' %}" class="auth-topbar__link">Already have an account? <strong>Login</strong> {% include "partials/icon.html" with name="arrow-right" cls="icon-sm" %}</a>
+        </div>
+
+        <div class="register-card">
+            <div class="register-card__head">
+                <div>
+                    <h1>Create Account</h1>
+                    <p class="slate">Select your account type and fill in the details</p>
+                </div>
+                <div class="step-indicator step-indicator--compact">
+                    <div class="step-indicator__step is-active"><span class="step-indicator__circle">1</span><span class="step-indicator__label">Account Type</span></div>
+                    <span class="step-indicator__line"></span>
+                    <div class="step-indicator__step"><span class="step-indicator__circle">2</span><span class="step-indicator__label">Verify</span></div>
+                    <span class="step-indicator__line"></span>
+                    <div class="step-indicator__step"><span class="step-indicator__circle">3</span><span class="step-indicator__label">Complete</span></div>
+                </div>
+            </div>
+
+            <form class="auth-form" method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="form-error-banner">
+                    {% include "partials/icon.html" with name="info" cls="icon-sm" %}
+                    {{ form.non_field_errors.0 }}
+                </div>
+                {% endif %}
+
+                <div class="auth-section-title">Step 1: Select Account Type</div>
+                {{ form.role }}
+                <div class="account-type-grid">
+                    {% for type in account_types %}
+                    <button type="button" class="account-type-card js-account-type {% if type.key == form.role.value %}is-selected{% endif %}" data-type="{{ type.key }}">
+                        <span class="account-type-card__radio">{% include "partials/icon.html" with name="check" cls="icon-sm" %}</span>
+                        <span class="account-type-card__icon">{% include "partials/icon.html" with name=type.icon %}</span>
+                        <strong>{{ type.title }}</strong>
+                        <p>{{ type.text }}</p>
+                    </button>
+                    {% endfor %}
+                </div>
+                {% if form.role.errors %}<span class="field-error">{{ form.role.errors.0 }}</span>{% endif %}
+
+                <div class="auth-section-title">Step 2: Enter Your Details</div>
+                <div class="auth-form__grid">
+                    <div>
+                        <label class="field-label" for="regName">Full Name</label>
+                        <div class="field-with-icon">
+                            {% include "partials/icon.html" with name="user" cls="icon-sm" %}
+                            {{ form.full_name }}
+                        </div>
+                        {% if form.full_name.errors %}<span class="field-error">{{ form.full_name.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div>
+                        <label class="field-label" for="regMobile">Mobile Number</label>
+                        <div class="field-with-icon">
+                            {% include "partials/icon.html" with name="phone" cls="icon-sm" %}
+                            {{ form.mobile_number }}
+                        </div>
+                        {% if form.mobile_number.errors %}<span class="field-error">{{ form.mobile_number.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div>
+                        <label class="field-label" for="regEmail">Email Address</label>
+                        <div class="field-with-icon">
+                            {% include "partials/icon.html" with name="envelope" cls="icon-sm" %}
+                            {{ form.email }}
+                        </div>
+                        {% if form.email.errors %}<span class="field-error">{{ form.email.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div>
+                        <label class="field-label" for="regPassword">Password</label>
+                        <div class="field-with-icon field-with-icon--toggle">
+                            {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
+                            {{ form.password }}
+                            <button type="button" class="field-toggle js-password-toggle" aria-label="Show password">{% include "partials/icon.html" with name="eye" cls="icon-sm" %}</button>
+                        </div>
+                        {% if form.password.errors %}<span class="field-error">{{ form.password.errors.0 }}</span>{% endif %}
+                    </div>
+                    <div class="auth-form__grid-full">
+                        <label class="field-label" for="regConfirm">Confirm Password</label>
+                        <div class="field-with-icon field-with-icon--toggle">
+                            {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
+                            {{ form.confirm_password }}
+                            <button type="button" class="field-toggle js-password-toggle" aria-label="Show password">{% include "partials/icon.html" with name="eye" cls="icon-sm" %}</button>
+                        </div>
+                        {% if form.confirm_password.errors %}<span class="field-error">{{ form.confirm_password.errors.0 }}</span>{% endif %}
+                    </div>
+                </div>
+
+                <label class="checkbox-row">{{ form.accept_terms }} I agree to the <a href="#" class="link-more">Terms &amp; Conditions</a> and <a href="#" class="link-more">Privacy Policy</a></label>
+                {% if form.accept_terms.errors %}<span class="field-error">{{ form.accept_terms.errors.0 }}</span>{% endif %}
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    Create Account
+                    {% include "partials/icon.html" with name="arrow-right" cls="icon-sm" %}
+                </button>
+                <p class="auth-note">
+                    {% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}
+                    Your information is safe with us. We never share your details.
+                </p>
+            </form>
+        </div>
+    </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/auth.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}My Profile | Rentora{% endblock %}
+{% block body_class %}page-dash-profile{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="user" %} My Profile</h1></div>
+    <p>Manage your personal information and rental preferences.</p>
+</div>
+
+<div class="profile-head">
+    {% if tenant_profile.profile_photo %}
+    <img src="{{ tenant_profile.profile_photo.url }}" alt="" class="profile-head__avatar">
+    {% else %}
+    <span class="header-account__avatar header-account__avatar--initials profile-head__avatar" style="font-size:28px;">{{ user.full_name|first|upper }}</span>
+    {% endif %}
+    <div>
+        <div class="profile-head__name"><h2 class="text-h3">{{ user.full_name }}</h2><span class="badge badge-blue">{{ user.get_role_display }}</span></div>
+        <div class="profile-head__meta">Profile {{ tenant_profile.completion_percent }}% complete &middot; Member since {{ user.date_joined|date:"M Y" }}</div>
+    </div>
+    <div class="profile-head__verify">
+        <span class="verify-pill {% if user.is_mobile_verified %}verify-pill--yes{% else %}verify-pill--no{% endif %}">
+            {% include "partials/icon.html" with name="phone" cls="icon-sm" %}
+            {% if user.is_mobile_verified %}Mobile Verified{% else %}Mobile Not Verified{% endif %}
+        </span>
+        <span class="verify-pill {% if user.is_email_verified %}verify-pill--yes{% else %}verify-pill--no{% endif %}">
+            {% include "partials/icon.html" with name="envelope" cls="icon-sm" %}
+            {% if user.is_email_verified %}Email Verified{% else %}Email Not Verified{% endif %}
+        </span>
+    </div>
+</div>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <div class="dash-section">
+        <h2 class="text-h3" style="margin-bottom: var(--space-4);">Personal Information</h2>
+        <div class="profile-form-grid">
+            <div>
+                <label class="field-label" for="{{ account_form.full_name.id_for_label }}">Full Name</label>
+                {{ account_form.full_name }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ profile_form.gender.id_for_label }}">Gender (Optional)</label>
+                {{ profile_form.gender }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ account_form.mobile_number.id_for_label }}">Mobile Number</label>
+                {{ account_form.mobile_number }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ profile_form.occupation.id_for_label }}">Occupation</label>
+                {{ profile_form.occupation }}
+            </div>
+            <div>
+                <label class="field-label">Email Address</label>
+                <input type="email" class="field" value="{{ user.email }}" disabled>
+            </div>
+            <div>
+                <label class="field-label" for="{{ profile_form.preferred_city.id_for_label }}">Preferred City</label>
+                {{ profile_form.preferred_city }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ profile_form.date_of_birth.id_for_label }}">Date of Birth (Optional)</label>
+                {{ profile_form.date_of_birth }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ profile_form.profile_photo.id_for_label }}">Profile Photo</label>
+                {{ profile_form.profile_photo }}
+            </div>
+            <div class="profile-form-grid-full">
+                <label class="field-label" for="{{ profile_form.about.id_for_label }}">About You (Optional)</label>
+                {{ profile_form.about }}
+            </div>
+        </div>
+    </div>
+
+    <div class="dash-section">
+        <h2 class="text-h3" style="margin-bottom: var(--space-4);">Rental Preferences</h2>
+        <div class="profile-form-grid">
+            <div>
+                <label class="field-label" for="{{ profile_form.preferred_property_type.id_for_label }}">Preferred Property Type</label>
+                {{ profile_form.preferred_property_type }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ profile_form.furnishing_preference.id_for_label }}">Furnishing Preference</label>
+                {{ profile_form.furnishing_preference }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ profile_form.tenant_type.id_for_label }}">Tenant Type</label>
+                {{ profile_form.tenant_type }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ profile_form.move_in_time.id_for_label }}">Move-in Time</label>
+                {{ profile_form.move_in_time }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ profile_form.preferred_budget_min.id_for_label }}">Budget Min (&#8377;/month)</label>
+                {{ profile_form.preferred_budget_min }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ profile_form.preferred_budget_max.id_for_label }}">Budget Max (&#8377;/month)</label>
+                {{ profile_form.preferred_budget_max }}
+            </div>
+        </div>
+    </div>
+
+    <div class="alert alert-info" style="margin-bottom: var(--space-4);">
+        {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
+        Your information is secure with us. We never share your personal details with anyone without your permission.
+    </div>
+
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+</form>
+{% endblock %}

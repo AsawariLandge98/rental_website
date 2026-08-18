@@ -1,0 +1,26 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}Saved Properties | Rentora{% endblock %}
+{% block body_class %}page-dash-saved{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="heart" %} Saved Properties</h1></div>
+    <p>Properties you have saved for later. Tap a card to view details or contact the owner.</p>
+</div>
+
+{% if properties %}
+<p class="slate" style="font-size:13px; margin-bottom: var(--space-4);">{{ properties|length }} saved propert{{ properties|length|pluralize:"y,ies" }}</p>
+<div class="dash-property-grid">
+    {% for property in properties %}
+    {% include "partials/property_card.html" with property=property %}
+    {% endfor %}
+</div>
+{% else %}
+<div class="dash-empty">
+    {% include "partials/icon.html" with name="heart" %}
+    <p>You haven't saved any properties yet.</p>
+    <a href="{% url 'properties:search' %}" class="btn btn-primary btn-sm">Browse Properties</a>
+</div>
+{% endif %}
+{% endblock %}

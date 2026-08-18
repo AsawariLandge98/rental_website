@@ -1,0 +1,41 @@
+{% with url_name=request.resolver_match.url_name app_name=request.resolver_match.app_name %}
+<aside class="dash-sidebar" id="dashSidebar">
+    <nav class="dash-sidebar__nav">
+        <a href="{% url 'dashboard:tenant' %}" class="dash-sidebar__link {% if url_name == 'tenant' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="house" %} <span>Dashboard</span>
+        </a>
+        <a href="{% url 'properties:search' %}" class="dash-sidebar__link {% if app_name == 'properties' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="search" %} <span>Search Properties</span>
+        </a>
+        <a href="{% url 'dashboard:tenant_saved' %}" class="dash-sidebar__link {% if url_name == 'tenant_saved' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="heart" %} <span>Saved Properties</span>
+        </a>
+        <a href="{% url 'inquiries:my_inquiries' %}" class="dash-sidebar__link {% if app_name == 'inquiries' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="chat" %} <span>My Inquiries</span>
+        </a>
+        <a href="{% url 'visits:my_visits' %}" class="dash-sidebar__link {% if app_name == 'visits' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="calendar" %} <span>My Visits</span>
+        </a>
+        <a href="{% url 'notifications:list' %}" class="dash-sidebar__link {% if app_name == 'notifications' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="bell" %} <span>Notifications</span>
+            {% if unread_notifications_count %}<span class="dash-sidebar__badge">{{ unread_notifications_count }}</span>{% endif %}
+        </a>
+        <a href="{% url 'dashboard:tenant_profile' %}" class="dash-sidebar__link {% if url_name == 'tenant_profile' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="user" %} <span>My Profile</span>
+        </a>
+        <a href="{% url 'dashboard:tenant_settings' %}" class="dash-sidebar__link {% if url_name == 'tenant_settings' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="sliders" %} <span>Settings</span>
+        </a>
+        <a href="{% url 'dashboard:tenant_help' %}" class="dash-sidebar__link {% if url_name == 'tenant_help' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="headset" %} <span>Help &amp; Support</span>
+        </a>
+    </nav>
+
+    <form method="post" action="{% url 'accounts:logout' %}" class="dash-sidebar__logout">
+        {% csrf_token %}
+        <button type="submit" class="dash-sidebar__link">
+            {% include "partials/icon.html" with name="logout" %} <span>Logout</span>
+        </button>
+    </form>
+</aside>
+{% endwith %}

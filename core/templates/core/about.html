@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}About Us | Rentora{% endblock %}
+{% block body_class %}page-about{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages.css' %}">
+{% endblock %}
+
+{% block content %}
+
+{% url 'core:home' as home_url %}
+<div class="container">
+    <nav class="breadcrumb">
+        {% include "partials/back_button.html" with fallback_url=home_url %}
+        <a href="{% url 'core:home' %}">Home</a>
+        <span>/</span>
+        <span>About Us</span>
+    </nav>
+</div>
+
+<!-- Intro -->
+<section class="about-intro">
+    <div class="container about-intro__grid">
+        <div class="about-intro__copy">
+            <span class="eyebrow">About Us</span>
+            <h1>Making Rentals Simple,<br><span class="text-accent">Safe &amp; Transparent</span></h1>
+            <p>Rentora is a zero-brokerage property rental platform that connects property owners and tenants directly. Our mission is to build a trusted community where finding or renting a property is simple, transparent and secure.</p>
+            <div class="about-intro__pills">
+                <span><span class="pill-icon">{% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}</span> Zero Brokerage<br><small>Deal directly with owners.</small></span>
+                <span><span class="pill-icon">{% include "partials/icon.html" with name="chat" cls="icon-sm" %}</span> Direct Contact<br><small>Call, WhatsApp or email owners instantly.</small></span>
+            </div>
+        </div>
+        <div class="about-intro__img" style="background-image:url('https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=900&q=60');"></div>
+    </div>
+</section>
+
+<!-- Mission / Vision / Values -->
+<div class="container" data-reveal>
+    <div class="about-mvv">
+        <div class="about-mvv__card">
+            <span class="about-mvv__icon">{% include "partials/icon.html" with name="target" %}</span>
+            <h3>Our Mission</h3>
+            <p>To simplify the rental experience by eliminating brokers, promoting transparency and ensuring every user feels safe while finding or listing properties.</p>
+        </div>
+        <div class="about-mvv__card">
+            <span class="about-mvv__icon">{% include "partials/icon.html" with name="eye" %}</span>
+            <h3>Our Vision</h3>
+            <p>To become India's most trusted rental platform where every property transaction is transparent, secure and beneficial for both owners and tenants.</p>
+        </div>
+        <div class="about-mvv__card">
+            <span class="about-mvv__icon">{% include "partials/icon.html" with name="heart" %}</span>
+            <h3>Our Values</h3>
+            <ul>
+                {% for value in values %}
+                <li>{% include "partials/icon.html" with name="check" cls="icon-sm" %} {{ value }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- Stats -->
+<section class="section--tint about-stats-section" data-reveal>
+    <div class="container">
+        <h2 class="about-stats-heading">Rentora by the Numbers</h2>
+        <div class="about-stats">
+            {% for stat in stats %}
+            <div class="about-stat">
+                <span class="about-stat__icon">{% include "partials/icon.html" with name=stat.icon %}</span>
+                <span class="about-stat__value">{{ stat.value }}</span>
+                <span class="about-stat__label">{{ stat.label }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Why choose -->
+<section class="section" data-reveal>
+    <div class="container">
+        <h2 class="section-title-center">Why Choose Rentora?</h2>
+        <div class="about-why-grid">
+            {% for item in why_choose %}
+            <div class="about-why-item">
+                <span class="about-why-item__icon">{% include "partials/icon.html" with name=item.icon %}</span>
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.text }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- How it works -->
+<section class="section section--tight" id="how-it-works" data-reveal>
+    <div class="container">
+        <h2 class="section-title-center">How Rentora Works</h2>
+        <div class="verification-steps">
+            {% for step in trust_steps %}
+            <div class="verification-step">
+                <span class="verification-step__icon">{% include "partials/icon.html" with name=step.icon %}</span>
+                <h3>{{ step.title }}</h3>
+                <p>{{ step.text }}</p>
+            </div>
+            {% if not forloop.last %}<span class="verification-step__connector"></span>{% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Team -->
+<section class="section" data-reveal>
+    <div class="container about-team">
+        <div class="about-team__img" style="background-image:url('https://images.unsplash.com/photo-1600880292203-757bb62b4baf?auto=format&fit=crop&w=900&q=60');"></div>
+        <div class="about-team__copy">
+            <span class="eyebrow">Our Team</span>
+            <h2>Built by people who care</h2>
+            <p>We are a team of passionate individuals working towards making the rental journey better for everyone.</p>
+            <a href="{% url 'core:contact' %}" class="btn btn-primary">Join Our Community</a>
+        </div>
+    </div>
+</section>
+
+<!-- Newsletter -->
+<section class="about-newsletter" data-reveal>
+    <div class="container about-newsletter__inner">
+        <div class="about-newsletter__msg">
+            <span class="about-newsletter__icon">{% include "partials/icon.html" with name="envelope" %}</span>
+            <div>
+                <h3>Stay Updated</h3>
+                <p>Subscribe to get the latest properties, offers and updates straight to your inbox.</p>
+            </div>
+        </div>
+        <form class="about-newsletter__form" action="{% url 'core:subscribe_newsletter' %}" method="post">
+            {% csrf_token %}
+            <input type="email" name="email" class="field" placeholder="Enter your email address" required>
+            <button type="submit" class="btn btn-primary">
+                {% include "partials/icon.html" with name="send" cls="icon-sm" %}
+                Subscribe
+            </button>
+        </form>
+    </div>
+</section>
+
+{% endblock %}
