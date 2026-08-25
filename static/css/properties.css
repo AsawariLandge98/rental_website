@@ -572,6 +572,20 @@
   .detail-mobile-bar .price .amount { font: 700 18px var(--font-heading); color: var(--color-ink); }
   .detail-mobile-bar .price .label { font-size: 11px; color: var(--color-slate); }
   .detail-mobile-bar .btn { flex: 1 1 auto; min-width: 0; padding: 10px 10px; font-size: 13px; }
+  .detail-mobile-bar__save {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid var(--color-border);
+    background: var(--color-white);
+    color: var(--color-slate);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .detail-mobile-bar__save.is-saved { color: #FF385C; }
+  .detail-mobile-bar__save.is-saved svg { fill: currentColor; }
 
   /* The full price card's own buttons are redundant with the sticky bar */
   .price-card .btn-block,
