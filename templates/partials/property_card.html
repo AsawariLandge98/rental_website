@@ -48,16 +48,18 @@ Optional: show_actions=True renders View Details / Contact Owner buttons (search
         <h3 class="property-card__title">
             {% if property.id %}<a href="{% url 'properties:detail' property.id %}">{{ property.title }}</a>{% else %}{{ property.title }}{% endif %}
         </h3>
-        <div class="property-card__location">
-            {% include "partials/icon.html" with name="map-pin" %}
-            <span title="{{ property.location }}">{{ property.location }}</span>
+        {% if property.amenities %}
+        <div class="property-card__amenities">
+            {% for amenity in property.amenities %}
+            <span class="property-card__amenity">{% include "partials/icon.html" with name=amenity.icon cls="icon-sm" %}{{ amenity.name }}</span>
+            {% endfor %}
+            {% if property.amenities_more %}
+            <span class="property-card__amenity property-card__amenity--more">+{{ property.amenities_more }} more</span>
+            {% endif %}
         </div>
-        <div class="property-card__specs">
-            <span>{% include "partials/icon.html" with name="bed" %} {{ property.beds }} Bed{{ property.beds|pluralize }}</span>
-            <span>{% include "partials/icon.html" with name="bath" %} {{ property.baths }} Bath{{ property.baths|pluralize }}</span>
-            <span>{% include "partials/icon.html" with name="area" %} {{ property.area }} sq.ft.</span>
-        </div>
+        {% endif %}
         <div class="property-card__footer">
+            <span class="property-card__location" title="{{ property.city }}">{{ property.city }}</span>
             <div class="property-card__price">
                 <span class="text-price-stat">&#8377;{{ property.price|floatformat:"0"|intcomma }}</span>
                 <span>/month</span>
@@ -68,7 +70,7 @@ Optional: show_actions=True renders View Details / Contact Owner buttons (search
             <a href="{% url 'properties:detail' property.id %}" class="btn btn-secondary btn-sm">View Details</a>
             <a href="{% url 'properties:detail' property.id %}" class="btn btn-primary btn-sm">
                 {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
-                Contact Owner
+                Contact
             </a>
         </div>
         {% elif property.id %}

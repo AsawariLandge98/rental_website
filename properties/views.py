@@ -26,17 +26,21 @@ def _property_card_context(property_obj, saved_ids=frozenset()):
     """Shapes a Property instance into the dict shape partials/property_card.html
     and property_detail.html already expect (built for the old dummy data)."""
     cover = property_obj.cover_photo
+    amenities = list(property_obj.amenities.all())
     return {
         'id': property_obj.pk,
         'title': property_obj.title,
         'location': property_obj.display_location,
         'short_location': property_obj.short_location,
+        'city': property_obj.city,
         'beds': property_obj.bedrooms or 0,
         'baths': property_obj.bathrooms or 0,
         'area': property_obj.total_area or 0,
         'floor_label': property_obj.floor_label,
         'furnishing': property_obj.get_furnishing_status_display() if property_obj.furnishing_status else '',
         'parking': property_obj.get_parking_display() if property_obj.parking else '',
+        'amenities': amenities[:6],
+        'amenities_more': max(len(amenities) - 6, 0),
         'price': property_obj.monthly_rent or 0,
         'badge': property_obj.badge,
         'no_brokerage': property_obj.no_brokerage,
@@ -106,7 +110,7 @@ BEDROOM_OPTIONS = [
 
 
 def search_results(request):
-    queryset = Property.objects.filter(status=Property.Status.PUBLISHED).prefetch_related('photos')
+    queryset = Property.objects.filter(status=Property.Status.PUBLISHED).prefetch_related('photos', 'amenities')
 
     q = request.GET.get('q', '').strip()
     city = request.GET.get('city')
@@ -213,7 +217,7 @@ def property_detail(request, pk):
     similar_properties = [
         _property_card_context(p, saved_ids) for p in Property.objects.filter(
             status=Property.Status.PUBLISHED, city=property_obj.city,
-        ).exclude(pk=pk).prefetch_related('photos')[:2]
+        ).exclude(pk=pk).prefetch_related('photos', 'amenities')[:2]
     ]
 
     property_details_table = [
@@ -242,12 +246,7 @@ def property_detail(request, pk):
         "contact_options": _owner_contact_options(property_obj),
         "gallery": gallery,
         "amenities": amenities,
-        "prime_location": [],
         "property_details_table": property_details_table,
-        "rating_average": 0,
-        "rating_count": 0,
-        "rating_breakdown": [],
-        "reviews": [],
         "similar_properties": similar_properties,
         "owner": {
             "name": property_obj.owner.full_name,

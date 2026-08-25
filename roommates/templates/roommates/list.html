@@ -26,181 +26,121 @@
     <div class="container roommate-hero__grid">
         <div class="roommate-hero__intro">
             <h1>Find Your Perfect Roommate</h1>
-            <p>Find verified flatmates or rooms in shared apartments that match your lifestyle.</p>
+            <p>Browse flatmates and shared rooms that match your lifestyle, then reach out directly — zero brokerage, zero waiting.</p>
         </div>
         <div class="roommate-hero__img" style="background-image:url('https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=900&q=60');"></div>
     </div>
+</section>
 
+<!-- Filters -->
+<div class="search-toolbar">
     <div class="container">
-        <form class="roommate-search" action="{% url 'roommates:list' %}" method="get">
-            <label class="roommate-search__field">
+        <form class="search-toolbar__bar" action="{% url 'roommates:list' %}" method="get">
+            <label class="search-toolbar__field">
                 {% include "partials/icon.html" with name="map-pin" %}
-                <span class="roommate-search__field-label"><span>City</span><select name="city"><option>Bengaluru</option></select></span>
+                <span class="search-toolbar__field-label">
+                    <span>Area / Locality</span>
+                    <input type="text" name="q" value="{{ selected_q }}" placeholder="e.g. Koramangala" style="border:none; outline:none; font:600 14px var(--font-body); width:100%;">
+                </span>
             </label>
-            <label class="roommate-search__field">
-                {% include "partials/icon.html" with name="map-pin" %}
-                <span class="roommate-search__field-label"><span>Area / Locality</span><select name="area"><option>Koramangala</option></select></span>
-            </label>
-            <label class="roommate-search__field">
-                {% include "partials/icon.html" with name="key" %}
-                <span class="roommate-search__field-label"><span>Budget (monthly share)</span><select name="budget"><option>&#8377;5,000 - &#8377;20,000</option></select></span>
-            </label>
-            <label class="roommate-search__field">
-                {% include "partials/icon.html" with name="bed" %}
-                <span class="roommate-search__field-label"><span>Room Type</span><select name="room_type"><option>Any</option></select></span>
-            </label>
-            <label class="roommate-search__field">
+            <label class="search-toolbar__field">
                 {% include "partials/icon.html" with name="users" %}
-                <span class="roommate-search__field-label"><span>Gender Preference</span><select name="gender"><option>Any</option></select></span>
+                <span class="search-toolbar__field-label">
+                    <span>Gender</span>
+                    <select name="gender">
+                        <option value="">Any</option>
+                        {% for g in gender_options %}
+                        <option value="{{ g }}" {% if g == selected_gender %}selected{% endif %}>{{ g }}</option>
+                        {% endfor %}
+                    </select>
+                </span>
             </label>
-            <button type="submit" class="btn btn-primary roommate-search__submit">
+            <label class="search-toolbar__field">
+                {% include "partials/icon.html" with name="bed" %}
+                <span class="search-toolbar__field-label">
+                    <span>Room Type</span>
+                    <select name="room_type">
+                        <option value="">Any</option>
+                        {% for rt in room_type_options %}
+                        <option value="{{ rt }}" {% if rt == selected_room_type %}selected{% endif %}>{{ rt }}</option>
+                        {% endfor %}
+                    </select>
+                </span>
+            </label>
+            <label class="search-toolbar__field">
+                {% include "partials/icon.html" with name="key" %}
+                <span class="search-toolbar__field-label">
+                    <span>Budget</span>
+                    <select name="budget">
+                        <option value="">Any Budget</option>
+                        {% for value, label in budget_options %}
+                        <option value="{{ value }}" {% if value == selected_budget %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                </span>
+            </label>
+            <button type="submit" class="btn btn-primary">
                 {% include "partials/icon.html" with name="search" %}
                 Search
             </button>
-            <button type="button" class="btn btn-secondary search-toolbar__filters-trigger" id="filtersTrigger">
-                {% include "partials/icon.html" with name="sliders" cls="icon-sm" %}
-                Filters
-            </button>
+            {% if selected_gender or selected_room_type or selected_budget or selected_q %}
+            <a href="{% url 'roommates:list' %}" class="btn btn-secondary">Clear</a>
+            {% endif %}
         </form>
     </div>
-</section>
+</div>
 
-<div class="container search-layout hotel-layout">
-    <!-- Filters -->
-    <div class="filters-panel" id="filtersPanel">
-        <div class="filters-panel__head">
-            <h3>Filters</h3>
-            <div class="icon-row">
-                <a href="{% url 'roommates:list' %}" class="link-more">Clear All</a>
-                <button type="button" class="filters-panel__close" id="filtersClose" aria-label="Close filters">
-                    {% include "partials/icon.html" with name="chevron-down" cls="icon-sm" %}
-                </button>
-            </div>
-        </div>
-
-        <div class="filter-group">
-            <div class="filter-group__head"><h3>Gender</h3>{% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}</div>
-            <div class="filter-group__body">
-                <label class="checkbox-row"><input type="checkbox" checked> Any</label>
-                <label class="checkbox-row"><input type="checkbox"> Male</label>
-                <label class="checkbox-row"><input type="checkbox"> Female</label>
-                <label class="checkbox-row"><input type="checkbox"> Other</label>
-            </div>
-        </div>
-
-        <div class="filter-group">
-            <div class="filter-group__head"><h3>Budget (Monthly Share)</h3>{% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}</div>
-            <div class="filter-group__body">
-                <div class="range-slider range-slider--single">
-                    <div class="range-slider__track"></div>
-                    <div class="range-slider__fill" style="left:0;width:60%"></div>
-                    <input type="range" min="5000" max="20000" step="500" value="15000">
-                </div>
-                <div class="range-slider__labels"><span>&#8377;5,000</span><span>&#8377;20,000+</span></div>
-            </div>
-        </div>
-
-        <div class="filter-group">
-            <div class="filter-group__head"><h3>Occupation</h3>{% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}</div>
-            <div class="filter-group__body">
-                <label class="checkbox-row"><input type="checkbox"> Students</label>
-                <label class="checkbox-row"><input type="checkbox"> Working Professionals</label>
-                <label class="checkbox-row"><input type="checkbox"> Business</label>
-                <label class="checkbox-row"><input type="checkbox"> Others</label>
-            </div>
-        </div>
-
-        <div class="filter-group">
-            <div class="filter-group__head"><h3>Room Type</h3>{% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}</div>
-            <div class="filter-group__body">
-                <label class="checkbox-row"><input type="checkbox"> Single Room</label>
-                <label class="checkbox-row"><input type="checkbox"> Shared Room</label>
-                <label class="checkbox-row"><input type="checkbox"> Private Room in 2 BHK</label>
-                <label class="checkbox-row"><input type="checkbox" checked> Any</label>
-            </div>
-        </div>
-
-        <div class="filter-group">
-            <div class="filter-group__head"><h3>Availability</h3>{% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}</div>
-            <div class="filter-group__body">
-                <label class="checkbox-row"><input type="checkbox" checked> Available Now</label>
-                <label class="checkbox-row"><input type="checkbox"> Available This Month</label>
-            </div>
-        </div>
-
-        <button type="button" class="btn btn-primary btn-block" id="filtersApply">Apply Filters</button>
-    </div>
-    <div class="filters-panel__backdrop" id="filtersBackdrop"></div>
-
+<div class="container roommate-layout">
     <!-- Results -->
     <div class="results-main">
         <div class="results-header">
             <div class="results-count">{{ result_count }} Roommates / Shared Rooms Found</div>
-            <div class="results-controls">
-                <select aria-label="Sort by">
-                    <option>Newest First</option>
-                    <option>Budget: Low to High</option>
-                    <option>Budget: High to Low</option>
-                </select>
-                <div class="view-toggle">
-                    <button type="button" class="is-active">{% include "partials/icon.html" with name="grid" cls="icon-sm" %} Grid</button>
-                    <button type="button">{% include "partials/icon.html" with name="rows" cls="icon-sm" %} List</button>
-                </div>
-            </div>
-        </div>
-
-        <div class="info-banner">
-            <span class="info-banner__msg">
-                {% include "partials/icon.html" with name="info" cls="icon-sm" %}
-                Reach out directly — no brokerage, no waiting on approval.
+            <span class="view-indicator">
+                {% include "partials/icon.html" with name="grid" cls="icon-sm" %}
+                Grid View
             </span>
         </div>
 
+        {% if roommates %}
         <div class="roommate-grid">
             {% for r in roommates %}
             <article class="roommate-card">
                 <div class="roommate-card__media">
-                    <img src="{{ r.avatar }}" alt="{{ r.name }}" loading="lazy">
+                    <img src="{{ r.image }}" alt="{{ r.room_type }} in {{ r.location }}" loading="lazy">
                     <span class="badge roommate-card__tag roommate-card__tag--{{ r.badge_color }}">{{ r.badge }}</span>
-                    <button type="button" class="property-card__save js-save-toggle" aria-label="Save profile">
-                        {% include "partials/icon.html" with name="heart" %}
-                    </button>
                 </div>
                 <div class="roommate-card__body">
                     <h3 class="roommate-card__name">{{ r.name }}</h3>
-                    <p class="roommate-card__occupation">{{ r.occupation }}</p>
-                    <div class="roommate-card__meta">
-                        <span>{% include "partials/icon.html" with name="user" cls="icon-sm" %} {{ r.gender }}</span>
-                        <span>{% include "partials/icon.html" with name="clock" cls="icon-sm" %} {{ r.age }} Years</span>
+                    <div class="roommate-card__tags">
+                        <span class="roommate-card__tag-chip">{{ r.gender }}</span>
+                        <span class="roommate-card__tag-chip">{{ r.age }} yrs</span>
+                        <span class="roommate-card__tag-chip">{{ r.occupation }}</span>
                     </div>
                     <p class="roommate-card__room">{{ r.room_type }}</p>
-                    <p class="roommate-card__location">{{ r.location }}</p>
-                    <div class="roommate-card__price">
-                        <span class="text-price-stat">&#8377;{{ r.price|intcomma }}</span>
-                        <span>/month<br>(per share)</span>
+                    <div class="roommate-card__footer">
+                        <span class="roommate-card__location" title="{{ r.location }}">{{ r.location }}</span>
+                        <div class="roommate-card__price">
+                            <span class="text-price-stat">&#8377;{{ r.price|intcomma }}</span>
+                            <span>/month</span>
+                        </div>
                     </div>
                     <span class="btn btn-secondary btn-sm btn-block is-disabled" title="Full roommate profiles are coming soon" aria-disabled="true">Profile Coming Soon</span>
                 </div>
             </article>
             {% endfor %}
         </div>
-
+        {% else %}
+        <div class="empty-state">
+            <span class="empty-state__icon">{% include "partials/icon.html" with name="search" %}</span>
+            <h3>No roommates match your search</h3>
+            <p>Try a different locality, gender or a wider budget range.</p>
+            <a href="{% url 'roommates:list' %}" class="btn btn-primary btn-sm">Clear Filters</a>
+        </div>
+        {% endif %}
     </div>
 
     <!-- Sidebar -->
     <aside class="listing-sidebar">
-        <div class="sidebar-card">
-            <h3>Why Choose Rentora?</h3>
-            <div class="sidebar-trust-list">
-                {% for item in why_choose %}
-                <div class="sidebar-trust-item">
-                    <span class="sidebar-trust-item__icon">{% include "partials/icon.html" with name=item.icon %}</span>
-                    <div><strong>{{ item.title }}</strong><p>{{ item.text }}</p></div>
-                </div>
-                {% endfor %}
-            </div>
-        </div>
-
         <div class="sidebar-card sidebar-card--tint">
             <h3>Create Your Profile</h3>
             <p>Post your profile and let others find the perfect match.</p>
@@ -208,15 +148,6 @@
                 {% include "partials/icon.html" with name="plus-circle" cls="icon-sm" %}
                 Create Profile
             </a>
-        </div>
-
-        <div class="sidebar-card">
-            <h3>Safety Tips</h3>
-            <ul class="sidebar-checklist">
-                {% for tip in safety_tips %}
-                <li>{% include "partials/icon.html" with name="check" cls="icon-sm" %} {{ tip }}</li>
-                {% endfor %}
-            </ul>
         </div>
     </aside>
 </div>

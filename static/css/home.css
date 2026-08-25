@@ -310,38 +310,8 @@
 .testimonial-card__stars svg { width: 14px; height: 14px; }
 
 /* ==========================================================================
-   Newsletter
+   Newsletter — moved to base.css (shared component, used by About too)
    ========================================================================== */
-.newsletter {
-  border-radius: var(--radius-card);
-  padding: var(--space-8);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-8);
-}
-.newsletter__intro { display: flex; align-items: center; gap: var(--space-4); }
-.newsletter__icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .12);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.newsletter__icon svg { width: 22px; height: 22px; }
-.newsletter h2 { color: var(--color-white); margin-bottom: 2px; }
-.newsletter p { color: var(--color-blue-300); font-size: 14px; }
-.newsletter__form { display: flex; gap: var(--space-2); flex-shrink: 0; }
-.newsletter__form input {
-  min-width: 260px;
-  border-radius: var(--radius-control);
-  border: none;
-  padding: 12px 16px;
-}
-.newsletter__form input:focus { outline: none; box-shadow: 0 0 0 3px rgba(255,255,255,.25); }
 
 /* ==========================================================================
    Tablet (1023px and below)
@@ -360,11 +330,6 @@
 
   .steps { grid-template-columns: repeat(3, 1fr); row-gap: var(--space-8); }
   .steps::before { display: none; }
-
-  .newsletter { flex-direction: column; align-items: stretch; text-align: center; }
-  .newsletter__intro { flex-direction: column; }
-  .newsletter__form { flex-direction: column; }
-  .newsletter__form input { min-width: 0; }
 
   /* Native swipe replaces arrow controls once rows start scrolling horizontally */
   .carousel-nav { display: none; }
@@ -456,5 +421,4 @@
   .testimonials-grid { display: block; }
   .testimonial-card:not(:first-child) { display: none; }
 
-  .newsletter { border-radius: 0; margin-inline: calc(-1 * var(--space-4)); padding: var(--space-6) var(--space-4); }
 }

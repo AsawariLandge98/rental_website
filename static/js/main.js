@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initBackButtons();
   initHeroSlider();
   initSaveToggle();
+  initShareButtons();
   initPropertyGallery();
   initReadMore();
   initFilterAccordion();
@@ -210,6 +211,24 @@ function initSaveToggle() {
   });
 }
 
+function initShareButtons() {
+  document.querySelectorAll('.js-share').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const shareData = { title: btn.dataset.shareTitle || document.title, url: window.location.href };
+      if (navigator.share) {
+        try { await navigator.share(shareData); } catch (err) { /* user cancelled the share sheet */ }
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(shareData.url);
+        const original = btn.innerHTML;
+        btn.innerHTML = btn.innerHTML.replace(/Share( Property)?/, 'Link Copied!');
+        setTimeout(() => { btn.innerHTML = original; }, 2000);
+      } catch (err) { /* clipboard unavailable */ }
+    });
+  });
+}
+
 function initPropertyGallery() {
   const gallery = document.querySelector('.js-gallery');
   if (!gallery) return;
@@ -246,6 +265,11 @@ function initReadMore() {
   const text = document.getElementById('aboutText');
   const toggle = document.getElementById('readMoreToggle');
   if (!text || !toggle) return;
+
+  if (text.scrollHeight <= text.clientHeight + 1) {
+    toggle.style.display = 'none';
+    return;
+  }
 
   toggle.addEventListener('click', () => {
     const expanded = text.classList.toggle('is-clamped') === false;

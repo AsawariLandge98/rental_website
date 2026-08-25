@@ -210,13 +210,25 @@ class Property(models.Model):
     def __str__(self):
         return self.title or f'Draft property #{self.pk}'
 
+    def _joined_location(self, parts):
+        """Joins location parts, dropping blanks and case-insensitive
+        repeats (e.g. area_locality and city both entered as "Nagpur")."""
+        seen = set()
+        deduped = []
+        for part in parts:
+            if not part or part.lower() in seen:
+                continue
+            seen.add(part.lower())
+            deduped.append(part)
+        return ', '.join(deduped)
+
     @property
     def short_location(self):
-        return ', '.join(part for part in [self.area_locality, self.city] if part)
+        return self._joined_location([self.area_locality, self.city])
 
     @property
     def display_location(self):
-        return ', '.join(part for part in [self.area_locality, self.city, self.state, self.pincode] if part)
+        return self._joined_location([self.area_locality, self.city, self.state, self.pincode])
 
     @property
     def floor_label(self):

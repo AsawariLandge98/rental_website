@@ -65,17 +65,22 @@
 .about-intro__grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--space-8); align-items: center; }
 .about-intro__copy h1 { margin-bottom: var(--space-4); }
 .about-intro__copy p { color: var(--color-slate); font-size: 15px; line-height: 24px; max-width: 52ch; margin-bottom: var(--space-6); }
-.about-intro__pills { display: flex; gap: var(--space-6); }
-.about-intro__pills span { display: flex; align-items: flex-start; gap: var(--space-2); font: 600 13px var(--font-body); color: var(--color-ink); }
-.about-intro__pills small { font-weight: 400; color: var(--color-slate); }
+.about-intro__pills { display: flex; flex-wrap: wrap; gap: var(--space-6); }
+.about-intro__pill { display: flex; align-items: flex-start; gap: var(--space-3); max-width: 220px; }
+.about-intro__pill strong { display: block; font: 600 14px var(--font-body); color: var(--color-ink); margin-bottom: 2px; }
+.about-intro__pill p { font-size: 13px; color: var(--color-slate); line-height: 18px; }
 .pill-icon {
-  width: 28px; height: 28px; flex-shrink: 0;
+  width: 36px; height: 36px; flex-shrink: 0;
   border-radius: 50%;
   background: var(--color-white);
   color: var(--color-blue-500);
+  box-shadow: var(--shadow-card);
   display: inline-flex; align-items: center; justify-content: center;
 }
 .about-intro__img {
+  width: 100%;
+  max-width: 460px;
+  justify-self: end;
   aspect-ratio: 4 / 3;
   border-radius: var(--radius-card);
   background-size: cover;
@@ -108,17 +113,12 @@
 .host-cta__inner h2 { color: var(--color-white); margin-bottom: var(--space-2); }
 .host-cta__inner p { color: var(--color-blue-300); }
 
-/* Mission / Vision / Values — deliberately overlaps the intro section's
-   bottom edge (negative margin matching .about-intro's own bottom padding)
-   so the cards read as "floating" on top, same technique used for the
-   Quick Search card on Home. */
+/* Mission / Vision / Values */
 .about-mvv {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: var(--space-4);
-  margin-top: calc(-1 * var(--space-8));
-  position: relative;
-  z-index: 3;
+  margin-block: var(--space-8) var(--space-12);
 }
 .about-mvv__card {
   background: var(--color-white);
@@ -147,7 +147,7 @@
 /* Stats */
 .about-stats-section { padding-block: var(--space-16) var(--space-12); }
 .about-stats-heading { text-align: center; margin-bottom: var(--space-8); }
-.about-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-4); text-align: center; }
+.about-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); text-align: center; }
 .about-stat { display: flex; flex-direction: column; align-items: center; }
 .about-stat__icon {
   width: 44px; height: 44px; margin-inline: auto;
@@ -206,34 +206,21 @@
 .about-team__img:hover { transform: scale(1.015); }
 .about-team__copy p { color: var(--color-slate); font-size: 14px; line-height: 22px; margin-block: var(--space-3) var(--space-6); max-width: 46ch; }
 
-/* Newsletter band */
-.about-newsletter { background: var(--color-navy-900); padding-block: var(--space-8); }
-.about-newsletter__inner { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap; }
-.about-newsletter__msg { display: flex; align-items: center; gap: var(--space-4); color: var(--color-white); }
-.about-newsletter__icon {
-  width: 44px; height: 44px; flex-shrink: 0;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .1);
-  display: flex; align-items: center; justify-content: center;
-}
-.about-newsletter__msg h3 { color: var(--color-white); margin-bottom: 2px; }
-.about-newsletter__msg p { color: var(--color-blue-300); font-size: 13px; }
-.about-newsletter__form { display: flex; gap: var(--space-2); flex: 1; max-width: 460px; min-width: 260px; }
-.about-newsletter__form .field { flex: 1; }
-
 /* ==========================================================================
    Contact Us
    ========================================================================== */
-.contact-layout { display: grid; grid-template-columns: 1fr 380px; gap: var(--space-6); padding-block: var(--space-8); align-items: start; }
+.contact-layout { padding-block: var(--space-8); }
 .contact-card {
+  max-width: 640px;
+  margin-inline: auto;
   background: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
-  padding: var(--space-6);
+  padding: var(--space-8);
 }
-.contact-card h2 { margin-bottom: 4px; }
-.contact-card > p.slate { margin-bottom: var(--space-6); font-size: 14px; }
+.contact-card h2 { margin-bottom: 4px; text-align: center; }
+.contact-card > p.slate { margin-bottom: var(--space-6); font-size: 14px; text-align: center; }
 
 .contact-form { display: flex; flex-direction: column; gap: var(--space-4); }
 .contact-form__row { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
@@ -243,43 +230,6 @@
 .contact-form__message { resize: vertical; min-height: 120px; }
 .contact-form__note { display: flex; align-items: center; gap: 6px; justify-content: center; font-size: 12px; color: var(--color-slate); }
 .contact-form__note svg { color: var(--color-slate); flex-shrink: 0; }
-
-.contact-trust-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: var(--space-4);
-  margin-top: var(--space-6);
-  padding-top: var(--space-6);
-  border-top: 1px solid var(--color-border);
-  text-align: center;
-}
-.contact-trust-row__icon {
-  width: 40px; height: 40px; margin-inline: auto;
-  border-radius: 50%;
-  background: var(--color-blue-50);
-  color: var(--color-blue-500);
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: var(--space-2);
-  transition: transform var(--transition-base) var(--ease);
-}
-.contact-trust-row > div:hover .contact-trust-row__icon { transform: scale(1.12); }
-.contact-trust-row strong { display: block; font-size: 13px; margin-bottom: 2px; }
-.contact-trust-row p { font-size: 12px; color: var(--color-slate); }
-
-.contact-side { display: flex; flex-direction: column; gap: var(--space-4); }
-.contact-info-item { display: flex; gap: var(--space-3); margin-bottom: var(--space-5); }
-.contact-info-item:last-child { margin-bottom: 0; }
-.contact-info-item__icon {
-  width: 40px; height: 40px; flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--color-blue-50);
-  color: var(--color-blue-500);
-  display: flex; align-items: center; justify-content: center;
-  transition: transform var(--transition-base) var(--ease);
-}
-.contact-info-item:hover .contact-info-item__icon { transform: scale(1.1); }
-.contact-info-item strong { display: block; font-size: 14px; margin-bottom: 2px; }
-.contact-info-item p { font-size: 13px; color: var(--color-slate); line-height: 20px; }
 
 .contact-faq { display: flex; flex-direction: column; gap: var(--space-3); max-width: 900px; margin-inline: auto; }
 .contact-faq__item {
@@ -294,19 +244,17 @@
    ========================================================================== */
 @media (max-width: 1023px) {
   .about-intro__grid { grid-template-columns: 1fr; }
-  .about-intro__img { order: -1; }
+  .about-intro__img { order: -1; justify-self: center; }
   .host-intro__grid { grid-template-columns: 1fr; }
   .host-intro__img { order: -1; }
   .host-cta__inner { text-align: center; justify-content: center; flex-direction: column; }
-  .about-mvv { grid-template-columns: 1fr; margin-top: var(--space-6); }
-  .about-stats { grid-template-columns: repeat(3, 1fr); gap: var(--space-6); }
+  .about-mvv { grid-template-columns: 1fr; margin-block: var(--space-6); }
+  .about-stats { grid-template-columns: repeat(2, 1fr); gap: var(--space-6); }
   .about-why-grid { grid-template-columns: repeat(3, 1fr); }
   .verification-steps { flex-wrap: wrap; }
   .verification-step { flex: 1 1 30%; }
   .verification-step__connector { display: none; }
   .about-team { grid-template-columns: 1fr; }
-  .contact-layout { grid-template-columns: 1fr; }
-  .contact-trust-row { grid-template-columns: repeat(2, 1fr); gap: var(--space-6); }
 }
 
 @media (max-width: 767px) {
@@ -319,8 +267,6 @@
   .about-stats { grid-template-columns: repeat(2, 1fr); }
   .about-why-grid { grid-template-columns: repeat(2, 1fr); }
   .verification-step { flex: 1 1 45%; }
-  .about-newsletter__inner { flex-direction: column; align-items: stretch; }
-  .about-newsletter__form { max-width: none; }
   .contact-form__row { grid-template-columns: 1fr; }
   .contact-card { padding: var(--space-4); }
 }

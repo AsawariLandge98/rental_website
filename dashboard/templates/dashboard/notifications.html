@@ -19,12 +19,13 @@
         </form>
     </div>
     {% for n in notifications %}
-    <a href="{% url 'notifications:mark_read' n.pk %}" class="dash-notif-list-item" style="display:flex; text-decoration:none; {% if not n.is_read %}background: var(--color-blue-50); border-radius: var(--radius-control); padding-inline: var(--space-3);{% endif %}">
-        <span class="dash-stat-card__icon" style="width:36px;height:36px;flex-shrink:0;">{% include "partials/icon.html" with name="bell" cls="icon-sm" %}</span>
-        <div class="dash-visit-item__body">
-            <div style="font-size:14px; color: var(--color-ink);">{{ n.message }}</div>
-            <div class="dash-visit-item__meta">{{ n.created_at|timesince }} ago &middot; {{ n.get_category_display }}</div>
+    <a href="{% url 'notifications:mark_read' n.pk %}" class="dash-notif-item {% if not n.is_read %}is-unread{% endif %}">
+        <span class="dash-notif-item__icon">{% include "partials/icon.html" with name="bell" cls="icon-sm" %}</span>
+        <div class="dash-notif-item__body">
+            <div class="dash-notif-item__message">{{ n.message }}</div>
+            <div class="dash-notif-item__meta">{{ n.created_at|timesince }} ago &middot; {{ n.get_category_display }}</div>
         </div>
+        {% if not n.is_read %}<span class="dash-notif-item__dot" aria-hidden="true"></span>{% endif %}
     </a>
     {% endfor %}
     {% else %}

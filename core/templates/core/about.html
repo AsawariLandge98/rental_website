@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}About Us | Rentora{% endblock %}
 {% block body_class %}page-about{% endblock %}
@@ -28,8 +28,20 @@
             <h1>Making Rentals Simple,<br><span class="text-accent">Safe &amp; Transparent</span></h1>
             <p>Rentora is a zero-brokerage property rental platform that connects property owners and tenants directly. Our mission is to build a trusted community where finding or renting a property is simple, transparent and secure.</p>
             <div class="about-intro__pills">
-                <span><span class="pill-icon">{% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}</span> Zero Brokerage<br><small>Deal directly with owners.</small></span>
-                <span><span class="pill-icon">{% include "partials/icon.html" with name="chat" cls="icon-sm" %}</span> Direct Contact<br><small>Call, WhatsApp or email owners instantly.</small></span>
+                <div class="about-intro__pill">
+                    <span class="pill-icon">{% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}</span>
+                    <div>
+                        <strong>Zero Brokerage</strong>
+                        <p>Deal directly with owners.</p>
+                    </div>
+                </div>
+                <div class="about-intro__pill">
+                    <span class="pill-icon">{% include "partials/icon.html" with name="chat" cls="icon-sm" %}</span>
+                    <div>
+                        <strong>Direct Contact</strong>
+                        <p>Call, WhatsApp or email owners instantly.</p>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="about-intro__img" style="background-image:url('https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=900&q=60');"></div>
@@ -69,7 +81,7 @@
             {% for stat in stats %}
             <div class="about-stat">
                 <span class="about-stat__icon">{% include "partials/icon.html" with name=stat.icon %}</span>
-                <span class="about-stat__value">{{ stat.value }}</span>
+                <span class="about-stat__value">{{ stat.value|intcomma }}</span>
                 <span class="about-stat__label">{{ stat.label }}</span>
             </div>
             {% endfor %}
@@ -124,23 +136,25 @@
 </section>
 
 <!-- Newsletter -->
-<section class="about-newsletter" data-reveal>
-    <div class="container about-newsletter__inner">
-        <div class="about-newsletter__msg">
-            <span class="about-newsletter__icon">{% include "partials/icon.html" with name="envelope" %}</span>
-            <div>
-                <h3>Stay Updated</h3>
-                <p>Subscribe to get the latest properties, offers and updates straight to your inbox.</p>
+<section class="section section--tight" data-reveal>
+    <div class="container">
+        <div class="newsletter section--navy">
+            <div class="newsletter__intro">
+                <span class="newsletter__icon">{% include "partials/icon.html" with name="envelope" %}</span>
+                <div>
+                    <h2>Stay Updated</h2>
+                    <p>Subscribe to get the latest properties, offers and updates straight to your inbox.</p>
+                </div>
             </div>
+            <form class="newsletter__form" action="{% url 'core:subscribe_newsletter' %}" method="post">
+                {% csrf_token %}
+                <input type="email" name="email" class="field" placeholder="Enter your email address" required>
+                <button type="submit" class="btn btn-primary">
+                    {% include "partials/icon.html" with name="send" cls="icon-sm" %}
+                    Subscribe
+                </button>
+            </form>
         </div>
-        <form class="about-newsletter__form" action="{% url 'core:subscribe_newsletter' %}" method="post">
-            {% csrf_token %}
-            <input type="email" name="email" class="field" placeholder="Enter your email address" required>
-            <button type="submit" class="btn btn-primary">
-                {% include "partials/icon.html" with name="send" cls="icon-sm" %}
-                Subscribe
-            </button>
-        </form>
     </div>
 </section>
 

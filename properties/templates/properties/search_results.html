@@ -165,20 +165,10 @@
                     <option value="price_asc" {% if selected_sort == "price_asc" %}selected{% endif %}>Price: Low to High</option>
                     <option value="price_desc" {% if selected_sort == "price_desc" %}selected{% endif %}>Price: High to Low</option>
                 </select>
-                <div class="view-toggle">
-                    <button type="button" class="is-active">
-                        {% include "partials/icon.html" with name="grid" cls="icon-sm" %}
-                        Grid
-                    </button>
-                    <button type="button">
-                        {% include "partials/icon.html" with name="rows" cls="icon-sm" %}
-                        List
-                    </button>
-                    <button type="button">
-                        {% include "partials/icon.html" with name="map-pin" cls="icon-sm" %}
-                        Map
-                    </button>
-                </div>
+                <span class="view-indicator">
+                    {% include "partials/icon.html" with name="grid" cls="icon-sm" %}
+                    Grid View
+                </span>
             </div>
         </div>
 

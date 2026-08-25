@@ -23,7 +23,7 @@
 
     <div class="detail-topbar">
         <span>Property ID: RP{{ property.id|stringformat:"08d" }}</span>
-        <button type="button" class="btn btn-secondary btn-sm">
+        <button type="button" class="btn btn-secondary btn-sm js-share" data-share-title="{{ property.title }}">
             Share
             {% include "partials/icon.html" with name="share" cls="icon-sm" %}
         </button>
@@ -73,15 +73,14 @@
                 <div class="detail-location">
                     {% include "partials/icon.html" with name="map-pin" cls="icon-sm" %}
                     {{ property.location }}
-                    <a href="#">View on Map</a>
                 </div>
                 <div class="detail-specs">
-                    <span>{% include "partials/icon.html" with name="bed" cls="icon-sm" %} {{ property.beds }} Beds</span>
-                    <span>{% include "partials/icon.html" with name="bath" cls="icon-sm" %} {{ property.baths }} Baths</span>
-                    <span>{% include "partials/icon.html" with name="area" cls="icon-sm" %} {{ property.area }} sq.ft.</span>
-                    <span>{% include "partials/icon.html" with name="building" cls="icon-sm" %} {{ property.floor_label }}</span>
-                    <span>{% include "partials/icon.html" with name="sliders" cls="icon-sm" %} {{ property.furnishing }}</span>
-                    <span>{% include "partials/icon.html" with name="commercial" cls="icon-sm" %} {{ property.parking }}</span>
+                    {% if property.beds %}<span>{% include "partials/icon.html" with name="bed" cls="icon-sm" %} {{ property.beds }} Bed{{ property.beds|pluralize }}</span>{% endif %}
+                    {% if property.baths %}<span>{% include "partials/icon.html" with name="bath" cls="icon-sm" %} {{ property.baths }} Bath{{ property.baths|pluralize }}</span>{% endif %}
+                    {% if property.area %}<span>{% include "partials/icon.html" with name="area" cls="icon-sm" %} {{ property.area }} sq.ft.</span>{% endif %}
+                    {% if property.floor_label %}<span>{% include "partials/icon.html" with name="building" cls="icon-sm" %} {{ property.floor_label }}</span>{% endif %}
+                    {% if property.furnishing %}<span>{% include "partials/icon.html" with name="sliders" cls="icon-sm" %} {{ property.furnishing }}</span>{% endif %}
+                    {% if property.parking %}<span>{% include "partials/icon.html" with name="commercial" cls="icon-sm" %} {{ property.parking }}</span>{% endif %}
                 </div>
             </div>
 
@@ -97,10 +96,7 @@
 
             <!-- Amenities -->
             <div class="detail-card">
-                <div class="detail-section-head">
-                    <h2 class="detail-section-title" style="margin-bottom:0;">Amenities</h2>
-                    <a href="#" class="link-more">View All</a>
-                </div>
+                <h2 class="detail-section-title">Amenities</h2>
                 <div class="amenities-grid">
                     {% for amenity in amenities %}
                     <div class="amenity-pill">
@@ -122,70 +118,12 @@
                             <span>{{ property.short_location }}</span>
                         </div>
                     </div>
-                    <div>
-                        {% if prime_location %}
-                        <div class="prime-location-card">
-                            <h3>Prime Location</h3>
-                            <ul>
-                                {% for item in prime_location %}
-                                <li>{% include "partials/icon.html" with name="check" cls="icon-sm" %} {{ item }}</li>
-                                {% endfor %}
-                            </ul>
-                        </div>
-                        {% endif %}
-                        <div class="privacy-note">
-                            {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
-                            <span><strong>Privacy Protected</strong><br>The exact address isn't shown publicly — contact the owner directly and they can share it with you.</span>
-                        </div>
+                    <div class="privacy-note">
+                        {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
+                        <span><strong>Privacy Protected</strong><br>The exact address isn't shown publicly — contact the owner directly and they can share it with you.</span>
                     </div>
                 </div>
             </div>
-
-            <!-- Reviews -->
-            {% if rating_count %}
-            <div class="detail-card">
-                <h2 class="detail-section-title">Reviews &amp; Ratings</h2>
-                <div class="rating-summary">
-                    <div class="rating-summary__score">
-                        <span class="num">{{ rating_average }}</span>
-                        <span class="stars">
-                            {% for _ in "12345"|make_list %}{% include "partials/icon.html" with name="star" %}{% endfor %}
-                        </span>
-                        <span class="count">({{ rating_count }} reviews)</span>
-                    </div>
-                    <div class="rating-bars">
-                        {% for row in rating_breakdown %}
-                        <div class="rating-bar-row">
-                            <span class="label">{{ row.stars }} {% include "partials/icon.html" with name="star" cls="icon-sm" %}</span>
-                            <span class="track"><span class="fill" style="width:{{ row.pct }}%;"></span></span>
-                            <span class="count">{{ row.count }}</span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                {% for review in reviews %}
-                <div class="review-item">
-                    <img src="{{ review.avatar }}" alt="{{ review.name }}" class="review-item__avatar">
-                    <div style="flex:1;">
-                        <div class="review-item__head">
-                            <span class="review-item__name">{{ review.name }}</span>
-                            {% if review.verified %}<span class="badge badge-success-outline">Verified Tenant</span>{% endif %}
-                            <span class="review-item__date">{{ review.date }}</span>
-                        </div>
-                        <p class="review-item__comment">{{ review.comment }}</p>
-                        <div class="review-item__stars">
-                            {% for _ in review.rating|times %}{% include "partials/icon.html" with name="star" %}{% endfor %}
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-
-                <div style="text-align:center; margin-top:var(--space-4);">
-                    <a href="#" class="link-more">View All Reviews</a>
-                </div>
-            </div>
-            {% endif %}
         </div>
 
         <!-- Sidebar -->
@@ -232,8 +170,7 @@
                     {% else %}
                     <a href="{% url 'accounts:login' %}?next={% url 'properties:detail' property.id %}">{% include "partials/icon.html" with name="heart" %}Save Property</a>
                     {% endif %}
-                    <a href="#">{% include "partials/icon.html" with name="share" %}Share Property</a>
-                    <a href="#">{% include "partials/icon.html" with name="flag" %}Report Listing</a>
+                    <button type="button" class="js-share" data-share-title="{{ property.title }}">{% include "partials/icon.html" with name="share" %}Share Property</button>
                 </div>
             </div>
 

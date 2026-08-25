@@ -398,28 +398,29 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
 
 /* ==========================================================================
    Property Card (repeating component: Homepage, Search, Saved, Similar)
+   Airbnb-style: no card container/border/shadow — the image carries the
+   visual weight, text sits flat underneath it.
    ========================================================================== */
 .property-card {
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  overflow: hidden;
-  box-shadow: var(--shadow-card);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  overflow: visible;
+  box-shadow: none;
   display: flex;
   flex-direction: column;
   height: 100%;
-  transition: box-shadow var(--transition-base) var(--ease), transform var(--transition-base) var(--ease);
 }
-.property-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
-.property-card__media img { transition: transform .4s var(--ease); }
-.property-card:hover .property-card__media img { transform: scale(1.05); }
 
 .property-card__media {
   position: relative;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 1 / 1;
   background: var(--color-blue-50);
+  border-radius: 16px;
+  overflow: hidden;
 }
-.property-card__media img { width: 100%; height: 100%; object-fit: cover; }
+.property-card__media img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s var(--ease); }
+.property-card:hover .property-card__media img { transform: scale(1.05); }
 
 .property-card__badges {
   position: absolute;
@@ -430,6 +431,9 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
   flex-wrap: wrap;
   gap: 6px;
 }
+.property-card__badges .badge { background: var(--color-white); color: var(--color-ink); box-shadow: 0 1px 4px rgba(10, 38, 71, .18); }
+.property-card__badges .badge svg { color: var(--color-ink); }
+
 .property-card__photo-count {
   position: absolute;
   right: var(--space-3);
@@ -460,68 +464,76 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
   right: var(--space-3);
   width: 32px;
   height: 32px;
-  border-radius: var(--radius-pill);
-  background: var(--color-white);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, .55);
+  backdrop-filter: blur(2px);
   border: none;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--color-slate);
-  box-shadow: var(--shadow-card);
+  color: var(--color-ink);
 }
-.property-card__save svg { width: 16px; height: 16px; transition: transform var(--transition-fast) var(--ease); }
-.property-card__save { transition: color var(--transition-fast) var(--ease), transform var(--transition-fast) var(--ease); }
-.property-card__save:hover { transform: scale(1.1); }
-.property-card__save:active svg { transform: scale(1.25); }
-.property-card__save.is-saved { color: var(--color-blue-500); }
+.property-card__save svg { width: 18px; height: 18px; transition: transform var(--transition-fast) var(--ease); }
+.property-card__save { transition: background var(--transition-fast) var(--ease), color var(--transition-fast) var(--ease), transform var(--transition-fast) var(--ease); }
+.property-card__save:hover { background: rgba(255, 255, 255, .8); transform: scale(1.06); }
+.property-card__save:active svg { transform: scale(1.2); }
+.property-card__save.is-saved { color: #FF385C; }
 .property-card__save.is-saved svg { fill: currentColor; }
 
-.property-card__body { flex: 1; padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
-.property-card__title { font: 600 16px/22px var(--font-heading); color: var(--color-ink); }
+.property-card__body { flex: 1; padding-top: var(--space-3); display: flex; flex-direction: column; gap: 2px; }
+.property-card__title { font: 600 15px/20px var(--font-heading); color: var(--color-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .property-card__title a { color: inherit; }
 .property-card__title a:hover { color: var(--color-blue-500); }
-.property-card__location {
-  display: flex;
+
+.property-card__amenities { display: flex; flex-wrap: wrap; gap: 6px; max-height: 50px; overflow: hidden; }
+.property-card__amenity {
+  display: inline-flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 4px;
+  height: 22px;
+  background: var(--color-offwhite);
+  color: var(--color-slate);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  padding: 0 8px;
+  border-radius: var(--radius-pill);
+}
+.property-card__amenity svg { width: 13px; height: 13px; flex-shrink: 0; }
+.property-card__amenity--more { font-weight: 600; }
+.property-card__footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin-top: auto;
+  padding-top: 6px;
+  border-top: none;
+}
+.property-card__location {
+  flex: 1;
+  min-width: 0;
   font-size: 13px;
   color: var(--color-slate);
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.property-card__location svg { width: 14px; height: 14px; flex-shrink: 0; }
-.property-card__location span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-.property-card__specs {
-  display: flex;
-  align-items: center;
-  gap: var(--space-4);
-  font-size: 13px;
-  color: var(--color-slate);
-}
-.property-card__specs span { display: inline-flex; align-items: center; gap: 4px; }
-.property-card__specs svg { width: 14px; height: 14px; }
-
-.property-card__footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: auto;
-  padding-top: var(--space-2);
-  border-top: 1px solid var(--color-border);
-}
-.property-card__price { display: flex; align-items: baseline; gap: 4px; }
+.property-card__price { display: flex; align-items: baseline; gap: 4px; flex-shrink: 0; }
+.property-card__price .text-price-stat { color: var(--color-ink); }
 .property-card__price span { font-size: 13px; color: var(--color-slate); }
 
-.property-card__actions { display: flex; gap: var(--space-2); margin-top: var(--space-1); }
+.property-card__actions { display: flex; gap: var(--space-2); margin-top: var(--space-2); }
 .property-card__actions .btn {
   flex: 1;
   min-width: 0;
-  white-space: normal;
+  white-space: nowrap;
   text-align: center;
-  padding: 8px 6px;
-  font-size: 12px;
+  padding: 9px 10px;
+  font-size: 13px;
   line-height: 1.3;
-  gap: 4px;
+  gap: 6px;
 }
 
 .property-card__details-link { display: none; }
@@ -537,12 +549,55 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
   }
 
   /* Price-forward card order on mobile — price is the first thing a thumb
-     scrolling a feed needs, title/location/specs follow. */
-  .property-card__footer { order: -4; border-top: none; padding-top: 0; }
+     scrolling a feed needs, title follows. */
+  .property-card__footer { order: -2; border-top: none; padding-top: 0; }
   .property-card__price .text-price-stat { font-size: 20px; }
-  .property-card__title { order: -3; }
-  .property-card__location { order: -2; }
-  .property-card__specs { order: -1; padding-top: var(--space-2); border-top: 1px solid var(--color-border); margin-top: 2px; }
+  .property-card__title { order: -1; }
+}
+
+/* ==========================================================================
+   Newsletter band (shared: Home, About) — a rounded navy card sitting
+   inside a normal section, not a full-bleed section of its own.
+   ========================================================================== */
+.newsletter {
+  border-radius: var(--radius-card);
+  padding: var(--space-8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-8);
+}
+.newsletter__intro { display: flex; align-items: center; gap: var(--space-4); }
+.newsletter__icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .12);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.newsletter__icon svg { width: 22px; height: 22px; }
+.newsletter h2 { color: var(--color-white); margin-bottom: 2px; }
+.newsletter p { color: var(--color-blue-300); font-size: 14px; }
+.newsletter__form { display: flex; gap: var(--space-2); flex-shrink: 0; }
+.newsletter__form input {
+  min-width: 260px;
+  border-radius: var(--radius-control);
+  border: none;
+  padding: 12px 16px;
+}
+.newsletter__form input:focus { outline: none; box-shadow: 0 0 0 3px rgba(255,255,255,.25); }
+
+@media (max-width: 1023px) {
+  .newsletter { flex-direction: column; align-items: stretch; text-align: center; }
+  .newsletter__intro { flex-direction: column; }
+  .newsletter__form { flex-direction: column; }
+  .newsletter__form input { min-width: 0; }
+}
+@media (max-width: 767px) {
+  .newsletter { border-radius: 0; margin-inline: calc(-1 * var(--space-4)); padding: var(--space-6) var(--space-4); }
 }
 
 /* ==========================================================================
@@ -607,7 +662,6 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
   gap: var(--space-3);
 }
 .header-become-host { white-space: nowrap; font: 600 14px var(--font-body); }
-.icon-btn--bell { display: none; }
 
 .header-saved svg { color: var(--color-blue-500); }
 

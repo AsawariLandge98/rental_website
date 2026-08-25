@@ -3,6 +3,7 @@ from django.shortcuts import redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
+from accounts.models import User
 from cms.models import FAQ
 from properties.models import Property
 from properties.views import BUDGET_OPTIONS, CITY_OPTIONS, _property_card_context, _saved_ids_for
@@ -67,7 +68,7 @@ def home(request):
     saved_ids = _saved_ids_for(request.user)
     featured_properties = [
         _property_card_context(p, saved_ids) for p in
-        Property.objects.filter(status=Property.Status.PUBLISHED).prefetch_related('photos').order_by('-created_at')[:12]
+        Property.objects.filter(status=Property.Status.PUBLISHED).prefetch_related('photos', 'amenities').order_by('-created_at')[:12]
     ]
     context = {
         "property_types": PROPERTY_TYPES,
@@ -97,14 +98,6 @@ def subscribe_newsletter(request):
     return redirect(next_url)
 
 
-ABOUT_STATS = [
-    {"icon": "users", "value": "15,000+", "label": "Happy Users"},
-    {"icon": "building", "value": "25,000+", "label": "Properties Listed"},
-    {"icon": "heart", "value": "0%", "label": "Brokerage Fees"},
-    {"icon": "commercial", "value": "250+", "label": "Cities Covered"},
-    {"icon": "star", "value": "4.6/5", "label": "Average Rating"},
-]
-
 ABOUT_VALUES = [
     "Transparency in every step",
     "Safety and security for all users",
@@ -117,7 +110,7 @@ ABOUT_WHY_CHOOSE = [
     {"icon": "chat", "title": "Direct Contact", "text": "Talk directly with owners. No middlemen, no extra charges."},
     {"icon": "calendar", "title": "Easy Scheduling", "text": "Request a property visit in seconds — the owner confirms it."},
     {"icon": "lock", "title": "Secure Platform", "text": "Your personal data is protected with industry-leading security."},
-    {"icon": "map-pin", "title": "Wide Coverage", "text": "Find properties in 250+ cities across India."},
+    {"icon": "map-pin", "title": "Growing Coverage", "text": "New cities and properties are added directly by owners, every day."},
     {"icon": "headset", "title": "Responsive Support", "text": "Reach our support team any time you need help."},
 ]
 
@@ -129,7 +122,7 @@ HOW_TRUST_WORKS = [
     {"icon": "house", "title": "2. Real Listings", "text": "Owners publish their own properties directly — no middlemen."},
     {"icon": "chat", "title": "3. Direct Contact", "text": "Reach owners by call, WhatsApp or email, instantly."},
     {"icon": "calendar", "title": "4. Request a Visit", "text": "Pick a time that works for you — the owner confirms it."},
-    {"icon": "key", "title": "5. Move In", "text": "Finalize directly with the owner — zero brokerage, ever."},
+    {"icon": "flag", "title": "5. Move In", "text": "Finalize directly with the owner — zero brokerage, ever."},
 ]
 
 
@@ -156,8 +149,15 @@ def become_host(request):
 
 
 def about(request):
+    published = Property.objects.filter(status=Property.Status.PUBLISHED)
+    stats = [
+        {"icon": "building", "value": published.count(), "label": "Properties Listed"},
+        {"icon": "users", "value": User.objects.filter(role__in=User.PUBLIC_ROLES).count(), "label": "Registered Users"},
+        {"icon": "commercial", "value": published.exclude(city='').values('city').distinct().count(), "label": "Cities Covered"},
+        {"icon": "heart", "value": "0%", "label": "Brokerage Fees"},
+    ]
     context = {
-        "stats": ABOUT_STATS,
+        "stats": stats,
         "values": ABOUT_VALUES,
         "why_choose": ABOUT_WHY_CHOOSE,
         "trust_steps": HOW_TRUST_WORKS,

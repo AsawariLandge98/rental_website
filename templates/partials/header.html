@@ -31,14 +31,14 @@
             {% if user.is_authenticated %}
                 {% if user.role == "tenant" %}
                 <a href="{% url 'core:become_host' %}" class="btn-ghost header-become-host">Become a Host</a>
-                {% endif %}
-                <a href="#" class="btn btn-secondary btn-sm header-saved">
+                <a href="{% url 'dashboard:tenant_saved' %}" class="btn btn-secondary btn-sm header-saved">
                     {% include "partials/icon.html" with name="heart" cls="icon-sm" %}
                     Saved
                 </a>
-                <a href="#" class="icon-btn icon-btn--bell" aria-label="Notifications">
+                {% endif %}
+                <a href="{% url 'notifications:list' %}" class="icon-btn icon-btn--bell" aria-label="Notifications">
                     {% include "partials/icon.html" with name="bell" cls="icon-sm" %}
-                    <span class="notif-dot">3</span>
+                    {% if unread_notifications_count %}<span class="notif-dot">{{ unread_notifications_count }}</span>{% endif %}
                 </a>
                 <a href="{{ user_dashboard_url|default:'/' }}" class="header-account">
                     <span class="header-account__avatar header-account__avatar--initials">{{ user.full_name|first|upper }}</span>
@@ -52,12 +52,8 @@
                 </form>
             {% else %}
                 <a href="{% url 'core:become_host' %}" class="btn-ghost header-become-host">Become a Host</a>
-                <a href="#" class="icon-btn icon-btn--wishlist" aria-label="Saved properties">
+                <a href="{% url 'accounts:login' %}?next={% url 'dashboard:tenant_saved' %}" class="icon-btn icon-btn--wishlist" aria-label="Log in to see saved properties">
                     {% include "partials/icon.html" with name="heart" cls="icon-sm" %}
-                </a>
-                <a href="#" class="icon-btn icon-btn--bell" aria-label="Notifications">
-                    {% include "partials/icon.html" with name="bell" cls="icon-sm" %}
-                    <span class="notif-dot">1</span>
                 </a>
                 <a href="{% url 'accounts:login' %}" class="btn btn-secondary btn-sm">Login</a>
                 <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">Register</a>
@@ -83,7 +79,15 @@
             {% if user.is_authenticated %}
                 {% if user.role == "tenant" %}
                 <a href="{% url 'core:become_host' %}" class="btn btn-secondary btn-block">Become a Host</a>
+                <a href="{% url 'dashboard:tenant_saved' %}" class="btn btn-secondary btn-block">
+                    {% include "partials/icon.html" with name="heart" cls="icon-sm" %}
+                    Saved Properties
+                </a>
                 {% endif %}
+                <a href="{% url 'notifications:list' %}" class="btn btn-secondary btn-block">
+                    {% include "partials/icon.html" with name="bell" cls="icon-sm" %}
+                    Notifications{% if unread_notifications_count %} ({{ unread_notifications_count }}){% endif %}
+                </a>
                 <a href="{{ user_dashboard_url|default:'/' }}" class="header-account header-account--mobile">
                     <span class="header-account__avatar header-account__avatar--initials">{{ user.full_name|first|upper }}</span>
                     <span class="header-account__name">Hi, {{ user.full_name|default:user.email|truncatechars:20 }}</span>

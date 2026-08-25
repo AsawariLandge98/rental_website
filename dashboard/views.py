@@ -52,7 +52,7 @@ def tenant_home(request):
     saved_ids = _saved_ids_for(request.user)
 
     recently_viewed_ids = request.session.get('recently_viewed_property_ids', [])
-    viewed_qs = Property.objects.filter(pk__in=recently_viewed_ids, status=Property.Status.PUBLISHED).prefetch_related('photos')
+    viewed_qs = Property.objects.filter(pk__in=recently_viewed_ids, status=Property.Status.PUBLISHED).prefetch_related('photos', 'amenities')
     viewed_by_id = {p.pk: p for p in viewed_qs}
     recently_viewed = [
         _property_card_context(viewed_by_id[pid], saved_ids)
@@ -64,7 +64,7 @@ def tenant_home(request):
         recommended_qs = recommended_qs.filter(city__iexact=tenant_profile.preferred_city)
     recommended = [
         _property_card_context(p, saved_ids)
-        for p in recommended_qs.prefetch_related('photos').order_by('-created_at')[:3]
+        for p in recommended_qs.prefetch_related('photos', 'amenities').order_by('-created_at')[:3]
     ]
 
     upcoming_visits = request.user.visits.filter(
@@ -89,7 +89,7 @@ def tenant_home(request):
 
 @tenant_required
 def saved_properties(request):
-    saved = request.user.saved_properties.select_related('property').prefetch_related('property__photos')
+    saved = request.user.saved_properties.select_related('property').prefetch_related('property__photos', 'property__amenities')
     saved_ids = {sp.property_id for sp in saved}
     properties = [_property_card_context(sp.property, saved_ids) for sp in saved]
     return render(request, 'dashboard/saved_properties.html', {'properties': properties})
