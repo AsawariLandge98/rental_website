@@ -9,14 +9,14 @@ from properties.views import BUDGET_OPTIONS, CITY_OPTIONS, _property_card_contex
 from .forms import ContactForm, NewsletterForm
 
 PROPERTY_TYPES = [
-    {"label": "All Properties", "icon": "house", "color": "blue"},
-    {"label": "Flats", "icon": "apartment", "color": "purple"},
-    {"label": "Independent House", "icon": "house", "color": "orange"},
-    {"label": "PG / Hostel", "icon": "bed", "color": "teal"},
-    {"label": "Villa", "icon": "villa", "color": "pink"},
-    {"label": "Commercial", "icon": "commercial", "color": "green"},
-    {"label": "Serviced Apartment", "icon": "building", "color": "blue"},
-    {"label": "Plots & Land", "icon": "plot", "color": "orange"},
+    {"label": "All Properties", "icon": "house"},
+    {"label": "Flats", "icon": "apartment"},
+    {"label": "Independent House", "icon": "house"},
+    {"label": "PG / Hostel", "icon": "bed"},
+    {"label": "Villa", "icon": "villa"},
+    {"label": "Commercial", "icon": "commercial"},
+    {"label": "Serviced Apartment", "icon": "building"},
+    {"label": "Plots & Land", "icon": "plot"},
 ]
 
 # Real, honest claims only — no "Verified" language anywhere on the site
@@ -25,7 +25,7 @@ WHY_CHOOSE_US = [
     {"icon": "heart", "title": "Zero Brokerage", "text": "No hidden charges. Deal directly with owners."},
     {"icon": "chat", "title": "Direct Contact", "text": "Call, WhatsApp or email owners directly — no waiting."},
     {"icon": "lock", "title": "Secure & Safe", "text": "Your data is protected with industry-standard security."},
-    {"icon": "calendar", "title": "Instant Visits", "text": "Schedule a property visit in seconds, no approval wait."},
+    {"icon": "calendar", "title": "Easy Scheduling", "text": "Request a visit in seconds — the owner confirms it directly."},
     {"icon": "map-pin", "title": "Real Listings", "text": "Every listing is posted directly by its actual owner."},
 ]
 
@@ -67,7 +67,7 @@ def home(request):
     saved_ids = _saved_ids_for(request.user)
     featured_properties = [
         _property_card_context(p, saved_ids) for p in
-        Property.objects.filter(status=Property.Status.PUBLISHED).prefetch_related('photos').order_by('-created_at')[:4]
+        Property.objects.filter(status=Property.Status.PUBLISHED).prefetch_related('photos').order_by('-created_at')[:12]
     ]
     context = {
         "property_types": PROPERTY_TYPES,
@@ -115,7 +115,7 @@ ABOUT_VALUES = [
 ABOUT_WHY_CHOOSE = [
     {"icon": "key", "title": "Zero Brokerage", "text": "Save your hard-earned money. Connect directly with property owners."},
     {"icon": "chat", "title": "Direct Contact", "text": "Talk directly with owners. No middlemen, no extra charges."},
-    {"icon": "calendar", "title": "Instant Scheduling", "text": "Book a property visit instantly, with no approval wait."},
+    {"icon": "calendar", "title": "Easy Scheduling", "text": "Request a property visit in seconds — the owner confirms it."},
     {"icon": "lock", "title": "Secure Platform", "text": "Your personal data is protected with industry-leading security."},
     {"icon": "map-pin", "title": "Wide Coverage", "text": "Find properties in 250+ cities across India."},
     {"icon": "headset", "title": "Responsive Support", "text": "Reach our support team any time you need help."},
@@ -128,9 +128,31 @@ HOW_TRUST_WORKS = [
     {"icon": "id-card", "title": "1. Create Account", "text": "Sign up with your name, email and mobile number."},
     {"icon": "house", "title": "2. Real Listings", "text": "Owners publish their own properties directly — no middlemen."},
     {"icon": "chat", "title": "3. Direct Contact", "text": "Reach owners by call, WhatsApp or email, instantly."},
-    {"icon": "calendar", "title": "4. Instant Visits", "text": "Schedule a visit at a time that works for you."},
+    {"icon": "calendar", "title": "4. Request a Visit", "text": "Pick a time that works for you — the owner confirms it."},
     {"icon": "key", "title": "5. Move In", "text": "Finalize directly with the owner — zero brokerage, ever."},
 ]
+
+
+BECOME_HOST_STEPS = [
+    {"icon": "house", "title": "1. Tell us about your property", "text": "Choose a category, add your location and the real details tenants care about."},
+    {"icon": "camera", "title": "2. Make it stand out", "text": "Add real photos, amenities and your contact preferences."},
+    {"icon": "key", "title": "3. Publish and connect", "text": "Set your rent and availability, go live, and hear from tenants directly."},
+]
+
+BECOME_HOST_PERKS = [
+    {"icon": "heart", "title": "Zero brokerage, zero listing fees", "text": "List for free. No commission taken from your rent, ever."},
+    {"icon": "chat", "title": "Direct tenant contact", "text": "Tenants reach you directly by call, WhatsApp or email — no middlemen."},
+    {"icon": "sliders", "title": "You stay in control", "text": "Set your own rent, availability and how tenants can reach you."},
+    {"icon": "headset", "title": "Real support when you need it", "text": "Our team is happy to help if you get stuck putting your listing together."},
+]
+
+
+def become_host(request):
+    context = {
+        "steps": BECOME_HOST_STEPS,
+        "perks": BECOME_HOST_PERKS,
+    }
+    return render(request, "core/become_host.html", context)
 
 
 def about(request):

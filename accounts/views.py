@@ -1,13 +1,16 @@
+from django.conf import settings
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
 from django.shortcuts import redirect, render
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
-from .forms import AdminLoginForm, EmailLoginForm, ForgotPasswordForm, RegisterForm, SetNewPasswordForm
+from .forms import (
+    AdminLoginForm, CompleteProfileForm, EmailLoginForm, ForgotPasswordForm, RegisterForm, SetNewPasswordForm,
+)
 from .models import User
 
 ACCOUNT_TYPES = [
@@ -32,7 +35,7 @@ ACCOUNT_TYPES = [
 ]
 
 REGISTER_PERKS = [
-    {"icon": "shield-check", "title": "100% Verified Platform", "text": "All users and properties are verified for your safety."},
+    {"icon": "shield-check", "title": "Real Listings, Real Owners", "text": "Every listing is posted directly by its actual owner — no middlemen."},
     {"icon": "key", "title": "Zero Brokerage", "text": "Connect directly with owners and save your hard-earned money."},
     {"icon": "chat", "title": "Direct Communication", "text": "Talk directly with owners and schedule visits easily."},
     {"icon": "lock", "title": "Secure & Trusted", "text": "Your data is protected with industry-standard security."},
@@ -91,7 +94,9 @@ def login_view(request):
     else:
         form = EmailLoginForm(request=request)
 
-    return render(request, "accounts/login.html", {"form": form})
+    return render(request, "accounts/login.html", {
+        "form": form, "google_oauth_configured": settings.GOOGLE_OAUTH_CONFIGURED,
+    })
 
 
 def register(request):
@@ -102,7 +107,7 @@ def register(request):
         form = RegisterForm(request.POST)
         if form.is_valid():
             user = form.save()
-            auth_login(request, user)
+            auth_login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             messages.success(request, f'Welcome to Rentora, {user.full_name}!')
             return _redirect_for_role(user.role)
     else:
@@ -112,8 +117,41 @@ def register(request):
         "form": form,
         "account_types": ACCOUNT_TYPES,
         "perks": REGISTER_PERKS,
+        "google_oauth_configured": settings.GOOGLE_OAUTH_CONFIGURED,
     }
     return render(request, "accounts/register.html", context)
+
+
+def google_login_start(request):
+    """Stashes the intended account type in the session, then hands off to
+    allauth's real Google OAuth flow. Kept as our own real URL (rather than
+    linking straight to allauth's) so "Continue with Google" from the
+    Become a Host flow can arrive as an Owner, same as the real register
+    form already supports via ?type=owner."""
+    if not settings.GOOGLE_OAUTH_CONFIGURED:
+        messages.error(request, "Google sign-in isn't set up yet. Please use email and password for now.")
+        return redirect('accounts:register')
+
+    role = request.GET.get('type', User.Role.TENANT)
+    if role in User.PUBLIC_ROLES:
+        request.session['social_signup_role'] = role
+    return redirect(reverse('google_login'))
+
+
+def complete_profile(request):
+    if not request.user.is_authenticated:
+        return redirect('accounts:login')
+
+    if request.method == 'POST':
+        form = CompleteProfileForm(request.POST, instance=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Welcome to Rentora, {request.user.full_name}!')
+            return _redirect_for_role(request.user.role)
+    else:
+        form = CompleteProfileForm(instance=request.user)
+
+    return render(request, "accounts/complete_profile.html", {"form": form})
 
 
 @require_POST

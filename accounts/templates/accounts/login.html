@@ -4,30 +4,14 @@
 {% block title %}Login | Rentora{% endblock %}
 {% block body_class %}auth-body{% endblock %}
 
+{% block header %}{% include "partials/header.html" %}{% endblock %}
+
 {% block content %}
 <div class="auth-shell">
-    {% url 'core:home' as home_url %}
-    <div class="auth-topbar container">
-        <div class="auth-topbar__left">
-            {% include "partials/back_button.html" with fallback_url=home_url %}
-            <a href="{% url 'core:home' %}" class="brand">
-                <svg class="brand__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M3 11.5 12 4l9 7.5" />
-                    <path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" />
-                </svg>
-                <span class="brand__text">
-                    <span class="brand__name">Rentora</span>
-                    <span class="brand__tagline">NO BROKERAGE. ONLY TRUST.</span>
-                </span>
-            </a>
-        </div>
-        <a href="{% url 'accounts:register' %}" class="auth-topbar__link">New to Rentora? <strong>Register</strong> {% include "partials/icon.html" with name="arrow-right" cls="icon-sm" %}</a>
-    </div>
-
     <div class="auth-center">
         <div class="auth-card">
-            <h1 class="auth-title">Welcome Back</h1>
-            <p class="auth-subtitle">Login to manage your properties and conversations.</p>
+            <h1 class="auth-title">Welcome back</h1>
+            <p class="auth-subtitle">Log in to manage your properties and conversations.</p>
 
             <form class="auth-form" method="post" novalidate>
                 {% csrf_token %}
@@ -40,41 +24,44 @@
                 </div>
                 {% endif %}
 
-                <label class="field-label" for="loginEmail">Email Address</label>
-                <div class="field-with-icon">
-                    {% include "partials/icon.html" with name="envelope" cls="icon-sm" %}
-                    {{ form.email }}
+                <div>
+                    <label class="field-label" for="loginEmail">Email Address</label>
+                    <div class="field-with-icon">
+                        {% include "partials/icon.html" with name="envelope" cls="icon-sm" %}
+                        {{ form.email }}
+                    </div>
+                    {% if form.email.errors %}<span class="field-error">{{ form.email.errors.0 }}</span>{% endif %}
                 </div>
-                {% if form.email.errors %}<span class="field-error">{{ form.email.errors.0 }}</span>{% endif %}
 
-                <label class="field-label" for="loginPassword">Password</label>
-                <div class="field-with-icon field-with-icon--toggle">
-                    {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
-                    {{ form.password }}
-                    <button type="button" class="field-toggle js-password-toggle" aria-label="Show password">
-                        {% include "partials/icon.html" with name="eye" cls="icon-sm" %}
-                    </button>
+                <div>
+                    <label class="field-label" for="loginPassword">Password</label>
+                    <div class="field-with-icon field-with-icon--toggle">
+                        {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
+                        {{ form.password }}
+                        <button type="button" class="field-toggle js-password-toggle" aria-label="Show password">
+                            {% include "partials/icon.html" with name="eye" cls="icon-sm" %}
+                        </button>
+                    </div>
+                    {% if form.password.errors %}<span class="field-error">{{ form.password.errors.0 }}</span>{% endif %}
                 </div>
-                {% if form.password.errors %}<span class="field-error">{{ form.password.errors.0 }}</span>{% endif %}
 
                 <div class="auth-form__row">
                     <span></span>
-                    <a href="{% url 'accounts:forgot_password' %}" class="link-more">Forgot Password?</a>
+                    <a href="{% url 'accounts:forgot_password' %}" class="link-more">Forgot password?</a>
                 </div>
 
-                <button type="submit" class="btn btn-primary btn-block">
-                    {% include "partials/icon.html" with name="lock" cls="icon-sm" %}
-                    Login
-                </button>
+                <button type="submit" class="btn btn-primary btn-block">Log In</button>
             </form>
 
-            <div class="auth-divider"><span>New to Rentora?</span></div>
-            <a href="{% url 'accounts:register' %}" class="btn btn-secondary btn-block">Create an Account</a>
+            {% if google_oauth_configured %}
+            <div class="auth-divider"><span>or</span></div>
+            <a href="{% url 'accounts:google_login_start' %}" class="btn btn-secondary btn-block auth-google-btn">
+                {% include "partials/icon.html" with name="google" cls="icon-sm" %}
+                Continue with Google
+            </a>
+            {% endif %}
 
-            <p class="auth-note">
-                {% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}
-                Your information is safe with us. We never share your details.
-            </p>
+            <p class="auth-footer-note">New to Rentora? <a href="{% url 'accounts:register' %}">Create an account</a></p>
         </div>
     </div>
 

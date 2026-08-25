@@ -29,16 +29,6 @@ from .forms import (
 from .models import AuditLog, SupportTicket, log_admin_action
 
 OWNER_COMING_SOON_SECTIONS = {
-    'inquiries': (
-        'Tenant Inquiries',
-        "Inquiry management — reading and responding to tenant messages from your dashboard — is coming in a "
-        "future update. Tenants can already reach you directly since your contact details are shown on your listings.",
-    ),
-    'visits': (
-        'Property Visits',
-        'A dedicated visit calendar — confirming, rescheduling and marking visits complete — is coming in a '
-        'future update. Tenants can already schedule visits directly from your listings.',
-    ),
     'settings': (
         'Settings',
         'Notification, privacy and language preferences are coming in a future update. You can already update '
@@ -78,14 +68,16 @@ def tenant_home(request):
     ]
 
     upcoming_visits = request.user.visits.filter(
-        status=Visit.Status.SCHEDULED, scheduled_at__gte=timezone.now(),
+        status__in=[Visit.Status.PENDING, Visit.Status.SCHEDULED], scheduled_at__gte=timezone.now(),
     ).select_related('property').order_by('scheduled_at')[:3]
 
     context = {
         'tenant_profile': tenant_profile,
         'saved_count': len(saved_ids),
         'active_inquiries_count': request.user.inquiries.filter(status=Inquiry.Status.OPEN).count(),
-        'scheduled_visits_count': request.user.visits.filter(status=Visit.Status.SCHEDULED).count(),
+        'scheduled_visits_count': request.user.visits.filter(
+            status__in=[Visit.Status.PENDING, Visit.Status.SCHEDULED],
+        ).count(),
         'unread_notifications_count': request.user.notifications.filter(is_read=False).count(),
         'recently_viewed': recently_viewed,
         'recommended': recommended,
@@ -219,23 +211,34 @@ def help_support(request):
 def owner_home(request):
     properties = request.user.properties.all()
     now = timezone.now()
+    month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    hour = now.hour
+    greeting = 'Good morning' if hour < 12 else 'Good afternoon' if hour < 17 else 'Good evening'
+
+    open_inquiries = Inquiry.objects.filter(property__owner=request.user, status=Inquiry.Status.OPEN)
     stats = {
         'total_listings': properties.count(),
         'active_listings': properties.filter(status=Property.Status.PUBLISHED).count(),
         'draft_listings': properties.filter(status=Property.Status.DRAFT).count(),
-        'total_inquiries': Inquiry.objects.filter(property__owner=request.user).count(),
+        'new_inquiries': open_inquiries.count(),
         'scheduled_visits': Visit.objects.filter(
-            property__owner=request.user, status=Visit.Status.SCHEDULED, scheduled_at__gte=now,
+            property__owner=request.user, status__in=[Visit.Status.PENDING, Visit.Status.SCHEDULED],
+            scheduled_at__gte=now,
         ).count(),
+        'added_this_month': properties.filter(created_at__gte=month_start).count(),
     }
 
     context = {
+        'greeting': greeting,
         'stats': stats,
-        'recent_properties': properties.prefetch_related('photos')[:5],
+        'recent_properties': properties.prefetch_related('photos').annotate(
+            inquiries_count=Count('inquiries', distinct=True),
+        )[:5],
         'recent_inquiries': Inquiry.objects.filter(property__owner=request.user)
             .select_related('property', 'tenant')[:5],
         'upcoming_visits': Visit.objects.filter(
-            property__owner=request.user, status=Visit.Status.SCHEDULED, scheduled_at__gte=now,
+            property__owner=request.user, status__in=[Visit.Status.PENDING, Visit.Status.SCHEDULED],
+            scheduled_at__gte=now,
         ).select_related('property', 'tenant').order_by('scheduled_at')[:5],
     }
     return render(request, 'dashboard/owner_home.html', context)
@@ -272,6 +275,133 @@ def owner_profile_password(request):
 
 
 @owner_or_hotel_required
+def owner_inquiries(request):
+    all_inquiries = Inquiry.objects.filter(property__owner=request.user).select_related('tenant', 'property')
+    stats = {
+        'total': all_inquiries.count(),
+        'open': all_inquiries.filter(status=Inquiry.Status.OPEN).count(),
+        'closed': all_inquiries.filter(status=Inquiry.Status.CLOSED).count(),
+    }
+
+    queryset = all_inquiries
+    q = request.GET.get('q', '').strip()
+    status = request.GET.get('status', '')
+    if q:
+        queryset = queryset.filter(Q(tenant__full_name__icontains=q) | Q(property__title__icontains=q))
+    if status:
+        queryset = queryset.filter(status=status)
+
+    paginator = Paginator(queryset.order_by('-created_at'), 10)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    carry_params = request.GET.copy()
+    carry_params.pop('page', None)
+
+    return render(request, 'dashboard/owner_inquiries.html', {
+        'inquiries': page_obj,
+        'page_obj': page_obj,
+        'carry_qs': carry_params.urlencode(),
+        'stats': stats,
+        'status_options': Inquiry.Status.choices,
+        'selected_q': q,
+        'selected_status': status,
+    })
+
+
+@owner_or_hotel_required
+@require_POST
+def owner_inquiry_set_status(request, pk, status):
+    inquiry = get_object_or_404(Inquiry, pk=pk, property__owner=request.user)
+    allowed = {Inquiry.Status.OPEN, Inquiry.Status.CLOSED}
+    if status not in allowed:
+        raise Http404('Invalid status change.')
+    inquiry.status = status
+    inquiry.save(update_fields=['status'])
+    messages.success(request, f'Inquiry marked as {inquiry.get_status_display()}.')
+    return redirect('dashboard:owner_inquiries')
+
+
+@owner_or_hotel_required
+def owner_visits(request):
+    all_visits = Visit.objects.filter(property__owner=request.user).select_related('tenant', 'property')
+    stats = {
+        'total': all_visits.count(),
+        'pending': all_visits.filter(status=Visit.Status.PENDING).count(),
+        'scheduled': all_visits.filter(status=Visit.Status.SCHEDULED).count(),
+        'completed': all_visits.filter(status=Visit.Status.COMPLETED).count(),
+        'cancelled': all_visits.filter(status=Visit.Status.CANCELLED).count(),
+    }
+
+    queryset = all_visits
+    q = request.GET.get('q', '').strip()
+    status = request.GET.get('status', '')
+    if q:
+        queryset = queryset.filter(Q(tenant__full_name__icontains=q) | Q(property__title__icontains=q))
+    if status:
+        queryset = queryset.filter(status=status)
+
+    paginator = Paginator(queryset.order_by('-scheduled_at'), 10)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    carry_params = request.GET.copy()
+    carry_params.pop('page', None)
+
+    return render(request, 'dashboard/owner_visits.html', {
+        'visits': page_obj,
+        'page_obj': page_obj,
+        'carry_qs': carry_params.urlencode(),
+        'stats': stats,
+        'status_options': Visit.Status.choices,
+        'selected_q': q,
+        'selected_status': status,
+    })
+
+
+@owner_or_hotel_required
+@require_POST
+def owner_visit_cancel(request, pk):
+    visit = get_object_or_404(Visit, pk=pk, property__owner=request.user)
+    if visit.status == Visit.Status.SCHEDULED:
+        visit.status = Visit.Status.CANCELLED
+        visit.save(update_fields=['status'])
+        notify(
+            visit.tenant, f'Your visit for "{visit.property.title or "a property"}" was cancelled by the owner.',
+            category=Notification.Category.VISIT, url='/tenant/dashboard/visits/',
+        )
+        messages.success(request, 'Visit cancelled.')
+    return redirect('dashboard:owner_visits')
+
+
+@owner_or_hotel_required
+@require_POST
+def owner_visit_approve(request, pk):
+    visit = get_object_or_404(Visit, pk=pk, property__owner=request.user)
+    if visit.status == Visit.Status.PENDING:
+        visit.status = Visit.Status.SCHEDULED
+        visit.save(update_fields=['status'])
+        notify(
+            visit.tenant,
+            f'Your visit for "{visit.property.title or "a property"}" on {visit.scheduled_at:%d %b %Y, %I:%M %p} was confirmed by the owner.',
+            category=Notification.Category.VISIT, url='/tenant/dashboard/visits/',
+        )
+        messages.success(request, 'Visit approved.')
+    return redirect('dashboard:owner_visits')
+
+
+@owner_or_hotel_required
+@require_POST
+def owner_visit_decline(request, pk):
+    visit = get_object_or_404(Visit, pk=pk, property__owner=request.user)
+    if visit.status == Visit.Status.PENDING:
+        visit.status = Visit.Status.CANCELLED
+        visit.save(update_fields=['status'])
+        notify(
+            visit.tenant, f'Your visit request for "{visit.property.title or "a property"}" was declined by the owner.',
+            category=Notification.Category.VISIT, url='/tenant/dashboard/visits/',
+        )
+        messages.success(request, 'Visit declined.')
+    return redirect('dashboard:owner_visits')
+
+
+@owner_or_hotel_required
 def owner_coming_soon(request, section):
     if section not in OWNER_COMING_SOON_SECTIONS:
         raise Http404('Unknown dashboard section.')
@@ -297,7 +427,9 @@ def admin_home(request):
         'active_properties': Property.objects.filter(status=Property.Status.PUBLISHED).count(),
         'draft_properties': Property.objects.filter(status=Property.Status.DRAFT).count(),
         'total_inquiries': Inquiry.objects.count(),
-        'scheduled_visits': Visit.objects.filter(status=Visit.Status.SCHEDULED, scheduled_at__gte=now).count(),
+        'scheduled_visits': Visit.objects.filter(
+            status__in=[Visit.Status.PENDING, Visit.Status.SCHEDULED], scheduled_at__gte=now,
+        ).count(),
         'open_tickets': SupportTicket.objects.filter(status=SupportTicket.Status.OPEN).count(),
     }
 
@@ -640,6 +772,7 @@ def admin_visits(request):
     all_visits = Visit.objects.select_related('tenant', 'property', 'property__owner')
     stats = {
         'total': all_visits.count(),
+        'pending': all_visits.filter(status=Visit.Status.PENDING).count(),
         'scheduled': all_visits.filter(status=Visit.Status.SCHEDULED).count(),
         'completed': all_visits.filter(status=Visit.Status.COMPLETED).count(),
         'cancelled': all_visits.filter(status=Visit.Status.CANCELLED).count(),

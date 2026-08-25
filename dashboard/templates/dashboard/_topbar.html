@@ -14,6 +14,8 @@
         <span class="brand__name">Rentora</span>
     </a>
 
+    {% if dash_page_title %}<span class="dash-topbar__title">{{ dash_page_title }}</span>{% endif %}
+
     <form action="{% url 'properties:search' %}" method="get" class="dash-topbar__search">
         {% include "partials/icon.html" with name="search" cls="icon-sm" %}
         <input type="text" name="q" placeholder="Search by city, area, landmark or property name...">

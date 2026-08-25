@@ -1,48 +1,37 @@
-{% extends "base.html" %}
-{% load static %}
+{% extends "properties/manage/_wizard_base.html" %}
 
 {% block title %}Amenities | Add Listing | Rentora{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/properties.css' %}">
-{% endblock %}
+{% block wizard_card %}
+<h1 class="text-h2">Amenities</h1>
+<p class="wizard-card__subtitle">Select everything available at this property. Optional — you can skip and come back later.</p>
 
-{% block content %}
-<div class="container wizard-shell">
-    {% include "properties/manage/_wizard_head.html" %}
-
-    <div class="wizard-card">
-        <h1 class="text-h2">Amenities</h1>
-        <p class="wizard-card__subtitle">Select everything available at this property. Optional — you can skip and come back later.</p>
-
-        <form method="post" novalidate>
-            {% csrf_token %}
-            {% for group_value, group_label, group_amenities in grouped_amenities %}
-            <div class="option-group-title">{{ group_label }}</div>
-            <div class="option-card-grid">
-                {% for amenity in group_amenities %}
-                <label class="option-card">
-                    <input type="checkbox" name="amenities" value="{{ amenity.id }}" {% if amenity.id in selected_amenity_ids %}checked{% endif %}>
-                    {% include "partials/icon.html" with name=amenity.icon cls="icon-sm" %}
-                    {{ amenity.name }}
-                </label>
-                {% endfor %}
-            </div>
-            {% endfor %}
-
-            <div class="wizard-actions">
-                <a href="{{ prev_url }}" class="btn btn-secondary">
-                    {% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}
-                    Back
-                </a>
-                <div class="wizard-actions__right">
-                    <button type="submit" class="btn btn-primary">
-                        Save &amp; Continue
-                        {% include "partials/icon.html" with name="arrow-right" cls="icon-sm" %}
-                    </button>
-                </div>
-            </div>
-        </form>
+<form method="post" novalidate>
+    {% csrf_token %}
+    {% for group_value, group_label, group_amenities in grouped_amenities %}
+    <div class="option-group-title">{{ group_label }}</div>
+    <div class="option-card-grid">
+        {% for amenity in group_amenities %}
+        <label class="option-card">
+            <input type="checkbox" name="amenities" value="{{ amenity.id }}" {% if amenity.id in selected_amenity_ids %}checked{% endif %}>
+            {% include "partials/icon.html" with name=amenity.icon cls="icon-sm" %}
+            {{ amenity.name }}
+        </label>
+        {% endfor %}
     </div>
-</div>
+    {% endfor %}
+
+    <div class="wizard-actions">
+        <a href="{{ prev_url }}" class="btn btn-secondary">
+            {% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}
+            Back
+        </a>
+        <div class="wizard-actions__right">
+            <button type="submit" class="btn btn-primary">
+                Save &amp; Continue
+                {% include "partials/icon.html" with name="arrow-right" cls="icon-sm" %}
+            </button>
+        </div>
+    </div>
+</form>
 {% endblock %}

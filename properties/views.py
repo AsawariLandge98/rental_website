@@ -93,14 +93,30 @@ def _owner_contact_options(property_obj):
     return options
 
 
+PRICE_SLIDER_MIN = 0
+PRICE_SLIDER_MAX = 100000
+
+BEDROOM_OPTIONS = [
+    ('studio', '1 RK / Studio'),
+    ('1', '1 BHK'),
+    ('2', '2 BHK'),
+    ('3', '3 BHK'),
+    ('4plus', '4+ BHK'),
+]
+
+
 def search_results(request):
     queryset = Property.objects.filter(status=Property.Status.PUBLISHED).prefetch_related('photos')
 
     q = request.GET.get('q', '').strip()
     city = request.GET.get('city')
     area = request.GET.get('area')
-    property_type = request.GET.get('property_type')
     budget = request.GET.get('budget')
+    property_types = [v for v in request.GET.getlist('property_type') if v]
+    furnishing = [v for v in request.GET.getlist('furnishing') if v]
+    bedrooms = [v for v in request.GET.getlist('bedrooms') if v]
+    price_min = request.GET.get('price_min', '')
+    price_max = request.GET.get('price_max', '')
 
     if q:
         queryset = queryset.filter(
@@ -110,14 +126,30 @@ def search_results(request):
         queryset = queryset.filter(city__iexact=city)
     if area:
         queryset = queryset.filter(area_locality__icontains=area)
-    if property_type:
-        queryset = queryset.filter(property_type=property_type)
+    if property_types:
+        queryset = queryset.filter(property_type__in=property_types)
     if budget:
         low, _, high = budget.partition('-')
         if low:
             queryset = queryset.filter(monthly_rent__gte=int(low))
         if high:
             queryset = queryset.filter(monthly_rent__lte=int(high))
+    if price_min.isdigit() and int(price_min) > PRICE_SLIDER_MIN:
+        queryset = queryset.filter(monthly_rent__gte=int(price_min))
+    if price_max.isdigit() and int(price_max) < PRICE_SLIDER_MAX:
+        queryset = queryset.filter(monthly_rent__lte=int(price_max))
+    if furnishing:
+        queryset = queryset.filter(furnishing_status__in=furnishing)
+    if bedrooms:
+        bedroom_filter = Q()
+        for value in bedrooms:
+            if value == 'studio':
+                bedroom_filter |= Q(property_type=Property.PropertyType.STUDIO) | Q(bedrooms=0)
+            elif value == '4plus':
+                bedroom_filter |= Q(bedrooms__gte=4)
+            elif value.isdigit():
+                bedroom_filter |= Q(bedrooms=int(value))
+        queryset = queryset.filter(bedroom_filter)
 
     sort = request.GET.get('sort', 'newest')
     sort_field = {'newest': '-created_at', 'price_asc': 'monthly_rent', 'price_desc': '-monthly_rent'}.get(sort, '-created_at')
@@ -147,8 +179,16 @@ def search_results(request):
         'selected_q': q,
         'selected_city': city or '',
         'selected_area': area or '',
-        'selected_property_type': property_type or '',
+        'selected_property_types': property_types,
         'selected_budget': budget or '',
+        'bedroom_options': BEDROOM_OPTIONS,
+        'selected_bedrooms': bedrooms,
+        'furnishing_options': Property.FurnishingStatus.choices,
+        'selected_furnishing': furnishing,
+        'selected_price_min': int(price_min) if price_min.isdigit() else PRICE_SLIDER_MIN,
+        'selected_price_max': int(price_max) if price_max.isdigit() else PRICE_SLIDER_MAX,
+        'price_slider_min': PRICE_SLIDER_MIN,
+        'price_slider_max': PRICE_SLIDER_MAX,
     }
     return render(request, "properties/search_results.html", context)
 

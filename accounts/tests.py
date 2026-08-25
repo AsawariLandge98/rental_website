@@ -157,3 +157,60 @@ class ForgotPasswordTests(TestCase):
         response = fresh_client.get(reset_path)
         response = fresh_client.get(response.url if response.status_code == 302 else reset_path)
         self.assertContains(response, 'Link Expired')
+
+
+class GoogleSignInTests(TestCase):
+    """Real credentials are blank in dev/test, so google_login_start should
+    honestly refuse rather than pretend to work — this is exactly what
+    settings.GOOGLE_OAUTH_CONFIGURED exists to control."""
+
+    def test_google_login_start_redirects_to_register_when_not_configured(self):
+        response = self.client.get('/accounts/google/', {'type': 'owner'})
+        self.assertRedirects(response, '/accounts/register/')
+
+    def test_google_login_start_does_not_stash_invalid_role(self):
+        self.client.get('/accounts/google/', {'type': 'admin'})
+        self.assertNotIn('social_signup_role', self.client.session)
+
+
+class CompleteProfileTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email='googleuser@example.com', full_name='Google User', role=User.Role.OWNER,
+        )
+        self.user.set_unusable_password()
+        self.user.save()
+
+    def test_anonymous_user_redirected_to_login(self):
+        response = self.client.get('/accounts/complete-profile/')
+        self.assertRedirects(response, '/accounts/login/')
+
+    def test_valid_submission_saves_name_and_dob_and_redirects_to_dashboard(self):
+        self.client.force_login(self.user)
+        response = self.client.post('/accounts/complete-profile/', {
+            'full_name': 'Google User Updated', 'date_of_birth': '1995-06-15',
+        })
+        self.assertRedirects(response, '/owner/dashboard/')
+        self.user.refresh_from_db()
+        self.assertEqual(self.user.full_name, 'Google User Updated')
+        self.assertEqual(str(self.user.date_of_birth), '1995-06-15')
+
+    def test_underage_date_of_birth_rejected(self):
+        self.client.force_login(self.user)
+        from datetime import date, timedelta
+        too_young = (date.today() - timedelta(days=17 * 365)).isoformat()
+        response = self.client.post('/accounts/complete-profile/', {
+            'full_name': 'Google User', 'date_of_birth': too_young,
+        })
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertIsNone(self.user.date_of_birth)
+
+    def test_blank_full_name_rejected(self):
+        self.client.force_login(self.user)
+        response = self.client.post('/accounts/complete-profile/', {
+            'full_name': '', 'date_of_birth': '1995-06-15',
+        })
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertIsNone(self.user.date_of_birth)

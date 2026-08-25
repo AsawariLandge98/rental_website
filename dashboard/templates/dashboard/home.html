@@ -29,7 +29,7 @@
         <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="calendar" %}</span>
         <div>
             <div class="dash-stat-card__value">{{ scheduled_visits_count }}</div>
-            <div class="dash-stat-card__label">Scheduled Visits</div>
+            <div class="dash-stat-card__label">Upcoming Visits</div>
         </div>
     </div>
     <div class="dash-stat-card">
@@ -104,7 +104,7 @@
                 <img src="{{ visit.property.cover_photo.image.url }}" alt="" class="dash-visit-item__thumb">
                 {% endif %}
                 <div class="dash-visit-item__body">
-                    <div class="dash-visit-item__title">{{ visit.property.title }}</div>
+                    <div class="dash-visit-item__title">{{ visit.property.title }} <span class="status-pill status-pill--{{ visit.status }}">{{ visit.get_status_display }}</span></div>
                     <div class="dash-visit-item__meta">{{ visit.property.short_location }}</div>
                     <div class="dash-visit-item__meta">{{ visit.scheduled_at|date:"d M Y \a\t g:i A" }}</div>
                 </div>

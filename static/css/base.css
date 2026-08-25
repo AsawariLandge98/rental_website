@@ -286,6 +286,7 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
 .field-with-icon--toggle .field { padding-right: 40px; }
 
 .field-label { display: block; font: 600 13px var(--font-body); color: var(--color-ink); margin-bottom: var(--space-2); }
+.field-required { color: var(--color-error); }
 
 .checkbox-row { display: flex; align-items: center; gap: var(--space-2); font-size: 14px; color: var(--color-ink); }
 .checkbox-row input { width: 16px; height: 16px; accent-color: var(--color-blue-500); flex-shrink: 0; }
@@ -310,6 +311,7 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
   font: 500 13px/20px var(--font-body);
 }
 .form-error-banner svg { flex-shrink: 0; width: 16px; height: 16px; }
+.form-error-banner--stacked { align-items: flex-start; }
 
 .messages { display: flex; flex-direction: column; gap: var(--space-2); }
 .alert {
@@ -371,6 +373,30 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
 .badge svg { width: 12px; height: 12px; }
 
 /* ==========================================================================
+   Status pills (properties, inquiries, visits, tickets, verification)
+   Shared here rather than in properties.css/dashboard.css since dashboard
+   pages that only load dashboard.css (e.g. the owner overview) also render
+   property-status pills — a single canonical definition avoids the pill
+   rendering with no shape/color wherever its "home" stylesheet isn't loaded.
+   ========================================================================== */
+.status-pill { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: var(--radius-pill); font: 600 11px var(--font-body); text-transform: uppercase; letter-spacing: .03em; }
+.status-pill--draft { background: var(--color-offwhite); color: var(--color-slate); }
+.status-pill--published { background: #E9F9EF; color: var(--color-success); }
+.status-pill--paused { background: #FEF6E7; color: #8A5A00; }
+.status-pill--archived { background: #FDECEC; color: var(--color-error); }
+.status-pill--rented { background: var(--color-blue-50); color: var(--color-blue-700); }
+.status-pill--verify-pending { background: #FEF6E7; color: #8A5A00; }
+.status-pill--verify-verified { background: #E9F9EF; color: var(--color-success); }
+.status-pill--verify-rejected { background: #FDECEC; color: var(--color-error); }
+.status-pill--open { background: var(--color-blue-50); color: var(--color-blue-700); }
+.status-pill--closed { background: var(--color-offwhite); color: var(--color-slate); }
+.status-pill--pending { background: #FEF6E7; color: #8A5A00; }
+.status-pill--scheduled { background: var(--color-blue-50); color: var(--color-blue-700); }
+.status-pill--completed { background: #E9F9EF; color: var(--color-success); }
+.status-pill--cancelled { background: #FDECEC; color: var(--color-error); }
+.status-pill--resolved { background: #E9F9EF; color: var(--color-success); }
+
+/* ==========================================================================
    Property Card (repeating component: Homepage, Search, Saved, Similar)
    ========================================================================== */
 .property-card {
@@ -381,6 +407,7 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
   box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
+  height: 100%;
   transition: box-shadow var(--transition-base) var(--ease), transform var(--transition-base) var(--ease);
 }
 .property-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
@@ -449,7 +476,7 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
 .property-card__save.is-saved { color: var(--color-blue-500); }
 .property-card__save.is-saved svg { fill: currentColor; }
 
-.property-card__body { padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
+.property-card__body { flex: 1; padding: var(--space-4); display: flex; flex-direction: column; gap: var(--space-2); }
 .property-card__title { font: 600 16px/22px var(--font-heading); color: var(--color-ink); }
 .property-card__title a { color: inherit; }
 .property-card__title a:hover { color: var(--color-blue-500); }
@@ -459,8 +486,10 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
   gap: 4px;
   font-size: 13px;
   color: var(--color-slate);
+  overflow: hidden;
 }
 .property-card__location svg { width: 14px; height: 14px; flex-shrink: 0; }
+.property-card__location span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .property-card__specs {
   display: flex;
@@ -476,6 +505,7 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
   display: flex;
   align-items: center;
   justify-content: space-between;
+  margin-top: auto;
   padding-top: var(--space-2);
   border-top: 1px solid var(--color-border);
 }
@@ -555,13 +585,14 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
 .main-nav {
   display: flex;
   align-items: center;
-  gap: var(--space-6);
+  gap: clamp(12px, 1.8vw, var(--space-6));
 }
 .main-nav a {
   font: 500 14px/20px var(--font-body);
   color: var(--color-ink);
   padding-block: 4px;
   border-bottom: 2px solid transparent;
+  white-space: nowrap;
 }
 .main-nav a:hover { color: var(--color-blue-500); }
 .main-nav a.is-active {
@@ -575,6 +606,7 @@ h3, .text-h3 { font: 600 clamp(1.0625rem, 1rem + 0.25vw, 1.125rem)/1.4 var(--fon
   align-items: center;
   gap: var(--space-3);
 }
+.header-become-host { white-space: nowrap; font: 600 14px var(--font-body); }
 .icon-btn--bell { display: none; }
 
 .header-saved svg { color: var(--color-blue-500); }

@@ -44,21 +44,28 @@
   max-width: 440px;
   background: var(--color-white);
   border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-lg);
-  padding: var(--space-8);
+  border-radius: 20px;
+  box-shadow: 0 20px 50px rgba(10, 38, 71, 0.10), 0 2px 8px rgba(10, 38, 71, 0.06);
+  padding: 40px;
 }
-.auth-title { text-align: center; margin-bottom: var(--space-2); }
-.auth-subtitle { text-align: center; color: var(--color-slate); font-size: 14px; margin-bottom: var(--space-6); }
+.auth-card--wide { max-width: 480px; }
+.auth-title { text-align: center; margin-bottom: var(--space-2); font-size: clamp(1.375rem, 1.25rem + 0.4vw, 1.625rem); }
+.auth-subtitle { text-align: center; color: var(--color-slate); font-size: 14px; line-height: 20px; margin-bottom: var(--space-8); }
 
 .auth-form { display: flex; flex-direction: column; gap: var(--space-4); }
 .auth-form__row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-top: calc(-1 * var(--space-2)); }
-.auth-form__grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); }
-.auth-form__grid-full { grid-column: 1 / -1; }
+
+.auth-card .field { padding: 13px 14px; border-radius: 10px; }
+.auth-card .field-with-icon .field { padding-left: 42px; }
+.auth-card .btn-block { padding: 13px 20px; border-radius: 10px; font-size: 15px; }
 
 .auth-divider { display: flex; align-items: center; gap: var(--space-3); margin-block: var(--space-6); }
 .auth-divider::before, .auth-divider::after { content: ''; flex: 1; height: 1px; background: var(--color-border); }
 .auth-divider span { font-size: 12px; color: var(--color-slate); white-space: nowrap; }
+
+.auth-google-btn { color: var(--color-ink); border-color: var(--color-border); gap: var(--space-2); }
+.auth-google-btn:hover { background: var(--color-offwhite); }
+.auth-google-btn svg { width: 18px; height: 18px; }
 
 .auth-note {
   display: flex;
@@ -72,97 +79,66 @@
 }
 .auth-note svg { flex-shrink: 0; color: var(--color-slate); }
 
+.auth-footer-note { text-align: center; font-size: 14px; color: var(--color-slate); margin-top: var(--space-6); }
+.auth-footer-note a { color: var(--color-blue-500); font-weight: 600; }
+.auth-footer-note a:hover { text-decoration: underline; }
+
 .auth-section-title {
-  font: 600 13px var(--font-body);
+  font: 600 12px var(--font-body);
   color: var(--color-slate);
   text-transform: uppercase;
-  letter-spacing: .04em;
-  padding-top: var(--space-6);
-  padding-bottom: var(--space-4);
-  border-top: 1px solid var(--color-border);
-  margin-top: var(--space-6);
+  letter-spacing: .05em;
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-1);
 }
-.auth-section-title:first-of-type { margin-top: 0; border-top: none; padding-top: 0; }
 
 /* ==========================================================================
-   Register — split screen
+   Register — account type selector (vertical, compact rows)
    ========================================================================== */
-.register-shell { display: grid; grid-template-columns: 420px 1fr; min-height: 100vh; }
-
-.register-aside {
-  background: linear-gradient(180deg, var(--color-blue-50) 0%, #DCEAFB 100%);
-  padding: var(--space-8) var(--space-6);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-6);
-}
-.register-aside__copy h1 { margin-bottom: var(--space-3); }
-.register-aside__copy p { color: var(--color-slate); font-size: 14px; line-height: 22px; }
-.register-aside__perks { display: flex; flex-direction: column; gap: var(--space-4); }
-.perk-item { display: flex; gap: var(--space-3); align-items: flex-start; }
-.perk-item__icon {
-  width: 36px; height: 36px; flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--color-white);
-  color: var(--color-blue-500);
-  display: flex; align-items: center; justify-content: center;
-  box-shadow: var(--shadow-card);
-}
-.perk-item strong { display: block; font-size: 13px; margin-bottom: 2px; }
-.perk-item p { font-size: 12px; color: var(--color-slate); line-height: 18px; }
-.register-aside__img {
-  margin-top: auto;
-  aspect-ratio: 4 / 3;
-  border-radius: var(--radius-card);
-  background-size: cover;
-  background-position: center;
-}
-
-.register-main { padding-inline: var(--space-8); padding-bottom: var(--space-12); overflow-x: hidden; }
-.register-card { max-width: 720px; margin-inline: auto; padding-block: var(--space-4) var(--space-12); }
-.register-card__head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); flex-wrap: wrap; margin-bottom: var(--space-2); }
-.register-card__head h1 { margin-bottom: 2px; }
-
-.account-type-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); margin-bottom: var(--space-2); }
-.account-type-card {
+.account-type-list { display: flex; flex-direction: column; gap: var(--space-3); margin-bottom: var(--space-2); }
+.account-type-row {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
   text-align: left;
   background: var(--color-white);
-  border: 2px solid var(--color-border);
-  border-radius: var(--radius-card);
-  padding: var(--space-5);
+  border: 1.5px solid var(--color-border);
+  border-radius: 12px;
+  padding: var(--space-3) var(--space-4);
   transition: border-color .15s ease, background .15s ease;
 }
-.account-type-card:hover { border-color: var(--color-blue-300); }
-.account-type-card.is-selected { border-color: var(--color-blue-500); background: var(--color-blue-50); }
-.account-type-card__radio {
-  position: absolute;
-  top: var(--space-3);
-  right: var(--space-3);
-  width: 22px; height: 22px;
+.account-type-row:hover { border-color: var(--color-blue-300); }
+.account-type-row.is-selected { border-color: var(--color-navy-900); background: var(--color-blue-50); }
+.account-type-row__icon {
+  width: 38px; height: 38px; flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-offwhite);
+  color: var(--color-blue-500);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .15s ease, color .15s ease;
+}
+.account-type-row.is-selected .account-type-row__icon { background: var(--color-navy-900); color: var(--color-white); }
+.account-type-row__text { flex: 1; min-width: 0; }
+.account-type-row__text strong { display: block; font: 600 14px var(--font-heading); }
+.account-type-row__text p { font-size: 12px; color: var(--color-slate); line-height: 17px; margin-top: 1px; }
+.account-type-row__radio {
+  width: 20px; height: 20px; flex-shrink: 0;
   border-radius: 50%;
   border: 2px solid var(--color-border);
   background: var(--color-white);
   display: flex; align-items: center; justify-content: center;
   color: transparent;
+  transition: background .15s ease, border-color .15s ease;
 }
-.account-type-card__radio svg { width: 12px; height: 12px; opacity: 0; transition: opacity .15s ease; }
-.account-type-card.is-selected .account-type-card__radio {
-  background: var(--color-blue-500);
-  border-color: var(--color-blue-500);
+.account-type-row__radio svg { width: 11px; height: 11px; opacity: 0; transition: opacity .15s ease; }
+.account-type-row.is-selected .account-type-row__radio {
+  background: var(--color-navy-900);
+  border-color: var(--color-navy-900);
   color: var(--color-white);
 }
-.account-type-card.is-selected .account-type-card__radio svg { opacity: 1; }
-.account-type-card__icon {
-  width: 48px; height: 48px;
-  border-radius: 50%;
-  background: var(--color-blue-50);
-  color: var(--color-blue-500);
-  display: flex; align-items: center; justify-content: center;
-  margin-bottom: var(--space-3);
-}
-.account-type-card strong { display: block; font: 600 15px var(--font-heading); margin-bottom: 4px; }
-.account-type-card p { font-size: 13px; color: var(--color-slate); line-height: 19px; }
+.account-type-row.is-selected .account-type-row__radio svg { opacity: 1; }
 
 /* ==========================================================================
    Forgot Password
@@ -400,13 +376,6 @@
    Responsive
    ========================================================================== */
 @media (max-width: 1023px) {
-  .register-shell { grid-template-columns: 1fr; }
-  .register-aside { flex-direction: row; flex-wrap: wrap; align-items: center; gap: var(--space-6); padding: var(--space-6); }
-  .register-aside__perks { flex-direction: row; flex-wrap: wrap; flex: 1; }
-  .perk-item { flex: 1 1 220px; }
-  .register-aside__img { display: none; }
-  .register-main { padding-inline: var(--space-4); }
-
   .fp-steps { flex-direction: column; align-items: stretch; }
   .fp-step-card { max-width: none; }
   .fp-connector { display: none; }
@@ -421,13 +390,6 @@
   .auth-topbar--plain { padding-inline: var(--space-4); }
   .auth-topbar__link strong { display: none; }
   .auth-card { padding: var(--space-6) var(--space-5); }
-
-  .register-aside { flex-direction: column; align-items: stretch; text-align: left; }
-  .register-aside__perks { flex-direction: column; }
-  .account-type-grid { grid-template-columns: 1fr; }
-  .auth-form__grid { grid-template-columns: 1fr; }
-  .register-card__head { flex-direction: column; }
-  .step-indicator--compact { align-self: flex-start; }
 
   .fp-hero { padding-block: var(--space-6); }
   .step-indicator__line { min-width: 24px; }

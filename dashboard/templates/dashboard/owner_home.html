@@ -5,45 +5,48 @@
 {% block body_class %}page-dash-owner-home{% endblock %}
 
 {% block content %}
-<div class="dash-page-head">
-    <h1 class="text-h2">Welcome back, {{ user.full_name|default:user.email|truncatechars:20 }} 👋</h1>
-    <p>Here's what's happening with your properties today.</p>
+<div class="dash-welcome">
+    <div>
+        <h1 class="text-h2">{{ greeting }}, {{ user.full_name|default:user.email|truncatechars:20 }} <span class="wave">👋</span></h1>
+        <p>Here's what's happening with your properties today.</p>
+    </div>
+    <a href="{% url 'properties:start_listing' %}" class="btn btn-primary">
+        {% include "partials/icon.html" with name="plus-circle" cls="icon-sm" %}
+        Add Property
+    </a>
 </div>
 
 <div class="dash-stats">
-    <div class="dash-stat-card">
+    <div class="dash-stat-card dash-stat-card--kpi dash-stat-card--primary">
         <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="building" %}</span>
         <div>
+            <div class="dash-stat-card__label">Total Properties</div>
             <div class="dash-stat-card__value">{{ stats.total_listings }}</div>
-            <div class="dash-stat-card__label">Total Listings</div>
+            {% if stats.added_this_month %}<div class="dash-stat-card__trend">+{{ stats.added_this_month }} this month</div>{% endif %}
         </div>
     </div>
-    <div class="dash-stat-card">
+    <div class="dash-stat-card dash-stat-card--kpi dash-stat-card--success">
         <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="check" %}</span>
         <div>
-            <div class="dash-stat-card__value">{{ stats.active_listings }}</div>
             <div class="dash-stat-card__label">Active Listings</div>
+            <div class="dash-stat-card__value">{{ stats.active_listings }}</div>
+            <div class="dash-stat-card__trend">{{ stats.draft_listings }} in draft</div>
         </div>
     </div>
-    <div class="dash-stat-card">
-        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="document" %}</span>
-        <div>
-            <div class="dash-stat-card__value">{{ stats.draft_listings }}</div>
-            <div class="dash-stat-card__label">Draft Listings</div>
-        </div>
-    </div>
-    <div class="dash-stat-card">
+    <div class="dash-stat-card dash-stat-card--kpi dash-stat-card--pink">
         <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="chat" %}</span>
         <div>
-            <div class="dash-stat-card__value">{{ stats.total_inquiries }}</div>
-            <div class="dash-stat-card__label">Total Inquiries</div>
+            <div class="dash-stat-card__label">New Inquiries</div>
+            <div class="dash-stat-card__value">{{ stats.new_inquiries }}</div>
+            <div class="dash-stat-card__trend">Awaiting your response</div>
         </div>
     </div>
-    <div class="dash-stat-card">
+    <div class="dash-stat-card dash-stat-card--kpi dash-stat-card--teal">
         <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="calendar" %}</span>
         <div>
+            <div class="dash-stat-card__label">Upcoming Visits</div>
             <div class="dash-stat-card__value">{{ stats.scheduled_visits }}</div>
-            <div class="dash-stat-card__label">Scheduled Visits</div>
+            <div class="dash-stat-card__trend">Pending &amp; scheduled</div>
         </div>
     </div>
 </div>
@@ -57,35 +60,38 @@
             </div>
             {% if recent_properties %}
             {% for property in recent_properties %}
-            <div class="dash-visit-item">
+            <div class="dash-property-row">
                 {% if property.cover_photo %}
-                <img src="{{ property.cover_photo.image.url }}" alt="" class="dash-visit-item__thumb">
+                <img src="{{ property.cover_photo.image.url }}" alt="" class="dash-property-row__thumb">
+                {% else %}
+                <span class="dash-property-row__thumb dash-property-row__thumb--empty">{% include "partials/icon.html" with name="building" cls="icon-sm" %}</span>
                 {% endif %}
-                <div class="dash-visit-item__body">
-                    <div class="dash-visit-item__title">{{ property.title|default:"Untitled draft" }}</div>
-                    <div class="dash-visit-item__meta">{{ property.short_location }}{% if property.monthly_rent %} &middot; &#8377;{{ property.monthly_rent|floatformat:"0"|intcomma }}/month{% endif %}</div>
+                <div class="dash-property-row__body">
+                    <div class="dash-property-row__title">{{ property.title|default:"Untitled draft" }}</div>
+                    <div class="dash-property-row__location">
+                        <svg class="dash-pin-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M10 2a6 6 0 0 0-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 0 0-6-6Zm0 8.25A2.25 2.25 0 1 1 10 5.75a2.25 2.25 0 0 1 0 4.5Z"/></svg>
+                        {{ property.short_location }}
+                    </div>
+                    {% if property.monthly_rent %}<div class="dash-property-row__price">&#8377;{{ property.monthly_rent|floatformat:"0"|intcomma }} / month</div>{% endif %}
                 </div>
+                <span class="dash-property-row__inquiries">{% include "partials/icon.html" with name="chat" cls="icon-sm" %} {{ property.inquiries_count }}</span>
                 <span class="status-pill status-pill--{{ property.status }}">{{ property.get_status_display }}</span>
+                <a href="{% url 'properties:manage_step' property.pk 'property-info' %}" class="dash-property-row__manage" aria-label="Manage {{ property.title|default:'this property' }}">
+                    <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="10" cy="4" r="1.6"></circle><circle cx="10" cy="10" r="1.6"></circle><circle cx="10" cy="16" r="1.6"></circle></svg>
+                </a>
             </div>
             {% endfor %}
             {% else %}
             <div class="dash-empty">
-                {% include "partials/icon.html" with name="building" %}
-                <p>You haven't listed a property yet.</p>
-                <a href="{% url 'properties:start_listing' %}" class="btn btn-primary btn-sm">Add New Property</a>
+                <span class="dash-empty__icon">{% include "partials/icon.html" with name="building" %}</span>
+                <h3>No properties yet</h3>
+                <p>Start listing your first property and reach potential tenants.</p>
+                <a href="{% url 'properties:start_listing' %}" class="btn btn-primary btn-sm">
+                    {% include "partials/icon.html" with name="plus-circle" cls="icon-sm" %}
+                    Add Your First Property
+                </a>
             </div>
             {% endif %}
-        </div>
-
-        <div class="dash-section">
-            <h2 class="text-h3" style="margin-bottom: var(--space-4);">Quick Actions</h2>
-            <div class="dash-quick-actions">
-                <a href="{% url 'properties:start_listing' %}">{% include "partials/icon.html" with name="plus-circle" %}Add Property</a>
-                <a href="{% url 'properties:my_listings' %}">{% include "partials/icon.html" with name="building" %}My Properties</a>
-                <a href="{% url 'dashboard:owner_inquiries' %}">{% include "partials/icon.html" with name="chat" %}View Inquiries</a>
-                <a href="{% url 'dashboard:owner_visits' %}">{% include "partials/icon.html" with name="calendar" %}Property Visits</a>
-                <a href="{% url 'subscriptions:plan_list' %}">{% include "partials/icon.html" with name="star" %}Upgrade Plan</a>
-            </div>
         </div>
     </div>
 
@@ -97,15 +103,19 @@
             </div>
             {% for inquiry in recent_inquiries %}
             <div class="dash-notif-list-item">
-                <span class="dash-stat-card__icon" style="width:32px;height:32px;">{% include "partials/icon.html" with name="chat" cls="icon-sm" %}</span>
+                <span class="dash-inquiry-avatar">{{ inquiry.tenant.full_name|first|upper }}</span>
                 <div class="dash-visit-item__body">
-                    <div style="font-size:13px;"><strong>{{ inquiry.tenant.full_name }}</strong> &middot; {{ inquiry.property.title|default:"Untitled draft" }}</div>
+                    <div class="dash-inquiry-title"><strong>{{ inquiry.tenant.full_name }}</strong> &middot; {{ inquiry.property.title|default:"Untitled draft" }}</div>
+                    {% if inquiry.message %}<div class="dash-inquiry-message">&ldquo;{{ inquiry.message|truncatechars:48 }}&rdquo;</div>{% endif %}
                     <div class="dash-visit-item__meta">{{ inquiry.created_at|timesince }} ago</div>
                 </div>
                 <span class="status-pill status-pill--{{ inquiry.status }}">{{ inquiry.get_status_display }}</span>
             </div>
             {% empty %}
-            <p class="slate" style="font-size:13px;">No inquiries yet.</p>
+            <div class="dash-empty dash-empty--compact">
+                <span class="dash-empty__icon">{% include "partials/icon.html" with name="chat" %}</span>
+                <p>No inquiries yet.</p>
+            </div>
             {% endfor %}
         </div>
 
@@ -115,19 +125,56 @@
                 <a href="{% url 'dashboard:owner_visits' %}" class="link-more">View All</a>
             </div>
             {% for visit in upcoming_visits %}
-            <div class="dash-visit-item">
-                {% if visit.property.cover_photo %}
-                <img src="{{ visit.property.cover_photo.image.url }}" alt="" class="dash-visit-item__thumb">
-                {% endif %}
+            <div class="dash-visit-item dash-visit-item--compact">
+                <span class="dash-visit-item__icon">{% include "partials/icon.html" with name="calendar" cls="icon-sm" %}</span>
                 <div class="dash-visit-item__body">
                     <div class="dash-visit-item__title">{{ visit.tenant.full_name }}</div>
                     <div class="dash-visit-item__meta">{{ visit.property.title|default:"Untitled draft" }}</div>
-                    <div class="dash-visit-item__meta">{{ visit.scheduled_at|date:"d M Y \a\t g:i A" }}</div>
+                </div>
+                <div class="dash-visit-item__when">
+                    <div class="dash-visit-item__date">{{ visit.scheduled_at|date:"d M Y" }}</div>
+                    <div class="dash-visit-item__time">{{ visit.scheduled_at|date:"g:i A" }}</div>
+                    <span class="status-pill status-pill--{{ visit.status }}">{{ visit.get_status_display }}</span>
                 </div>
             </div>
             {% empty %}
-            <p class="slate" style="font-size:13px;">No visits scheduled yet.</p>
+            <div class="dash-empty dash-empty--compact">
+                <span class="dash-empty__icon">{% include "partials/icon.html" with name="calendar" %}</span>
+                <p>No visits scheduled yet.</p>
+            </div>
             {% endfor %}
+        </div>
+
+        <div class="dash-section">
+            <h2 class="text-h3" style="margin-bottom: var(--space-4);">Quick Actions</h2>
+            <div class="dash-quick-actions">
+                <a href="{% url 'properties:start_listing' %}">
+                    <span class="dash-quick-actions__icon">{% include "partials/icon.html" with name="plus-circle" %}</span>
+                    <span class="dash-quick-actions__label">Add Property</span>
+                </a>
+                <a href="{% url 'properties:my_listings' %}">
+                    <span class="dash-quick-actions__icon dash-quick-actions__icon--navy">{% include "partials/icon.html" with name="building" %}</span>
+                    <span class="dash-quick-actions__label">My Properties</span>
+                </a>
+                <a href="{% url 'dashboard:owner_inquiries' %}">
+                    <span class="dash-quick-actions__icon dash-quick-actions__icon--amber">
+                        {% include "partials/icon.html" with name="chat" %}
+                        {% if stats.new_inquiries %}<span class="dash-quick-actions__badge">{{ stats.new_inquiries }}</span>{% endif %}
+                    </span>
+                    <span class="dash-quick-actions__label">View Inquiries</span>
+                </a>
+                <a href="{% url 'dashboard:owner_visits' %}">
+                    <span class="dash-quick-actions__icon dash-quick-actions__icon--blue">
+                        {% include "partials/icon.html" with name="calendar" %}
+                        {% if stats.scheduled_visits %}<span class="dash-quick-actions__badge">{{ stats.scheduled_visits }}</span>{% endif %}
+                    </span>
+                    <span class="dash-quick-actions__label">Property Visits</span>
+                </a>
+                <a href="{% url 'subscriptions:plan_list' %}">
+                    <span class="dash-quick-actions__icon dash-quick-actions__icon--success">{% include "partials/icon.html" with name="star" %}</span>
+                    <span class="dash-quick-actions__label">Upgrade Plan</span>
+                </a>
+            </div>
         </div>
     </div>
 </div>

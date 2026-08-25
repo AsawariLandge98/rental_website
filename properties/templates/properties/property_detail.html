@@ -202,17 +202,25 @@
                     <div class="drow"><dt>Available From</dt><dd>{{ rent_details.available_from }}</dd></div>
                 </dl>
                 {% if contact_options %}
-                <button type="button" class="btn btn-primary btn-block js-contact-trigger" {% if user.is_authenticated and user.role == "tenant" %}data-inquiry-url="{% url 'properties:send_inquiry' property.id %}"{% endif %}>
+                <button type="button" class="btn btn-primary btn-block js-contact-trigger">
                     {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
                     Contact Owner
                 </button>
                 {% endif %}
                 {% if user.is_authenticated and user.role == "tenant" %}
+                <button type="button" class="btn btn-secondary btn-block js-inquiry-trigger">
+                    {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
+                    Send Inquiry
+                </button>
                 <button type="button" class="btn btn-secondary btn-block js-visit-trigger">
                     {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
                     Schedule Visit
                 </button>
                 {% else %}
+                <a href="{% url 'accounts:login' %}?next={% url 'properties:detail' property.id %}" class="btn btn-secondary btn-block">
+                    {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
+                    Send Inquiry
+                </a>
                 <a href="{% url 'accounts:login' %}?next={% url 'properties:detail' property.id %}" class="btn btn-secondary btn-block">
                     {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
                     Schedule Visit
@@ -282,7 +290,7 @@
 
     <div class="trust-footer-bar">
         {% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}
-        Rentora ensures 100% verified properties and zero brokerage. Deal directly with owners.
+        Zero brokerage, always. Deal directly with the owner — no middlemen, no hidden fees.
     </div>
 </div>
 
@@ -299,6 +307,10 @@
         {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
         Visit
     </button>
+    <button type="button" class="btn btn-secondary js-inquiry-trigger">
+        {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
+        Inquiry
+    </button>
     {% else %}
     <a href="{% url 'accounts:login' %}?next={% url 'properties:detail' property.id %}" class="btn btn-secondary">
         {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
@@ -306,7 +318,7 @@
     </a>
     {% endif %}
     {% if contact_options %}
-    <button type="button" class="btn btn-primary js-contact-trigger" {% if user.is_authenticated and user.role == "tenant" %}data-inquiry-url="{% url 'properties:send_inquiry' property.id %}"{% endif %}>
+    <button type="button" class="btn btn-primary js-contact-trigger">
         {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
         Contact Owner
     </button>
@@ -326,8 +338,26 @@
     <form method="post" action="{% url 'properties:schedule_visit' property.id %}">
         {% csrf_token %}
         <label class="field-label" for="visitDateTime">Pick a date &amp; time</label>
-        <input type="datetime-local" name="scheduled_at" id="visitDateTime" class="field" required min="{% now "Y-m-d\TH:i" %}" style="margin-bottom: var(--space-4);">
-        <button type="submit" class="btn btn-primary btn-block">Confirm Visit</button>
+        <input type="datetime-local" name="scheduled_at" id="visitDateTime" class="field" required min="{% now "Y-m-d\TH:i" %}" style="margin-bottom: var(--space-2);">
+        <p class="slate" style="font-size:12px; margin-bottom: var(--space-4);">The owner will need to approve your request before it's confirmed.</p>
+        <button type="submit" class="btn btn-primary btn-block">Request Visit</button>
+    </form>
+</div>
+
+<div class="contact-sheet-backdrop" id="inquirySheetBackdrop"></div>
+<div class="contact-sheet" id="inquirySheet">
+    <div class="contact-sheet__handle"></div>
+    <div class="contact-sheet__head">
+        <h3>Send an Inquiry</h3>
+        <button type="button" class="contact-sheet__close" id="inquirySheetClose" aria-label="Close">
+            {% include "partials/icon.html" with name="x" cls="icon-sm" %}
+        </button>
+    </div>
+    <form method="post" action="{% url 'properties:send_inquiry' property.id %}">
+        {% csrf_token %}
+        <label class="field-label" for="inquiryMessage">Message to the owner (optional)</label>
+        <textarea name="message" id="inquiryMessage" class="field" rows="3" placeholder="I'm interested in this property..." style="margin-bottom: var(--space-4); resize: vertical;"></textarea>
+        <button type="submit" class="btn btn-primary btn-block">Send Inquiry</button>
     </form>
 </div>
 {% endif %}

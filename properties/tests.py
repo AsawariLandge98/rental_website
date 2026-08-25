@@ -352,6 +352,65 @@ class PublicVisibilityTests(TestCase):
         self.assertContains(response, 'Premium')
 
 
+class SearchAdvancedFiltersTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            email='owner@example.com', password='StrongPass123',
+            full_name='Test Owner', role=User.Role.OWNER,
+        )
+
+    def _prop(self, **overrides):
+        defaults = dict(
+            owner=self.owner, title='Listing', status=Property.Status.PUBLISHED,
+            city='Bengaluru', monthly_rent=20000,
+        )
+        defaults.update(overrides)
+        return Property.objects.create(**defaults)
+
+    def test_property_type_checkboxes_filter_with_or_across_multiple_values(self):
+        self._prop(title='Villa Listing', property_type=Property.PropertyType.VILLA)
+        self._prop(title='Room Listing', property_type=Property.PropertyType.ROOM)
+        self._prop(title='Apartment Listing', property_type=Property.PropertyType.APARTMENT)
+
+        response = self.client.get('/properties/', {'property_type': ['villa', 'room']})
+        self.assertContains(response, 'Villa Listing')
+        self.assertContains(response, 'Room Listing')
+        self.assertNotContains(response, 'Apartment Listing')
+
+    def test_bedrooms_studio_and_4plus_filters(self):
+        self._prop(title='Studio Listing', property_type=Property.PropertyType.STUDIO, bedrooms=0)
+        self._prop(title='2BHK Listing', bedrooms=2)
+        self._prop(title='5BHK Listing', bedrooms=5)
+
+        response = self.client.get('/properties/', {'bedrooms': 'studio'})
+        self.assertContains(response, 'Studio Listing')
+        self.assertNotContains(response, '2BHK Listing')
+
+        response = self.client.get('/properties/', {'bedrooms': '4plus'})
+        self.assertContains(response, '5BHK Listing')
+        self.assertNotContains(response, '2BHK Listing')
+
+    def test_furnishing_filter_matches_real_choices(self):
+        self._prop(title='Furnished Listing', furnishing_status=Property.FurnishingStatus.FULLY_FURNISHED)
+        self._prop(title='Unfurnished Listing', furnishing_status=Property.FurnishingStatus.UNFURNISHED)
+
+        response = self.client.get('/properties/', {'furnishing': 'fully_furnished'})
+        self.assertContains(response, 'Furnished Listing')
+        self.assertNotContains(response, 'Unfurnished Listing')
+
+    def test_price_slider_range_filters_and_defaults_are_a_no_op(self):
+        self._prop(title='Cheap Listing', monthly_rent=5000)
+        self._prop(title='Expensive Listing', monthly_rent=95000)
+
+        response = self.client.get('/properties/', {'price_min': '0', 'price_max': '100000'})
+        self.assertContains(response, 'Cheap Listing')
+        self.assertContains(response, 'Expensive Listing')
+
+        response = self.client.get('/properties/', {'price_min': '50000', 'price_max': '100000'})
+        self.assertNotContains(response, 'Cheap Listing')
+        self.assertContains(response, 'Expensive Listing')
+
+
 @override_settings(MEDIA_ROOT=MEDIA_ROOT)
 class OwnerContactTests(TestCase):
     @classmethod

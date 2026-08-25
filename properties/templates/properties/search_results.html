@@ -22,7 +22,7 @@
 <!-- Search Toolbar -->
 <div class="search-toolbar">
     <div class="container">
-        <form class="search-toolbar__bar" action="{% url 'properties:search' %}" method="get">
+        <form class="search-toolbar__bar" id="searchForm" action="{% url 'properties:search' %}" method="get">
             <label class="search-toolbar__field">
                 {% include "partials/icon.html" with name="map-pin" %}
                 <span class="search-toolbar__field-label">
@@ -49,7 +49,7 @@
                     <select name="property_type">
                         <option value="">Any Type</option>
                         {% for value, label in property_type_options %}
-                        <option value="{{ value }}" {% if value == selected_property_type %}selected{% endif %}>{{ label }}</option>
+                        <option value="{{ value }}" {% if value in selected_property_types %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </span>
@@ -105,12 +105,12 @@
                 <div class="range-slider" id="budgetSlider">
                     <div class="range-slider__track"></div>
                     <div class="range-slider__fill"></div>
-                    <input type="range" min="0" max="100000" step="1000" value="10000" id="budgetMin">
-                    <input type="range" min="0" max="100000" step="1000" value="30000" id="budgetMax">
+                    <input type="range" min="{{ price_slider_min }}" max="{{ price_slider_max }}" step="1000" value="{{ selected_price_min }}" id="budgetMin" name="price_min" form="searchForm">
+                    <input type="range" min="{{ price_slider_min }}" max="{{ price_slider_max }}" step="1000" value="{{ selected_price_max }}" id="budgetMax" name="price_max" form="searchForm">
                 </div>
                 <div class="range-slider__labels">
-                    <span id="budgetMinLabel">&#8377;10,000</span>
-                    <span id="budgetMaxLabel">&#8377;30,000+</span>
+                    <span id="budgetMinLabel">&#8377;{{ selected_price_min }}</span>
+                    <span id="budgetMaxLabel">&#8377;{{ selected_price_max }}{% if selected_price_max == price_slider_max %}+{% endif %}</span>
                 </div>
             </div>
         </div>
@@ -121,12 +121,9 @@
                 {% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}
             </div>
             <div class="filter-group__body">
-                <label class="checkbox-row"><input type="checkbox" checked> All Types</label>
-                <label class="checkbox-row"><input type="checkbox"> Flat / Apartment</label>
-                <label class="checkbox-row"><input type="checkbox"> Independent House</label>
-                <label class="checkbox-row"><input type="checkbox"> PG / Hostel</label>
-                <label class="checkbox-row"><input type="checkbox"> Room</label>
-                <label class="checkbox-row"><input type="checkbox"> Villa</label>
+                {% for value, label in property_type_options %}
+                <label class="checkbox-row"><input type="checkbox" name="property_type" value="{{ value }}" form="searchForm" {% if value in selected_property_types %}checked{% endif %}> {{ label }}</label>
+                {% endfor %}
             </div>
         </div>
 
@@ -136,11 +133,9 @@
                 {% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}
             </div>
             <div class="filter-group__body">
-                <label class="checkbox-row"><input type="checkbox"> 1 RK / Studio</label>
-                <label class="checkbox-row"><input type="checkbox"> 1 BHK</label>
-                <label class="checkbox-row"><input type="checkbox" checked> 2 BHK</label>
-                <label class="checkbox-row"><input type="checkbox"> 3 BHK</label>
-                <label class="checkbox-row"><input type="checkbox"> 4+ BHK</label>
+                {% for value, label in bedroom_options %}
+                <label class="checkbox-row"><input type="checkbox" name="bedrooms" value="{{ value }}" form="searchForm" {% if value in selected_bedrooms %}checked{% endif %}> {{ label }}</label>
+                {% endfor %}
             </div>
         </div>
 
@@ -150,13 +145,13 @@
                 {% include "partials/icon.html" with name="chevron-up" cls="icon-sm" %}
             </div>
             <div class="filter-group__body">
-                <label class="checkbox-row"><input type="checkbox"> Fully Furnished</label>
-                <label class="checkbox-row"><input type="checkbox"> Semi Furnished</label>
-                <label class="checkbox-row"><input type="checkbox"> Unfurnished</label>
+                {% for value, label in furnishing_options %}
+                <label class="checkbox-row"><input type="checkbox" name="furnishing" value="{{ value }}" form="searchForm" {% if value in selected_furnishing %}checked{% endif %}> {{ label }}</label>
+                {% endfor %}
             </div>
         </div>
 
-        <button type="button" class="btn btn-primary btn-block" id="filtersApply">Show Results</button>
+        <button type="submit" form="searchForm" class="btn btn-primary btn-block" id="filtersApply">Show Results</button>
     </div>
     <div class="filters-panel__backdrop" id="filtersBackdrop"></div>
 
@@ -221,7 +216,7 @@
                 {% endif %}
             </div>
             <form class="pagination__per-page" method="get">
-                {% for key, value in request.GET.items %}{% if key != 'per_page' and key != 'page' %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+                {% for key, values in request.GET.lists %}{% if key != 'per_page' and key != 'page' %}{% for value in values %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endfor %}{% endif %}{% endfor %}
                 <span>Show</span>
                 <select name="per_page" onchange="this.form.submit()">
                     <option value="12" {% if selected_per_page == "12" %}selected{% endif %}>12</option>

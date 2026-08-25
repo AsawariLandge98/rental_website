@@ -81,6 +81,33 @@ class RegisterForm(forms.ModelForm):
         return user
 
 
+class CompleteProfileForm(forms.ModelForm):
+    """Shown once, right after a brand-new Google sign-up — confirms the
+    name Google gave us and captures the one real detail Google's OAuth
+    scopes don't provide: date of birth. Mobile number stays optional and
+    can be added later from Profile Settings."""
+
+    full_name = forms.CharField(
+        widget=forms.TextInput(attrs=_field_input(id='profileName', placeholder='Enter your full name')),
+    )
+    date_of_birth = forms.DateField(
+        widget=forms.DateInput(attrs=_field_input(id='profileDob', type='date'), format='%Y-%m-%d'),
+    )
+
+    class Meta:
+        model = User
+        fields = ['full_name', 'date_of_birth']
+
+    def clean_date_of_birth(self):
+        from datetime import date
+        dob = self.cleaned_data['date_of_birth']
+        if dob > date.today():
+            raise forms.ValidationError('Enter a valid date of birth.')
+        if (date.today() - dob).days < 18 * 365:
+            raise forms.ValidationError('You must be at least 18 years old.')
+        return dob
+
+
 class EmailLoginForm(forms.Form):
     """Shared by the public login page and the internal admin login page."""
     email = forms.EmailField(

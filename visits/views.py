@@ -28,10 +28,16 @@ def schedule_visit(request, property_id):
 
     Visit.objects.create(tenant=request.user, property=property_obj, scheduled_at=scheduled_at)
     notify(
-        request.user, f'Your visit to "{property_obj.title}" is scheduled for {scheduled_at:%d %b %Y, %I:%M %p}.',
+        request.user,
+        f'Your visit request for "{property_obj.title}" on {scheduled_at:%d %b %Y, %I:%M %p} is awaiting the owner\'s approval.',
         category=Notification.Category.VISIT, url='/tenant/dashboard/visits/',
     )
-    messages.success(request, 'Visit scheduled!')
+    notify(
+        property_obj.owner,
+        f'{request.user.full_name} requested a visit to "{property_obj.title}" on {scheduled_at:%d %b %Y, %I:%M %p}.',
+        category=Notification.Category.VISIT, url='/owner/dashboard/visits/',
+    )
+    messages.success(request, 'Visit requested! The owner will confirm or decline it shortly.')
     return redirect('properties:detail', pk=property_obj.pk)
 
 

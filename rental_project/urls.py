@@ -29,6 +29,10 @@ urlpatterns = [
     path('roommates/', include('roommates.urls')),
     path('hotels/', include('hotels.urls')),
     path('accounts/', include('accounts.urls')),
+    # allauth owns just the Google OAuth handshake (initiate + callback) at
+    # its own prefix — kept separate from accounts/ above so it can never
+    # collide with our own real login/register/logout URLs there.
+    path('social-auth/', include('allauth.urls')),
     path('', include('dashboard.urls')),
     path('tenant/dashboard/inquiries/', include('inquiries.urls')),
     path('tenant/dashboard/visits/', include('visits.urls')),

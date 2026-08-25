@@ -1,0 +1,45 @@
+{% if property %}
+<div class="wizard-sidebar__card">
+    <h3>Your listing so far</h3>
+    <p class="slate" style="font-size:12px; margin-bottom:var(--space-3);">Autosaved as a draft</p>
+    <div class="wizard-sidebar__row">
+        <span>Category</span>
+        <strong>{{ property.get_category_display }}</strong>
+    </div>
+    <div class="wizard-sidebar__row">
+        <span>Listing ID</span>
+        <strong>RNT-{{ property.pk }}</strong>
+    </div>
+    <div class="wizard-sidebar__row">
+        <span>Status</span>
+        <span class="status-pill status-pill--{{ property.status }}">{{ property.get_status_display }}</span>
+    </div>
+</div>
+{% endif %}
+
+<div class="wizard-sidebar__card">
+    <h3>Build trust faster</h3>
+    <ul class="wizard-trust-checklist">
+        <li class="is-done">
+            {% include "partials/icon.html" with name="check" cls="icon-sm" %}
+            <span>Mobile &amp; email verified</span>
+        </li>
+        <li class="is-done">
+            {% include "partials/icon.html" with name="check" cls="icon-sm" %}
+            <span>Government ID on file</span>
+        </li>
+        <li>
+            <span class="wizard-trust-checklist__dot"></span>
+            <span>Ownership document <a href="{% url 'core:contact' %}">add now</a></span>
+        </li>
+    </ul>
+</div>
+
+<div class="wizard-sidebar__card wizard-sidebar__card--navy">
+    <h3>Need a hand?</h3>
+    <p>Our listing team can fill this in with you over a 10-minute call.</p>
+    <a href="{% url 'core:contact' %}" class="btn btn-secondary-inverse btn-block">
+        {% include "partials/icon.html" with name="headset" cls="icon-sm" %}
+        Request a callback
+    </a>
+</div>

@@ -11,8 +11,10 @@ document.addEventListener('DOMContentLoaded', () => {
   initSingleRangeSliders();
   initContactSheet();
   initVisitSheet();
+  initInquirySheet();
   initScrollReveal();
   initSortSelect();
+  initFeaturedCarousel();
 });
 
 function initSortSelect() {
@@ -106,29 +108,17 @@ function initBackButtons() {
   });
 }
 
-function initContactSheet() {
-  const sheet = document.getElementById('contactSheet');
-  const backdrop = document.getElementById('contactSheetBackdrop');
-  const closeBtn = document.getElementById('contactSheetClose');
-  const triggers = document.querySelectorAll('.js-contact-trigger');
+function initSlideSheet(sheetId, backdropId, closeBtnId, triggerClass) {
+  const sheet = document.getElementById(sheetId);
+  const backdrop = document.getElementById(backdropId);
+  const closeBtn = document.getElementById(closeBtnId);
+  const triggers = document.querySelectorAll(triggerClass);
   if (!sheet || !backdrop || !triggers.length) return;
 
-  let inquiryLogged = false;
   function open() {
     sheet.classList.add('is-open');
     backdrop.classList.add('is-open');
     document.body.classList.add('nav-open');
-    if (!inquiryLogged) {
-      const inquiryUrl = triggers[0].dataset.inquiryUrl;
-      if (inquiryUrl) {
-        inquiryLogged = true;
-        fetch(inquiryUrl, {
-          method: 'POST',
-          headers: { 'X-CSRFToken': getCsrfToken(), 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: '',
-        }).catch(() => {});
-      }
-    }
   }
   function close() {
     sheet.classList.remove('is-open');
@@ -144,30 +134,16 @@ function initContactSheet() {
   });
 }
 
+function initContactSheet() {
+  initSlideSheet('contactSheet', 'contactSheetBackdrop', 'contactSheetClose', '.js-contact-trigger');
+}
+
 function initVisitSheet() {
-  const sheet = document.getElementById('visitSheet');
-  const backdrop = document.getElementById('visitSheetBackdrop');
-  const closeBtn = document.getElementById('visitSheetClose');
-  const triggers = document.querySelectorAll('.js-visit-trigger');
-  if (!sheet || !backdrop || !triggers.length) return;
+  initSlideSheet('visitSheet', 'visitSheetBackdrop', 'visitSheetClose', '.js-visit-trigger');
+}
 
-  function open() {
-    sheet.classList.add('is-open');
-    backdrop.classList.add('is-open');
-    document.body.classList.add('nav-open');
-  }
-  function close() {
-    sheet.classList.remove('is-open');
-    backdrop.classList.remove('is-open');
-    document.body.classList.remove('nav-open');
-  }
-
-  triggers.forEach((btn) => btn.addEventListener('click', open));
-  backdrop.addEventListener('click', close);
-  if (closeBtn) closeBtn.addEventListener('click', close);
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && sheet.classList.contains('is-open')) close();
-  });
+function initInquirySheet() {
+  initSlideSheet('inquirySheet', 'inquirySheetBackdrop', 'inquirySheetClose', '.js-inquiry-trigger');
 }
 
 function initHeroSlider() {
@@ -182,14 +158,23 @@ function initHeroSlider() {
     'https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=70',
   ];
 
-  const img = slider.querySelector('img');
+  const track = slider.querySelector('.hero__media-track');
+  const firstImg = track.querySelector('img');
   const counter = slider.querySelector('.hero__media-counter');
   const prevBtn = slider.querySelector('.hero__media-arrow--prev');
   const nextBtn = slider.querySelector('.hero__media-arrow--next');
   let index = 0;
 
+  // The first slide is already real markup (server-rendered); build the rest
+  // as identical slides so the track can slide between them via transform.
+  images.slice(1).forEach((src) => {
+    const slide = firstImg.cloneNode();
+    slide.src = src;
+    track.appendChild(slide);
+  });
+
   function render() {
-    img.src = images[index];
+    track.style.transform = `translateX(-${index * 100}%)`;
     counter.textContent = `${index + 1} / ${images.length}`;
   }
 
@@ -348,4 +333,71 @@ function initSingleRangeSliders() {
     input.addEventListener('input', render);
     render();
   });
+}
+
+function initFeaturedCarousel() {
+  const track = document.getElementById('featuredCarousel');
+  const dotsWrap = document.getElementById('featuredCarouselDots');
+  const prevBtn = document.getElementById('featuredCarouselPrev');
+  const nextBtn = document.getElementById('featuredCarouselNext');
+  if (!track || !dotsWrap) return;
+
+  const items = Array.from(track.children);
+  if (!items.length) return;
+
+  let pageCount = 1;
+  let dots = [];
+  let scrollTimer = null;
+
+  function cardsPerView() {
+    return Math.max(1, Math.round(track.clientWidth / items[0].getBoundingClientRect().width));
+  }
+
+  function buildDots() {
+    pageCount = Math.max(1, Math.ceil(items.length / cardsPerView()));
+    dotsWrap.innerHTML = '';
+    dots = [];
+    for (let i = 0; i < pageCount; i += 1) {
+      const dot = document.createElement('span');
+      if (i === 0) dot.classList.add('is-active');
+      dot.addEventListener('click', () => scrollToPage(i));
+      dotsWrap.appendChild(dot);
+      dots.push(dot);
+    }
+    dotsWrap.style.display = pageCount > 1 ? 'flex' : 'none';
+  }
+
+  function scrollToPage(pageIndex) {
+    track.scrollTo({ left: pageIndex * track.clientWidth, behavior: 'smooth' });
+  }
+
+  function syncActiveDot() {
+    const pageIndex = Math.round(track.scrollLeft / track.clientWidth);
+    dots.forEach((dot, i) => dot.classList.toggle('is-active', i === pageIndex));
+  }
+
+  track.addEventListener('scroll', () => {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(syncActiveDot, 100);
+  });
+
+  window.addEventListener('resize', () => {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(buildDots, 150);
+  });
+
+  if (prevBtn) {
+    prevBtn.addEventListener('click', () => {
+      const pageIndex = Math.max(0, Math.round(track.scrollLeft / track.clientWidth) - 1);
+      scrollToPage(pageIndex);
+    });
+  }
+  if (nextBtn) {
+    nextBtn.addEventListener('click', () => {
+      const pageIndex = Math.min(pageCount - 1, Math.round(track.scrollLeft / track.clientWidth) + 1);
+      scrollToPage(pageIndex);
+    });
+  }
+
+  buildDots();
 }

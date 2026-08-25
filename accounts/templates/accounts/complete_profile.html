@@ -1,0 +1,62 @@
+{% extends "auth_base.html" %}
+{% load static %}
+
+{% block title %}Complete Your Profile | Rentora{% endblock %}
+{% block body_class %}auth-body{% endblock %}
+
+{% block header %}{% include "partials/header.html" %}{% endblock %}
+
+{% block content %}
+<div class="auth-shell">
+    <div class="auth-center">
+        <div class="auth-card">
+            <span class="auth-icon-badge">{% include "partials/icon.html" with name="user" %}</span>
+            <h1 class="auth-title">Almost There</h1>
+            <p class="auth-subtitle">You signed in with Google. Confirm your name and add your date of birth to finish setting up your account.</p>
+
+            <form class="auth-form" method="post" novalidate>
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                <div class="form-error-banner">
+                    {% include "partials/icon.html" with name="info" cls="icon-sm" %}
+                    {{ form.non_field_errors.0 }}
+                </div>
+                {% endif %}
+
+                <label class="field-label" for="profileName">Full Name</label>
+                <div class="field-with-icon">
+                    {% include "partials/icon.html" with name="user" cls="icon-sm" %}
+                    {{ form.full_name }}
+                </div>
+                {% if form.full_name.errors %}<span class="field-error">{{ form.full_name.errors.0 }}</span>{% endif %}
+
+                <label class="field-label" for="profileEmail">Email</label>
+                <div class="field-with-icon">
+                    {% include "partials/icon.html" with name="envelope" cls="icon-sm" %}
+                    <input class="field" id="profileEmail" type="email" value="{{ user.email }}" disabled>
+                </div>
+
+                <label class="field-label" for="profileDob">Date of Birth</label>
+                <div class="field-with-icon">
+                    {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
+                    {{ form.date_of_birth }}
+                </div>
+                {% if form.date_of_birth.errors %}<span class="field-error">{{ form.date_of_birth.errors.0 }}</span>{% endif %}
+
+                <button type="submit" class="btn btn-primary btn-block">
+                    Continue
+                    {% include "partials/icon.html" with name="arrow-right" cls="icon-sm" %}
+                </button>
+            </form>
+
+            <p class="auth-note">
+                {% include "partials/icon.html" with name="shield-check" cls="icon-sm" %}
+                Your information is safe with us. We never share your details.
+            </p>
+        </div>
+    </div>
+
+    {% include "partials/footer.html" %}
+</div>
+{% endblock %}

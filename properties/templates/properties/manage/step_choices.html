@@ -1,44 +1,33 @@
-{% extends "base.html" %}
-{% load static %}
+{% extends "properties/manage/_wizard_base.html" %}
 
 {% block title %}{{ step_title }} | Add Listing | Rentora{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/properties.css' %}">
-{% endblock %}
+{% block wizard_card %}
+<h1 class="text-h2">{{ step_title }}</h1>
+<p class="wizard-card__subtitle">Multiple selections are allowed. This is optional — you can skip it and come back later.</p>
 
-{% block content %}
-<div class="container wizard-shell">
-    {% include "properties/manage/_wizard_head.html" %}
-
-    <div class="wizard-card">
-        <h1 class="text-h2">{{ step_title }}</h1>
-        <p class="wizard-card__subtitle">Multiple selections are allowed. This is optional — you can skip it and come back later.</p>
-
-        <form method="post" novalidate>
-            {% csrf_token %}
-            <div class="option-card-grid">
-                {% for value, label in choices %}
-                <label class="option-card">
-                    <input type="checkbox" name="{{ field_name }}" value="{{ value }}" {% if value in selected %}checked{% endif %}>
-                    {{ label }}
-                </label>
-                {% endfor %}
-            </div>
-
-            <div class="wizard-actions">
-                <a href="{{ prev_url }}" class="btn btn-secondary">
-                    {% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}
-                    Back
-                </a>
-                <div class="wizard-actions__right">
-                    <button type="submit" class="btn btn-primary">
-                        Save &amp; Continue
-                        {% include "partials/icon.html" with name="arrow-right" cls="icon-sm" %}
-                    </button>
-                </div>
-            </div>
-        </form>
+<form method="post" novalidate>
+    {% csrf_token %}
+    <div class="option-card-grid">
+        {% for value, label in choices %}
+        <label class="option-card">
+            <input type="checkbox" name="{{ field_name }}" value="{{ value }}" {% if value in selected %}checked{% endif %}>
+            {{ label }}
+        </label>
+        {% endfor %}
     </div>
-</div>
+
+    <div class="wizard-actions">
+        <a href="{{ prev_url }}" class="btn btn-secondary">
+            {% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}
+            Back
+        </a>
+        <div class="wizard-actions__right">
+            <button type="submit" class="btn btn-primary">
+                Save &amp; Continue
+                {% include "partials/icon.html" with name="arrow-right" cls="icon-sm" %}
+            </button>
+        </div>
+    </div>
+</form>
 {% endblock %}

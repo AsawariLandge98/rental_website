@@ -1,0 +1,75 @@
+{% extends "dashboard/_base.html" %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/properties.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="wizard-topbar">
+    <div class="wizard-topbar__row">
+        <div class="dash-page-head__title">
+            {% include "partials/icon.html" with name="building" %}
+            <div>
+                <h1 class="text-h2">Add New Property</h1>
+                <p class="wizard-topbar__subtitle">Complete all 10 steps to list your property and reach potential tenants.</p>
+            </div>
+        </div>
+        <div class="wizard-topbar__actions">
+            {% if property.updated_at %}
+            <span class="wizard-topbar__saved">
+                {% include "partials/icon.html" with name="clock" cls="icon-sm" %}
+                Saved {{ property.updated_at|timesince }} ago
+            </span>
+            {% endif %}
+            <a href="{% url 'properties:my_listings' %}" class="btn btn-secondary btn-sm">
+                {% include "partials/icon.html" with name="document" cls="icon-sm" %}
+                Save as Draft
+            </a>
+        </div>
+    </div>
+
+    <div class="wizard-progress-card">
+        <div class="wizard-progress-card__head">
+            <span>Step {{ step_number }} of 10 &middot; {% for n, label in wizard_nav %}{% if n == step_number %}{{ label }}{% endif %}{% endfor %}</span>
+            <span class="wizard-progress-card__pct">{% widthratio step_number|add:"-1" 10 100 %}% complete</span>
+        </div>
+        <div class="wizard-progress-bar"><div class="wizard-progress-bar__fill" style="width: {% widthratio step_number|add:"-1" 10 100 %}%;"></div></div>
+        <div class="step-indicator">
+            {% for n, label in wizard_nav %}
+            <div class="step-indicator__step {% if n == step_number %}is-active{% elif n < step_number %}is-done{% endif %}">
+                <span class="step-indicator__circle">
+                    {% if n < step_number %}{% include "partials/icon.html" with name="check" cls="icon-sm" %}{% else %}{{ n }}{% endif %}
+                </span>
+                <span class="step-indicator__label">{{ label }}</span>
+            </div>
+            {% if not forloop.last %}<span class="step-indicator__line"></span>{% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<div class="wizard-layout wizard-layout--3col">
+    <div class="wizard-card">
+        {% block wizard_card %}{% endblock %}
+    </div>
+
+    <aside class="wizard-sidebar">
+        <div class="wizard-sidebar__card">
+            <h3>Steps Summary</h3>
+            <ul class="wizard-steps-summary">
+                {% for n, label in wizard_nav %}
+                <li class="{% if n == step_number %}is-active{% elif n < step_number %}is-done{% endif %}">
+                    <span class="wizard-steps-summary__num">{% if n < step_number %}{% include "partials/icon.html" with name="check" cls="icon-sm" %}{% else %}{{ n }}{% endif %}</span>
+                    {{ label }}
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </aside>
+
+    <aside class="wizard-sidebar">
+        {% include "properties/manage/_wizard_sidebar.html" %}
+    </aside>
+</div>
+{% endblock %}

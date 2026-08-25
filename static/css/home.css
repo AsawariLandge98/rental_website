@@ -32,29 +32,8 @@
   margin-bottom: var(--space-6);
 }
 
-.hero__actions { display: flex; gap: var(--space-3); margin-bottom: var(--space-8); flex-wrap: wrap; }
+.hero__actions { display: flex; gap: var(--space-3); flex-wrap: wrap; }
 .hero__actions .btn { padding: 14px 24px; }
-
-.hero__trust {
-  display: grid;
-  grid-template-columns: repeat(4, auto);
-  gap: var(--space-6);
-}
-.trust-item { display: flex; align-items: center; gap: var(--space-2); }
-.trust-item__icon {
-  width: 34px;
-  height: 34px;
-  border-radius: var(--radius-control);
-  background: var(--color-blue-50);
-  color: var(--color-blue-500);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-.trust-item__icon svg { width: 18px; height: 18px; }
-.trust-item__label { font: 600 13px/18px var(--font-body); color: var(--color-ink); white-space: nowrap; }
-.trust-item__sub { font-size: 11px; color: var(--color-slate); white-space: nowrap; }
 
 .hero__media {
   position: relative;
@@ -63,23 +42,32 @@
   aspect-ratio: 4 / 3;
   box-shadow: var(--shadow-lg);
 }
-.hero__media img { width: 100%; height: 100%; object-fit: cover; }
+.hero__media-track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  transition: transform .5s var(--ease);
+}
+.hero__media-track img { flex: 0 0 100%; width: 100%; height: 100%; object-fit: cover; }
 .hero__media-arrow {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border-radius: var(--radius-pill);
-  background: rgba(255, 255, 255, .9);
+  background: var(--color-white);
   border: none;
+  box-shadow: var(--shadow-lg);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: var(--color-navy-900);
+  transition: transform var(--transition-fast) var(--ease);
 }
-.hero__media-arrow--prev { left: var(--space-3); }
-.hero__media-arrow--next { right: var(--space-3); }
+.hero__media-arrow:hover { transform: translateY(-50%) scale(1.06); }
+.hero__media-arrow--prev { left: var(--space-4); }
+.hero__media-arrow--next { right: var(--space-4); }
 .hero__media-counter {
   position: absolute;
   right: var(--space-3);
@@ -92,40 +80,9 @@
   border-radius: var(--radius-pill);
 }
 
-/* Mobile-only hero extras: a single tap-into-search card + a compact 2-up
-   feature tile row, both hidden on desktop (which uses .hero__actions /
-   .hero__trust / the photo carousel instead). */
-.mobile-search-card {
-  display: none;
-  align-items: center;
-  gap: var(--space-3);
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
-  padding: var(--space-3) var(--space-4);
-  margin-bottom: var(--space-6);
-  transition: box-shadow var(--transition-base) var(--ease), border-color var(--transition-base) var(--ease);
-}
-.mobile-search-card:hover, .mobile-search-card:focus-visible { box-shadow: var(--shadow-lg); border-color: var(--color-blue-300); }
-.mobile-search-card__icon {
-  width: 36px; height: 36px; flex-shrink: 0;
-  border-radius: 50%;
-  background: var(--color-blue-50);
-  color: var(--color-blue-500);
-  display: inline-flex; align-items: center; justify-content: center;
-}
-.mobile-search-card__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.mobile-search-card__label { font: 700 11px var(--font-body); text-transform: uppercase; letter-spacing: .04em; color: var(--color-slate); }
-.mobile-search-card__value { font: 600 14px var(--font-body); color: var(--color-ink); }
-.mobile-search-card__filter {
-  width: 40px; height: 40px; flex-shrink: 0;
-  border-radius: var(--radius-control);
-  background: var(--color-blue-500);
-  color: var(--color-white);
-  display: inline-flex; align-items: center; justify-content: center;
-}
-
+/* Mobile-only hero extra: a compact 2-up feature tile row, hidden on
+   desktop (which uses .hero__actions instead). The real Quick Search form
+   below is shared by every breakpoint — no separate mobile teaser needed. */
 .mobile-feature-tiles { display: none; }
 .mobile-feature-tile {
   border: 1px solid var(--color-border);
@@ -150,38 +107,38 @@
    Quick Search
    ========================================================================== */
 .quick-search {
-  margin-top: calc(-1 * var(--space-16) + 8px);
+  margin-top: var(--space-8);
   position: relative;
   z-index: 5;
 }
 .quick-search__card {
   background: var(--color-white);
-  border-radius: var(--radius-card);
+  border-radius: 18px;
   box-shadow: var(--shadow-lg);
   padding: var(--space-4) var(--space-6);
   display: flex;
   align-items: stretch;
-  gap: var(--space-4);
+  gap: var(--space-2);
 }
 .quick-search__field {
   flex: 1;
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  padding-inline: var(--space-3);
-  border-right: 1px solid var(--color-border);
+  padding: var(--space-2) var(--space-3);
   border-radius: var(--radius-control);
   transition: background var(--transition-fast) var(--ease);
 }
-.quick-search__field:last-of-type { border-right: none; }
 .quick-search__field:focus-within, .quick-search__field:hover { background: var(--color-offwhite); }
 .quick-search__field svg { width: 18px; height: 18px; color: var(--color-blue-500); flex-shrink: 0; }
-.quick-search__field select {
+.quick-search__field select,
+.quick-search__field-input {
   border: none;
+  outline: none;
   background: transparent;
   width: 100%;
   color: var(--color-ink);
-  font: inherit;
+  font: 600 14px var(--font-body);
 }
 .quick-search__field select:focus { outline: none; }
 .quick-search__field-label { display: flex; flex-direction: column; width: 100%; }
@@ -220,21 +177,25 @@
 }
 .property-type-tile:hover .property-type-tile__icon { transform: scale(1.1) rotate(-4deg); }
 .property-type-tile__icon svg { width: 22px; height: 22px; }
-.property-type-tile__icon--blue { background: var(--category-blue-bg); color: var(--category-blue); }
-.property-type-tile__icon--purple { background: var(--category-purple-bg); color: var(--category-purple); }
-.property-type-tile__icon--pink { background: var(--category-pink-bg); color: var(--category-pink); }
-.property-type-tile__icon--green { background: var(--category-green-bg); color: var(--category-green); }
-.property-type-tile__icon--orange { background: var(--category-orange-bg); color: var(--category-orange); }
-.property-type-tile__icon--teal { background: var(--category-teal-bg); color: var(--category-teal); }
 .property-type-tile span:last-child { font: 500 13px var(--font-body); color: var(--color-ink); }
 
 /* ==========================================================================
    Featured Properties
    ========================================================================== */
-.property-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
+.featured-carousel {
+  display: flex;
   gap: var(--space-6);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  scroll-behavior: smooth;
+}
+.featured-carousel::-webkit-scrollbar { display: none; }
+.featured-carousel__item {
+  flex: 0 0 calc((100% - 3 * var(--space-6)) / 4);
+  scroll-snap-align: start;
+  min-width: 0;
 }
 
 .carousel-dots {
@@ -248,6 +209,8 @@
   height: 7px;
   border-radius: 50%;
   background: var(--color-border);
+  cursor: pointer;
+  transition: width var(--transition-fast) var(--ease), background var(--transition-fast) var(--ease);
 }
 .carousel-dots span.is-active { background: var(--color-blue-500); width: 20px; border-radius: var(--radius-pill); }
 
@@ -391,7 +354,7 @@
   .quick-search__field { border-right: none; border-bottom: 1px solid var(--color-border); padding-block: var(--space-3); }
 
   .property-types { grid-template-columns: repeat(4, 1fr); }
-  .property-grid { grid-template-columns: repeat(2, 1fr); }
+  .featured-carousel__item { flex-basis: calc((100% - var(--space-6)) / 2); }
   .why-choose__grid { grid-template-columns: repeat(3, 1fr); }
   .testimonials-grid { grid-template-columns: 1fr; }
 
@@ -425,9 +388,11 @@
 
   .hero__actions { flex-direction: column; margin-bottom: var(--space-4); }
   .hero__actions .btn { width: 100%; }
-  .mobile-search-card { display: flex; }
-  .hero__trust { display: none; }
   .mobile-feature-tiles { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); margin-bottom: var(--space-2); }
+
+  .quick-search { margin-top: var(--space-5); }
+  .quick-search__card { padding: var(--space-3); border-radius: var(--radius-card); }
+  .quick-search__card .btn { width: 100%; margin-top: var(--space-1); }
 
   /* Browse by Property Type: swipeable pill chips (icon inline + label) */
   .property-types {
@@ -458,10 +423,10 @@
   .property-type-tile__icon { width: 28px; height: 28px; }
   .property-type-tile:first-child .property-type-tile__icon { background: rgba(255, 255, 255, .15); color: var(--color-white); }
 
-  /* Featured Properties: a plain vertical list on mobile, not a carousel —
-     this is the page's primary content, users scroll through it linearly. */
-  .property-grid { display: flex; flex-direction: column; gap: var(--space-4); }
-  .carousel-dots { display: none; }
+  /* Featured Properties: horizontal swipeable carousel with a "peek" of the
+     next card, matching the rest of the mobile page's swipe-row pattern. */
+  .featured-carousel { gap: var(--space-4); margin-inline: calc(-1 * var(--space-4)); padding-inline: var(--space-4); }
+  .featured-carousel__item { flex-basis: 84%; }
 
   /* Why Choose Us: icon-left / text-right rows, first 3 only */
   .why-choose { padding: var(--space-4); }

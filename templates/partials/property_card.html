@@ -50,7 +50,7 @@ Optional: show_actions=True renders View Details / Contact Owner buttons (search
         </h3>
         <div class="property-card__location">
             {% include "partials/icon.html" with name="map-pin" %}
-            {{ property.location }}
+            <span title="{{ property.location }}">{{ property.location }}</span>
         </div>
         <div class="property-card__specs">
             <span>{% include "partials/icon.html" with name="bed" %} {{ property.beds }} Bed{{ property.beds|pluralize }}</span>

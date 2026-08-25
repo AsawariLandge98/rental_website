@@ -1,12 +1,12 @@
 {% extends "dashboard/_base.html" %}
 
 {% block title %}Property Visits | Rentora{% endblock %}
-{% block body_class %}page-dash-admin-visits{% endblock %}
+{% block body_class %}page-dash-owner-visits{% endblock %}
 
 {% block content %}
 <div class="dash-page-head">
     <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="calendar" %} Property Visits</h1></div>
-    <p>Every visit a tenant has requested on the platform.</p>
+    <p>Visits tenants have requested for your listings. Approve or decline a request to confirm it.</p>
 </div>
 
 <div class="dash-stats">
@@ -36,7 +36,7 @@
     <form method="get" class="dash-filter-bar">
         <div class="dash-filter-bar__search">
             {% include "partials/icon.html" with name="search" cls="icon-sm" %}
-            <input type="text" name="q" value="{{ selected_q }}" placeholder="Search by tenant, property or owner...">
+            <input type="text" name="q" value="{{ selected_q }}" placeholder="Search by tenant or property...">
         </div>
         <select name="status">
             <option value="">All Status</option>
@@ -46,14 +46,14 @@
         </select>
         <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
         {% if selected_q or selected_status %}
-        <a href="{% url 'dashboard:admin_visits' %}" class="btn btn-secondary btn-sm">Reset</a>
+        <a href="{% url 'dashboard:owner_visits' %}" class="btn btn-secondary btn-sm">Reset</a>
         {% endif %}
     </form>
 
     {% if visits %}
     <table class="record-table">
         <thead>
-            <tr><th>Tenant</th><th>Property</th><th>Owner</th><th>Visit Date &amp; Time</th><th>Status</th><th>Actions</th></tr>
+            <tr><th>Tenant</th><th>Property</th><th>Visit Date &amp; Time</th><th>Status</th><th>Actions</th></tr>
         </thead>
         <tbody>
         {% for visit in visits %}
@@ -68,13 +68,21 @@
                         </div>
                     </div>
                 </td>
-                <td data-label="Owner">{{ visit.property.owner.full_name }}</td>
                 <td data-label="Visit Date &amp; Time">{{ visit.scheduled_at|date:"d M Y, g:i A" }}</td>
                 <td data-label="Status"><span class="status-pill status-pill--{{ visit.status }}">{{ visit.get_status_display }}</span></td>
                 <td data-label="Actions">
                     <div class="record-actions">
-                        {% if visit.status == "pending" or visit.status == "scheduled" %}
-                        <form method="post" action="{% url 'dashboard:admin_visit_cancel' visit.pk %}" onsubmit="return confirm('Cancel this visit? The tenant will be notified.');">
+                        {% if visit.status == "pending" %}
+                        <form method="post" action="{% url 'dashboard:owner_visit_approve' visit.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-sm">Approve</button>
+                        </form>
+                        <form method="post" action="{% url 'dashboard:owner_visit_decline' visit.pk %}" onsubmit="return confirm('Decline this visit request? The tenant will be notified.');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm" style="color:var(--color-error);">Decline</button>
+                        </form>
+                        {% elif visit.status == "scheduled" %}
+                        <form method="post" action="{% url 'dashboard:owner_visit_cancel' visit.pk %}" onsubmit="return confirm('Cancel this visit? The tenant will be notified.');">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-secondary btn-sm" style="color:var(--color-error);">Cancel</button>
                         </form>

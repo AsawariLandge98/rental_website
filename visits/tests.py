@@ -28,7 +28,11 @@ class VisitTests(TestCase):
         response = self.client.post(reverse('properties:schedule_visit', args=[self.property.pk]), {'scheduled_at': future})
         self.assertRedirects(response, reverse('properties:detail', args=[self.property.pk]))
         visit = Visit.objects.get(tenant=self.tenant, property=self.property)
-        self.assertEqual(visit.status, Visit.Status.SCHEDULED)
+        self.assertEqual(visit.status, Visit.Status.PENDING)
+        self.assertTrue(self.tenant.notifications.filter(category='visit').exists())
+        self.assertTrue(
+            self.owner.notifications.filter(category='visit', message__icontains=self.tenant.full_name).exists(),
+        )
 
     def test_schedule_past_visit_rejected(self):
         past = (timezone.now() - timezone.timedelta(days=2)).strftime('%Y-%m-%dT%H:%M')

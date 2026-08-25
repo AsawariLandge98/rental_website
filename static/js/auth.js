@@ -50,11 +50,13 @@ function initAccountTypeCards() {
   const cards = document.querySelectorAll('.js-account-type');
   if (!cards.length) return;
   const hiddenInput = document.getElementById('regAccountType');
+  const googleLink = document.getElementById('googleSignupLink');
   cards.forEach((card) => {
     card.addEventListener('click', () => {
       cards.forEach((c) => c.classList.remove('is-selected'));
       card.classList.add('is-selected');
       if (hiddenInput) hiddenInput.value = card.dataset.type;
+      if (googleLink) googleLink.href = `${googleLink.dataset.baseHref}?type=${card.dataset.type}`;
     });
   });
 }

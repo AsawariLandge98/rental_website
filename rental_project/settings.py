@@ -49,6 +49,18 @@ DJANGO_APPS = [
     'django.contrib.staticfiles',
     'django.contrib.humanize',
     'django.contrib.postgres',
+    'django.contrib.sites',
+]
+
+THIRD_PARTY_APPS = [
+    # Google sign-in only — allauth's own login/signup/password pages are
+    # unused; we keep our own real ones and only take the social-login
+    # provider flow (see accounts/adapters.py for how a Google login gets
+    # mapped onto our existing custom User model and role system).
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
 ]
 
 LOCAL_APPS = [
@@ -66,7 +78,9 @@ LOCAL_APPS = [
     'dashboard',
 ]
 
-INSTALLED_APPS = DJANGO_APPS + LOCAL_APPS
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -76,6 +90,12 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
+]
+
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
 ROOT_URLCONF = 'rental_project.urls'
@@ -92,6 +112,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'accounts.context_processors.user_dashboard',
                 'notifications.context_processors.unread_notifications',
+                'dashboard.context_processors.dash_page_title',
             ],
         },
     },
@@ -175,3 +196,37 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # case with a clear message instead of crashing.
 RAZORPAY_KEY_ID = os.environ.get('RAZORPAY_KEY_ID', '')
 RAZORPAY_KEY_SECRET = os.environ.get('RAZORPAY_KEY_SECRET', '')
+
+# Google sign-in (django-allauth) — same "scaffolding first" pattern as
+# Razorpay above: blank until a real Google Cloud OAuth Client ID/Secret is
+# added to .env. accounts/views.py checks GOOGLE_OAUTH_CONFIGURED and hides
+# the "Continue with Google" button (rather than offering a broken one)
+# until real credentials exist.
+GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '')
+GOOGLE_OAUTH_CLIENT_SECRET = os.environ.get('GOOGLE_OAUTH_CLIENT_SECRET', '')
+GOOGLE_OAUTH_CONFIGURED = bool(GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET)
+
+ACCOUNT_ADAPTER = 'accounts.adapters.RentoraAccountAdapter'
+SOCIALACCOUNT_ADAPTER = 'accounts.adapters.RentoraSocialAccountAdapter'
+# Our custom User model has no `username` field at all (USERNAME_FIELD is
+# `email`) — without telling allauth's own auth backend to look up by email,
+# it tries a `username` query and crashes (not just fails) whenever it's
+# consulted, e.g. as the 2nd backend on a wrong-password attempt.
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
+ACCOUNT_UNIQUE_EMAIL = True
+SOCIALACCOUNT_LOGIN_ON_GET = True
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_STORE_TOKENS = False
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': GOOGLE_OAUTH_CLIENT_ID,
+            'secret': GOOGLE_OAUTH_CLIENT_SECRET,
+            'key': '',
+        },
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    },
+}

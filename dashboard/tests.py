@@ -139,7 +139,7 @@ class OwnerDashboardAccessTests(TestCase):
         response = self.client.get(reverse('dashboard:owner'))
         self.assertRedirects(response, f"/accounts/login/?next={reverse('dashboard:owner')}")
 
-    def test_coming_soon_sections_reachable_for_owner_and_blocked_for_tenant(self):
+    def test_owner_routes_reachable_for_owner_and_blocked_for_tenant(self):
         self.client.force_login(self.owner)
         for name in ('owner_inquiries', 'owner_visits', 'owner_settings', 'owner_help'):
             response = self.client.get(reverse(f'dashboard:{name}'))
@@ -185,7 +185,7 @@ class OwnerDashboardStatsTests(TestCase):
         self.assertEqual(stats['total_listings'], 2)
         self.assertEqual(stats['active_listings'], 1)
         self.assertEqual(stats['draft_listings'], 1)
-        self.assertEqual(stats['total_inquiries'], 1)
+        self.assertEqual(stats['new_inquiries'], 1)
         self.assertEqual(stats['scheduled_visits'], 1)
 
     def test_recent_inquiries_and_visits_show_up(self):
@@ -586,7 +586,7 @@ class AdminInquiriesVisitsTests(TestCase):
         )
         self.scheduled_visit = Visit.objects.create(
             tenant=self.tenant, property=self.published,
-            scheduled_at=timezone.now() + timezone.timedelta(days=1),
+            scheduled_at=timezone.now() + timezone.timedelta(days=1), status=Visit.Status.SCHEDULED,
         )
         self.client.force_login(self.admin)
 
@@ -632,6 +632,7 @@ class AdminInquiriesVisitsTests(TestCase):
         response = self.client.get(reverse('dashboard:admin_visits'))
         stats = response.context['stats']
         self.assertEqual(stats['total'], 1)
+        self.assertEqual(stats['pending'], 0)
         self.assertEqual(stats['scheduled'], 1)
         self.assertEqual(stats['completed'], 0)
         self.assertEqual(stats['cancelled'], 0)
@@ -642,6 +643,166 @@ class AdminInquiriesVisitsTests(TestCase):
         self.scheduled_visit.refresh_from_db()
         self.assertEqual(self.scheduled_visit.status, Visit.Status.CANCELLED)
         self.assertTrue(Notification.objects.filter(user=self.tenant, message__icontains='cancelled').exists())
+
+    def test_cancel_pending_visit(self):
+        pending_visit = Visit.objects.create(
+            tenant=self.tenant, property=self.published, scheduled_at=timezone.now() + timezone.timedelta(days=1),
+        )
+        response = self.client.post(reverse('dashboard:admin_visit_cancel', args=[pending_visit.pk]))
+        self.assertRedirects(response, reverse('dashboard:admin_visits'))
+        pending_visit.refresh_from_db()
+        self.assertEqual(pending_visit.status, Visit.Status.CANCELLED)
+
+
+class OwnerInquiriesVisitsTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            email='owner@example.com', password='StrongPass123',
+            full_name='Test Owner', role=User.Role.OWNER,
+        )
+        self.other_owner = User.objects.create_user(
+            email='owner2@example.com', password='StrongPass123',
+            full_name='Other Owner', role=User.Role.OWNER,
+        )
+        self.tenant = User.objects.create_user(
+            email='tenant@example.com', password='StrongPass123',
+            full_name='Test Tenant', role=User.Role.TENANT,
+        )
+        self.other_tenant = User.objects.create_user(
+            email='tenant2@example.com', password='StrongPass123',
+            full_name='Other Tenant', role=User.Role.TENANT,
+        )
+        self.published = Property.objects.create(
+            owner=self.owner, title='Sunshine Flat', status=Property.Status.PUBLISHED,
+            property_type='apartment', city='Nagpur', monthly_rent=15000,
+        )
+        self.other_owner_property = Property.objects.create(
+            owner=self.other_owner, title='Other Flat', status=Property.Status.PUBLISHED,
+            property_type='apartment', city='Nagpur', monthly_rent=12000,
+        )
+        self.open_inquiry = Inquiry.objects.create(tenant=self.tenant, property=self.published, message='Hi')
+        self.closed_inquiry = Inquiry.objects.create(
+            tenant=self.other_tenant, property=self.published, message='Hi', status=Inquiry.Status.CLOSED,
+        )
+        self.other_owner_inquiry = Inquiry.objects.create(
+            tenant=self.tenant, property=self.other_owner_property, message='Hi',
+        )
+        self.scheduled_visit = Visit.objects.create(
+            tenant=self.tenant, property=self.published,
+            scheduled_at=timezone.now() + timezone.timedelta(days=1), status=Visit.Status.SCHEDULED,
+        )
+        self.pending_visit = Visit.objects.create(
+            tenant=self.other_tenant, property=self.published,
+            scheduled_at=timezone.now() + timezone.timedelta(days=2),
+        )
+        self.other_owner_visit = Visit.objects.create(
+            tenant=self.tenant, property=self.other_owner_property,
+            scheduled_at=timezone.now() + timezone.timedelta(days=1), status=Visit.Status.SCHEDULED,
+        )
+        self.other_owner_pending_visit = Visit.objects.create(
+            tenant=self.tenant, property=self.other_owner_property,
+            scheduled_at=timezone.now() + timezone.timedelta(days=2),
+        )
+        self.client.force_login(self.owner)
+
+    def test_access(self):
+        response = self.client.get(reverse('dashboard:owner_inquiries'))
+        self.assertEqual(response.status_code, 200)
+        response = self.client.get(reverse('dashboard:owner_visits'))
+        self.assertEqual(response.status_code, 200)
+
+        self.client.force_login(self.tenant)
+        response = self.client.get(reverse('dashboard:owner_inquiries'))
+        self.assertEqual(response.status_code, 403)
+        response = self.client.get(reverse('dashboard:owner_visits'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_inquiries_scoped_to_own_properties_only(self):
+        response = self.client.get(reverse('dashboard:owner_inquiries'))
+        stats = response.context['stats']
+        self.assertEqual(stats['total'], 2)
+        self.assertEqual(stats['open'], 1)
+        self.assertEqual(stats['closed'], 1)
+        ids = {i.pk for i in response.context['inquiries']}
+        self.assertEqual(ids, {self.open_inquiry.pk, self.closed_inquiry.pk})
+        self.assertNotIn(self.other_owner_inquiry.pk, ids)
+
+    def test_close_and_reopen_own_inquiry(self):
+        response = self.client.post(
+            reverse('dashboard:owner_inquiry_set_status', args=[self.open_inquiry.pk, 'closed']),
+        )
+        self.assertRedirects(response, reverse('dashboard:owner_inquiries'))
+        self.open_inquiry.refresh_from_db()
+        self.assertEqual(self.open_inquiry.status, Inquiry.Status.CLOSED)
+
+        response = self.client.post(
+            reverse('dashboard:owner_inquiry_set_status', args=[self.open_inquiry.pk, 'open']),
+        )
+        self.open_inquiry.refresh_from_db()
+        self.assertEqual(self.open_inquiry.status, Inquiry.Status.OPEN)
+
+    def test_cannot_change_another_owners_inquiry(self):
+        response = self.client.post(
+            reverse('dashboard:owner_inquiry_set_status', args=[self.other_owner_inquiry.pk, 'closed']),
+        )
+        self.assertEqual(response.status_code, 404)
+        self.other_owner_inquiry.refresh_from_db()
+        self.assertEqual(self.other_owner_inquiry.status, Inquiry.Status.OPEN)
+
+    def test_visits_scoped_to_own_properties_only(self):
+        response = self.client.get(reverse('dashboard:owner_visits'))
+        stats = response.context['stats']
+        self.assertEqual(stats['total'], 2)
+        self.assertEqual(stats['pending'], 1)
+        self.assertEqual(stats['scheduled'], 1)
+        ids = {v.pk for v in response.context['visits']}
+        self.assertEqual(ids, {self.scheduled_visit.pk, self.pending_visit.pk})
+        self.assertNotIn(self.other_owner_visit.pk, ids)
+        self.assertNotIn(self.other_owner_pending_visit.pk, ids)
+
+    def test_cancel_own_visit_notifies_tenant(self):
+        response = self.client.post(reverse('dashboard:owner_visit_cancel', args=[self.scheduled_visit.pk]))
+        self.assertRedirects(response, reverse('dashboard:owner_visits'))
+        self.scheduled_visit.refresh_from_db()
+        self.assertEqual(self.scheduled_visit.status, Visit.Status.CANCELLED)
+        self.assertTrue(Notification.objects.filter(user=self.tenant, message__icontains='cancelled').exists())
+
+    def test_cannot_cancel_another_owners_visit(self):
+        response = self.client.post(reverse('dashboard:owner_visit_cancel', args=[self.other_owner_visit.pk]))
+        self.assertEqual(response.status_code, 404)
+        self.other_owner_visit.refresh_from_db()
+        self.assertEqual(self.other_owner_visit.status, Visit.Status.SCHEDULED)
+
+    def test_approve_own_pending_visit_notifies_tenant(self):
+        response = self.client.post(reverse('dashboard:owner_visit_approve', args=[self.pending_visit.pk]))
+        self.assertRedirects(response, reverse('dashboard:owner_visits'))
+        self.pending_visit.refresh_from_db()
+        self.assertEqual(self.pending_visit.status, Visit.Status.SCHEDULED)
+        self.assertTrue(
+            Notification.objects.filter(user=self.other_tenant, message__icontains='confirmed').exists(),
+        )
+
+    def test_decline_own_pending_visit_notifies_tenant(self):
+        response = self.client.post(reverse('dashboard:owner_visit_decline', args=[self.pending_visit.pk]))
+        self.assertRedirects(response, reverse('dashboard:owner_visits'))
+        self.pending_visit.refresh_from_db()
+        self.assertEqual(self.pending_visit.status, Visit.Status.CANCELLED)
+        self.assertTrue(
+            Notification.objects.filter(user=self.other_tenant, message__icontains='declined').exists(),
+        )
+
+    def test_approve_and_decline_are_no_ops_once_not_pending(self):
+        self.client.post(reverse('dashboard:owner_visit_approve', args=[self.scheduled_visit.pk]))
+        self.scheduled_visit.refresh_from_db()
+        self.assertEqual(self.scheduled_visit.status, Visit.Status.SCHEDULED)
+
+    def test_cannot_approve_or_decline_another_owners_visit(self):
+        response = self.client.post(reverse('dashboard:owner_visit_approve', args=[self.other_owner_pending_visit.pk]))
+        self.assertEqual(response.status_code, 404)
+        response = self.client.post(reverse('dashboard:owner_visit_decline', args=[self.other_owner_pending_visit.pk]))
+        self.assertEqual(response.status_code, 404)
+        self.other_owner_pending_visit.refresh_from_db()
+        self.assertEqual(self.other_owner_pending_visit.status, Visit.Status.PENDING)
 
 
 class AdminSupportTests(TestCase):

@@ -48,6 +48,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(unique=True)
     full_name = models.CharField(max_length=150)
     mobile_number = models.CharField(max_length=15, blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.TENANT)
 
     is_email_verified = models.BooleanField(default=False)

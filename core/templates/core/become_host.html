@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Become a Host | Rentora{% endblock %}
+{% block body_class %}page-become-host{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages.css' %}">
+{% endblock %}
+
+{% block content %}
+
+{% url 'core:home' as home_url %}
+<div class="container">
+    <nav class="breadcrumb">
+        {% include "partials/back_button.html" with fallback_url=home_url %}
+        <a href="{% url 'core:home' %}">Home</a>
+        <span>/</span>
+        <span>Become a Host</span>
+    </nav>
+</div>
+
+<!-- Intro -->
+<section class="host-intro">
+    <div class="container host-intro__grid">
+        <div class="host-intro__copy">
+            <span class="eyebrow">Become a Host</span>
+            <h1>It's easy to get started<br>on <span class="text-accent">Rentora</span></h1>
+            <p>List your property in minutes and reach real tenants directly. Zero brokerage, zero listing fees — you stay in control of your rent, your availability and how tenants reach you.</p>
+            <div class="host-intro__actions">
+                <a href="{% url 'accounts:google_login_start' %}?type=owner" class="btn btn-primary">
+                    {% include "partials/icon.html" with name="google" cls="icon-sm" %}
+                    Get Started with Google
+                </a>
+                <a href="{% url 'accounts:login' %}" class="host-intro__login">Already hosting? <strong>Log in</strong></a>
+            </div>
+        </div>
+        <div class="host-intro__img" style="background-image:url('https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=900&q=60');"></div>
+    </div>
+</section>
+
+<!-- How hosting works -->
+<section class="section section--tight" data-reveal>
+    <div class="container">
+        <h2 class="section-title-center">How Hosting Works</h2>
+        <div class="verification-steps">
+            {% for step in steps %}
+            <div class="verification-step">
+                <span class="verification-step__icon">{% include "partials/icon.html" with name=step.icon %}</span>
+                <h3>{{ step.title }}</h3>
+                <p>{{ step.text }}</p>
+            </div>
+            {% if not forloop.last %}<span class="verification-step__connector"></span>{% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Why host with Rentora -->
+<section class="section--tint" data-reveal>
+    <div class="container">
+        <h2 class="section-title-center">Why Host With Rentora?</h2>
+        <div class="about-why-grid">
+            {% for perk in perks %}
+            <div class="about-why-item">
+                <span class="about-why-item__icon">{% include "partials/icon.html" with name=perk.icon %}</span>
+                <h3>{{ perk.title }}</h3>
+                <p>{{ perk.text }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Final CTA -->
+<section class="section section--navy host-cta" data-reveal>
+    <div class="container host-cta__inner">
+        <div>
+            <h2>Ready to list your property?</h2>
+            <p>It takes just a few minutes to create your first listing.</p>
+        </div>
+        <a href="{% url 'accounts:google_login_start' %}?type=owner" class="btn btn-primary">
+            {% include "partials/icon.html" with name="google" cls="icon-sm" %}
+            Get Started with Google
+        </a>
+    </div>
+</section>
+
+{% endblock %}

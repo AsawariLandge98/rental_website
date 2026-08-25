@@ -1,51 +1,45 @@
-{% extends "base.html" %}
-{% load static %}
+{% extends "properties/manage/_wizard_base.html" %}
 
 {% block title %}Add New Listing | Rentora{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/properties.css' %}">
-{% endblock %}
+{% block wizard_card %}
+<h1 class="text-h2">What are you listing?</h1>
+<p class="wizard-card__subtitle">Choose the category that best describes your property. The next steps adapt to whatever you pick here.</p>
 
-{% block content %}
-<div class="container wizard-shell">
-    {% include "properties/manage/_wizard_head.html" %}
+<form method="post" novalidate>
+    {% csrf_token %}
+    {% if form.category.errors %}<span class="field-error">{{ form.category.errors.0 }}</span>{% endif %}
 
-    <div class="wizard-card">
-        <h1 class="text-h2">What are you listing?</h1>
-        <p class="wizard-card__subtitle">Choose the category that best describes your property. You can fill in the rest of the details over the next few steps, and save as a draft any time.</p>
-
-        <form method="post" novalidate>
-            {% csrf_token %}
-            {% if form.category.errors %}<span class="field-error">{{ form.category.errors.0 }}</span>{% endif %}
-
-            <div class="option-card-grid">
-                {% for value, label in form.fields.category.choices %}
-                <label class="option-card">
-                    <input type="radio" name="category" value="{{ value }}" {% if form.category.value == value %}checked{% endif %}>
-                    {% if value == "residential" %}{% include "partials/icon.html" with name="house" cls="icon-sm" %}
-                    {% elif value == "room" %}{% include "partials/icon.html" with name="bed" cls="icon-sm" %}
-                    {% elif value == "pg" %}{% include "partials/icon.html" with name="apartment" cls="icon-sm" %}
-                    {% elif value == "shared" %}{% include "partials/icon.html" with name="users" cls="icon-sm" %}
-                    {% elif value == "hotel" %}{% include "partials/icon.html" with name="building" cls="icon-sm" %}
-                    {% elif value == "guest_house" %}{% include "partials/icon.html" with name="villa" cls="icon-sm" %}
-                    {% elif value == "homestay" %}{% include "partials/icon.html" with name="key" cls="icon-sm" %}
-                    {% endif %}
-                    {{ label }}
-                </label>
-                {% endfor %}
-            </div>
-
-            <div class="wizard-actions">
-                <a href="{% url 'properties:my_listings' %}" class="btn btn-secondary">Cancel</a>
-                <div class="wizard-actions__right">
-                    <button type="submit" class="btn btn-primary">
-                        Continue
-                        {% include "partials/icon.html" with name="arrow-right" cls="icon-sm" %}
-                    </button>
-                </div>
-            </div>
-        </form>
+    <div class="option-card-grid">
+        {% for value, label in form.fields.category.choices %}
+        <label class="option-card">
+            <input type="radio" name="category" value="{{ value }}" {% if form.category.value == value %}checked{% endif %}>
+            {% if value == "residential" %}{% include "partials/icon.html" with name="house" cls="icon-sm" %}
+            {% elif value == "room" %}{% include "partials/icon.html" with name="bed" cls="icon-sm" %}
+            {% elif value == "pg" %}{% include "partials/icon.html" with name="apartment" cls="icon-sm" %}
+            {% elif value == "shared" %}{% include "partials/icon.html" with name="users" cls="icon-sm" %}
+            {% elif value == "hotel" %}{% include "partials/icon.html" with name="building" cls="icon-sm" %}
+            {% elif value == "guest_house" %}{% include "partials/icon.html" with name="villa" cls="icon-sm" %}
+            {% elif value == "homestay" %}{% include "partials/icon.html" with name="key" cls="icon-sm" %}
+            {% endif %}
+            {{ label }}
+        </label>
+        {% endfor %}
     </div>
-</div>
+
+    <div class="wizard-info-banner">
+        {% include "partials/icon.html" with name="info" cls="icon-sm" %}
+        <p>Listings with verified ownership documents get up to <strong>3&times; more tenant enquiries</strong>. You can add documents any time before publishing.</p>
+    </div>
+
+    <div class="wizard-actions">
+        <a href="{% url 'properties:my_listings' %}" class="btn btn-secondary">Cancel</a>
+        <div class="wizard-actions__right">
+            <button type="submit" class="btn btn-primary">
+                Continue
+                {% include "partials/icon.html" with name="arrow-right" cls="icon-sm" %}
+            </button>
+        </div>
+    </div>
+</form>
 {% endblock %}

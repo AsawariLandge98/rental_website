@@ -1,86 +1,76 @@
-{% extends "base.html" %}
-{% load static humanize %}
+{% extends "properties/manage/_wizard_base.html" %}
+{% load humanize %}
 
 {% block title %}Preview Listing | Rentora{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/properties.css' %}">
-{% endblock %}
+{% block wizard_card %}
+<h1 class="text-h2">Preview Listing</h1>
+<p class="wizard-card__subtitle">Review everything before publishing. You can still edit any step afterwards.</p>
 
-{% block content %}
-<div class="container wizard-shell">
-    {% include "properties/manage/_wizard_head.html" %}
+{% if missing %}
+<div class="form-error-banner form-error-banner--stacked">
+    {% include "partials/icon.html" with name="info" cls="icon-sm" %}
+    <div>
+        <strong>Not ready to publish yet — missing:</strong>
+        <ul class="publish-checklist">
+            {% for item in missing %}<li>{% include "partials/icon.html" with name="x" cls="icon-sm" %} {{ item }}</li>{% endfor %}
+        </ul>
+    </div>
+</div>
+{% endif %}
 
-    <div class="wizard-card">
-        <h1 class="text-h2">Preview Listing</h1>
-        <p class="wizard-card__subtitle">Review everything before publishing. You can still edit any step afterwards.</p>
+<div class="wizard-preview-summary">
+    <h2 class="text-h3">{{ property.title|default:"Untitled draft" }}</h2>
+    <p class="slate">{{ property.get_category_display }}{% if property.property_type %} &middot; {{ property.get_property_type_display }}{% endif %}</p>
+    <p class="slate">{{ property.display_location|default:"Location not set yet" }}</p>
 
-        {% if missing %}
-        <div class="form-error-banner" style="align-items:flex-start;">
-            {% include "partials/icon.html" with name="info" cls="icon-sm" %}
-            <div>
-                <strong>Not ready to publish yet — missing:</strong>
-                <ul class="publish-checklist">
-                    {% for item in missing %}<li>{% include "partials/icon.html" with name="x" cls="icon-sm" %} {{ item }}</li>{% endfor %}
-                </ul>
-            </div>
-        </div>
-        {% endif %}
+    {% if property.cover_photo %}
+    <img src="{{ property.cover_photo.image.url }}" alt="" class="wizard-preview-summary__cover">
+    {% endif %}
 
-        <div class="detail-card" style="padding:0; border:none; box-shadow:none;">
-            <h2 class="text-h3">{{ property.title|default:"Untitled draft" }}</h2>
-            <p class="slate">{{ property.get_category_display }}{% if property.property_type %} &middot; {{ property.get_property_type_display }}{% endif %}</p>
-            <p class="slate">{{ property.display_location|default:"Location not set yet" }}</p>
+    <p>{{ property.description|default:"No description yet." }}</p>
 
-            {% if property.cover_photo %}
-            <img src="{{ property.cover_photo.image.url }}" alt="" style="width:100%; max-width:420px; border-radius:var(--radius-card); margin:var(--space-4) 0;">
-            {% endif %}
+    <div class="detail-specs">
+        {% if property.bedrooms %}<span>{% include "partials/icon.html" with name="bed" cls="icon-sm" %} {{ property.bedrooms }} Beds</span>{% endif %}
+        {% if property.bathrooms %}<span>{% include "partials/icon.html" with name="bath" cls="icon-sm" %} {{ property.bathrooms }} Baths</span>{% endif %}
+        {% if property.total_area %}<span>{% include "partials/icon.html" with name="area" cls="icon-sm" %} {{ property.total_area }} sq.ft.</span>{% endif %}
+    </div>
 
-            <p>{{ property.description|default:"No description yet." }}</p>
+    <p class="wizard-preview-summary__price">
+        <strong>&#8377;{{ property.monthly_rent|default:0|floatformat:"0"|intcomma }}/month</strong>
+        {% if property.no_brokerage %}<span class="badge badge-success-outline">No Brokerage</span>{% endif %}
+    </p>
 
-            <div class="detail-specs" style="margin-top:var(--space-4);">
-                {% if property.bedrooms %}<span>{% include "partials/icon.html" with name="bed" cls="icon-sm" %} {{ property.bedrooms }} Beds</span>{% endif %}
-                {% if property.bathrooms %}<span>{% include "partials/icon.html" with name="bath" cls="icon-sm" %} {{ property.bathrooms }} Baths</span>{% endif %}
-                {% if property.total_area %}<span>{% include "partials/icon.html" with name="area" cls="icon-sm" %} {{ property.total_area }} sq.ft.</span>{% endif %}
-            </div>
+    <p class="slate">{{ property.photos.count }} photo(s) uploaded</p>
+</div>
 
-            <p style="margin-top:var(--space-4);">
-                <strong>&#8377;{{ property.monthly_rent|default:0|floatformat:"0"|intcomma }}/month</strong>
-                {% if property.no_brokerage %}<span class="badge badge-success-outline">No Brokerage</span>{% endif %}
-            </p>
+<div class="wizard-section-title">Listing Plan</div>
+<form method="post" novalidate>
+    {% csrf_token %}
+    <div class="option-card-grid">
+        {% for value, label in plan_form.fields.listing_plan.choices %}
+        <label class="option-card">
+            <input type="radio" name="listing_plan" value="{{ value }}" {% if plan_form.listing_plan.value == value %}checked{% endif %}>
+            {{ label }}
+        </label>
+        {% endfor %}
+    </div>
+    <button type="submit" class="btn btn-secondary btn-sm">Save Plan</button>
+</form>
 
-            <p class="slate">{{ property.photos.count }} photo(s) uploaded</p>
-        </div>
-
-        <div class="auth-section-title">Step 13: Listing Plan</div>
-        <form method="post" novalidate>
+<div class="wizard-actions">
+    <a href="{% url 'properties:manage_step' property.pk 'property-info' %}" class="btn btn-secondary">
+        {% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}
+        Edit Details
+    </a>
+    <div class="wizard-actions__right">
+        <form method="post" action="{% url 'properties:manage_publish' property.pk %}">
             {% csrf_token %}
-            <div class="option-card-grid">
-                {% for value, label in plan_form.fields.listing_plan.choices %}
-                <label class="option-card">
-                    <input type="radio" name="listing_plan" value="{{ value }}" {% if plan_form.listing_plan.value == value %}checked{% endif %}>
-                    {{ label }}
-                </label>
-                {% endfor %}
-            </div>
-            <button type="submit" class="btn btn-secondary btn-sm">Save Plan</button>
+            <button type="submit" class="btn btn-primary" {% if missing %}disabled{% endif %}>
+                {% include "partials/icon.html" with name="check" cls="icon-sm" %}
+                Publish Listing
+            </button>
         </form>
-
-        <div class="wizard-actions">
-            <a href="{% url 'properties:manage_step' property.pk 'property-info' %}" class="btn btn-secondary">
-                {% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}
-                Edit Details
-            </a>
-            <div class="wizard-actions__right">
-                <form method="post" action="{% url 'properties:manage_publish' property.pk %}">
-                    {% csrf_token %}
-                    <button type="submit" class="btn btn-primary" {% if missing %}disabled{% endif %}>
-                        {% include "partials/icon.html" with name="check" cls="icon-sm" %}
-                        Publish Listing
-                    </button>
-                </form>
-            </div>
-        </div>
     </div>
 </div>
 {% endblock %}

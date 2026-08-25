@@ -1,13 +1,14 @@
 {% with url_name=request.resolver_match.url_name app_name=request.resolver_match.app_name %}
 <aside class="dash-sidebar" id="dashSidebar">
     <nav class="dash-sidebar__nav">
+        <span class="dash-sidebar__section-label">Main</span>
         <a href="{{ user_dashboard_url }}" class="dash-sidebar__link {% if url_name == 'owner' or url_name == 'hotel' %}is-active{% endif %}">
             {% include "partials/icon.html" with name="house" %} <span>Dashboard</span>
         </a>
         <a href="{% url 'properties:my_listings' %}" class="dash-sidebar__link {% if url_name == 'my_listings' %}is-active{% endif %}">
             {% include "partials/icon.html" with name="building" %} <span>My Properties</span>
         </a>
-        <a href="{% url 'properties:start_listing' %}" class="dash-sidebar__link {% if url_name == 'start_listing' or url_name == 'manage_step' %}is-active{% endif %}">
+        <a href="{% url 'properties:start_listing' %}" class="dash-sidebar__link {% if url_name == 'start_listing' or url_name == 'manage_step' or url_name == 'manage_preview' %}is-active{% endif %}">
             {% include "partials/icon.html" with name="plus-circle" %} <span>Add New Property</span>
         </a>
         <a href="{% url 'dashboard:owner_inquiries' %}" class="dash-sidebar__link {% if url_name == 'owner_inquiries' %}is-active{% endif %}">
@@ -16,9 +17,13 @@
         <a href="{% url 'dashboard:owner_visits' %}" class="dash-sidebar__link {% if url_name == 'owner_visits' %}is-active{% endif %}">
             {% include "partials/icon.html" with name="calendar" %} <span>Property Visits</span>
         </a>
+
+        <span class="dash-sidebar__section-label">Business</span>
         <a href="{% url 'subscriptions:plan_list' %}" class="dash-sidebar__link {% if app_name == 'subscriptions' %}is-active{% endif %}">
             {% include "partials/icon.html" with name="star" %} <span>Subscription Plan</span>
         </a>
+
+        <span class="dash-sidebar__section-label">Other</span>
         <a href="{% url 'notifications:list' %}" class="dash-sidebar__link {% if app_name == 'notifications' %}is-active{% endif %}">
             {% include "partials/icon.html" with name="bell" %} <span>Notifications</span>
             {% if unread_notifications_count %}<span class="dash-sidebar__badge">{{ unread_notifications_count }}</span>{% endif %}
@@ -34,11 +39,20 @@
         </a>
     </nav>
 
-    <form method="post" action="{% url 'accounts:logout' %}" class="dash-sidebar__logout">
-        {% csrf_token %}
-        <button type="submit" class="dash-sidebar__link">
-            {% include "partials/icon.html" with name="logout" %} <span>Logout</span>
-        </button>
-    </form>
+    <div class="dash-sidebar__bottom">
+        <a href="{% url 'dashboard:owner_profile' %}" class="dash-sidebar__profile">
+            <span class="header-account__avatar header-account__avatar--initials">{{ user.full_name|first|upper }}</span>
+            <span class="dash-sidebar__profile-text">
+                <span class="dash-sidebar__profile-name">{{ user.full_name|default:user.email|truncatechars:18 }}</span>
+                <span class="dash-sidebar__profile-role">{{ user.get_role_display }}</span>
+            </span>
+        </a>
+        <form method="post" action="{% url 'accounts:logout' %}" class="dash-sidebar__logout">
+            {% csrf_token %}
+            <button type="submit" class="dash-sidebar__link">
+                {% include "partials/icon.html" with name="logout" %} <span>Logout</span>
+            </button>
+        </form>
+    </div>
 </aside>
 {% endwith %}

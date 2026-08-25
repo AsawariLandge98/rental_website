@@ -24,9 +24,7 @@ class Notification(models.Model):
 
 
 def notify(user, message, category=Notification.Category.SYSTEM, url=''):
-    """Small helper other apps call to record a real notification —
-    e.g. inquiries/visits confirming the tenant's own action. See
-    Documentation/Feature 03 - Tenant Dashboard.md for what does and
-    doesn't generate a notification yet (richer notifications like an
-    owner accepting/rejecting need the Owner Dashboard, not built yet)."""
+    """Small helper other apps call to record a real notification — e.g.
+    confirming a tenant's own inquiry/visit action back to them, or alerting
+    an owner that a tenant reached out or requested a visit on their listing."""
     return Notification.objects.create(user=user, message=message, category=category, url=url)

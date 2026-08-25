@@ -28,6 +28,9 @@ class InquiryTests(TestCase):
         inquiry = Inquiry.objects.get(tenant=self.tenant, property=self.property)
         self.assertEqual(inquiry.status, Inquiry.Status.OPEN)
         self.assertTrue(self.tenant.notifications.filter(category='inquiry').exists())
+        self.assertTrue(
+            self.owner.notifications.filter(category='inquiry', message__icontains=self.tenant.full_name).exists(),
+        )
 
     def test_owner_cannot_send_inquiry(self):
         self.client.force_login(self.owner)

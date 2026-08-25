@@ -6,7 +6,7 @@
 {% block content %}
 <div class="dash-page-head">
     <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="calendar" %} My Visits</h1></div>
-    <p>Track your scheduled property visits. Visits are confirmed instantly when you book them.</p>
+    <p>Track your property visits. The owner needs to approve a request before it's confirmed.</p>
 </div>
 
 <div class="dash-section">
@@ -33,7 +33,7 @@
                 <td data-label="Actions">
                     <div class="record-actions">
                         <a href="{% url 'properties:detail' visit.property.id %}" class="btn btn-secondary btn-sm">View</a>
-                        {% if visit.status == "scheduled" %}
+                        {% if visit.status == "pending" or visit.status == "scheduled" %}
                         <form method="post" action="{% url 'visits:cancel_visit' visit.pk %}">
                             {% csrf_token %}
                             <button type="submit" class="btn btn-secondary btn-sm">Cancel</button>

@@ -19,6 +19,10 @@ def send_inquiry(request, property_id):
         request.user, f'Your inquiry for "{property_obj.title}" has been sent to the owner.',
         category=Notification.Category.INQUIRY, url='/tenant/dashboard/inquiries/',
     )
+    notify(
+        property_obj.owner, f'{request.user.full_name} sent an inquiry about "{property_obj.title}".',
+        category=Notification.Category.INQUIRY, url='/owner/dashboard/inquiries/',
+    )
     messages.success(request, 'Inquiry sent — the owner\'s contact details are shown on this page.')
     return redirect('properties:detail', pk=property_obj.pk)
 

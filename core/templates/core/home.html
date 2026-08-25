@@ -22,57 +22,15 @@ Zero Brokerage. Direct Owner Contact.
             <div class="hero__actions">
                 <a href="{% url 'properties:search' %}" class="btn btn-primary">
                     {% include "partials/icon.html" with name="search" %}
-                    Search Properties
+                    Explore Properties
                 </a>
-                <a href="{% url 'accounts:register' %}" class="btn btn-secondary">
+                <a href="{% url 'core:become_host' %}" class="btn btn-secondary">
                     {% include "partials/icon.html" with name="list" %}
                     List Your Property
                 </a>
             </div>
 
-            <!-- Mobile-only: single tap-target into the real search page instead of
-                 cramming the full filter form on a small screen -->
-            <a href="{% url 'properties:search' %}" class="mobile-search-card">
-                <span class="mobile-search-card__icon">{% include "partials/icon.html" with name="map-pin" cls="icon-sm" %}</span>
-                <span class="mobile-search-card__text">
-                    <span class="mobile-search-card__label">Location</span>
-                    <span class="mobile-search-card__value">Select City &amp; Area</span>
-                </span>
-                <span class="mobile-search-card__filter">{% include "partials/icon.html" with name="sliders" cls="icon-sm" %}</span>
-            </a>
-
-            <div class="hero__trust">
-                <div class="trust-item">
-                    <span class="trust-item__icon">{% include "partials/icon.html" with name="heart" %}</span>
-                    <span>
-                        <span class="trust-item__label">Zero</span>
-                        <span class="trust-item__sub">Brokerage</span>
-                    </span>
-                </div>
-                <div class="trust-item">
-                    <span class="trust-item__icon">{% include "partials/icon.html" with name="chat" %}</span>
-                    <span>
-                        <span class="trust-item__label">Direct</span>
-                        <span class="trust-item__sub">Owner Contact</span>
-                    </span>
-                </div>
-                <div class="trust-item">
-                    <span class="trust-item__icon">{% include "partials/icon.html" with name="lock" %}</span>
-                    <span>
-                        <span class="trust-item__label">Secure</span>
-                        <span class="trust-item__sub">&amp; Transparent</span>
-                    </span>
-                </div>
-                <div class="trust-item">
-                    <span class="trust-item__icon">{% include "partials/icon.html" with name="calendar" %}</span>
-                    <span>
-                        <span class="trust-item__label">Instant</span>
-                        <span class="trust-item__sub">Visit Scheduling</span>
-                    </span>
-                </div>
-            </div>
-
-            <!-- Mobile-only: compact 2-up version of .hero__trust above -->
+            <!-- Mobile-only: compact 2-up feature tile row -->
             <div class="mobile-feature-tiles">
                 <div class="mobile-feature-tile">
                     <span class="mobile-feature-tile__icon">{% include "partials/icon.html" with name="heart" %}</span>
@@ -88,7 +46,9 @@ Zero Brokerage. Direct Owner Contact.
         </div>
 
         <div class="hero__media js-hero-slider" data-slide="0">
-            <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=70" alt="Modern living room interior">
+            <div class="hero__media-track">
+                <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=1200&q=70" alt="Modern living room interior">
+            </div>
             <button type="button" class="hero__media-arrow hero__media-arrow--prev" aria-label="Previous photo">
                 {% include "partials/icon.html" with name="chevron-left" %}
             </button>
@@ -99,10 +59,9 @@ Zero Brokerage. Direct Owner Contact.
         </div>
 
     </div>
-</section>
 
-<!-- Quick Search -->
-<div class="container quick-search">
+    <!-- Quick Search, integrated into the Hero itself -->
+    <div class="container quick-search">
     <form class="quick-search__card" action="{% url 'properties:search' %}" method="get">
         <label class="quick-search__field">
             {% include "partials/icon.html" with name="map-pin" %}
@@ -120,7 +79,7 @@ Zero Brokerage. Direct Owner Contact.
             {% include "partials/icon.html" with name="map-pin" %}
             <span class="quick-search__field-label">
                 <span>Area / Locality</span>
-                <input type="text" name="area" placeholder="e.g. Koramangala" style="border:none; outline:none; font:600 14px var(--font-body); width:100%; background:transparent;">
+                <input type="text" name="area" placeholder="e.g. Koramangala" class="quick-search__field-input">
             </span>
         </label>
         <label class="quick-search__field">
@@ -152,7 +111,8 @@ Zero Brokerage. Direct Owner Contact.
             Search
         </button>
     </form>
-</div>
+    </div>
+</section>
 
 <!-- Browse by Property Type -->
 <section class="section section--tight" data-reveal>
@@ -164,7 +124,7 @@ Zero Brokerage. Direct Owner Contact.
         <div class="property-types">
             {% for type in property_types %}
             <a href="{% url 'properties:search' %}" class="property-type-tile">
-                <span class="property-type-tile__icon property-type-tile__icon--{{ type.color }}">{% include "partials/icon.html" with name=type.icon %}</span>
+                <span class="property-type-tile__icon">{% include "partials/icon.html" with name=type.icon %}</span>
                 <span>{{ type.label }}</span>
             </a>
             {% endfor %}
@@ -176,21 +136,36 @@ Zero Brokerage. Direct Owner Contact.
 <section class="section section--tight" data-reveal>
     <div class="container">
         <div class="section-head">
-            <h2>Recommended For You</h2>
-            <a href="{% url 'properties:search' %}" class="link-more">View All</a>
+            <h2>Featured Properties</h2>
+            <div class="icon-row">
+                <a href="{% url 'properties:search' %}" class="link-more">View All Properties</a>
+                {% if featured_properties %}
+                <div class="carousel-nav" id="featuredCarouselNav">
+                    <button type="button" class="carousel-arrow" id="featuredCarouselPrev" aria-label="Previous properties">
+                        {% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}
+                    </button>
+                    <button type="button" class="carousel-arrow" id="featuredCarouselNext" aria-label="Next properties">
+                        {% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}
+                    </button>
+                </div>
+                {% endif %}
+            </div>
         </div>
         {% if featured_properties %}
-        <div class="property-grid">
+        <div class="featured-carousel" id="featuredCarousel">
             {% for property in featured_properties %}
+            <div class="featured-carousel__item">
                 {% include "partials/property_card.html" with property=property %}
+            </div>
             {% endfor %}
         </div>
+        <div class="carousel-dots" id="featuredCarouselDots"></div>
         {% else %}
         <div class="empty-state">
             <span class="empty-state__icon">{% include "partials/icon.html" with name="house" %}</span>
             <h3>No listings yet</h3>
             <p>Be the first to list a property on Rentora.</p>
-            <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-sm">List Your Property</a>
+            <a href="{% url 'core:become_host' %}" class="btn btn-primary btn-sm">List Your Property</a>
         </div>
         {% endif %}
     </div>

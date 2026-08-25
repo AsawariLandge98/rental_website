@@ -85,6 +85,29 @@
 }
 .about-intro__img:hover { transform: scale(1.015); }
 
+/* ==========================================================================
+   Become a Host — intro + final CTA
+   ========================================================================== */
+.host-intro { background: var(--color-blue-50); padding-block: var(--space-12) var(--space-8); }
+.host-intro__grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: var(--space-8); align-items: center; }
+.host-intro__copy h1 { margin-bottom: var(--space-4); }
+.host-intro__copy p { color: var(--color-slate); font-size: 15px; line-height: 24px; max-width: 52ch; margin-bottom: var(--space-6); }
+.host-intro__actions { display: flex; align-items: center; gap: var(--space-5); flex-wrap: wrap; }
+.host-intro__login { font: 500 14px var(--font-body); color: var(--color-slate); }
+.host-intro__login strong { color: var(--color-blue-500); }
+.host-intro__img {
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-card);
+  background-size: cover;
+  background-position: center;
+  box-shadow: var(--shadow-lg);
+}
+
+.host-cta { text-align: left; }
+.host-cta__inner { display: flex; align-items: center; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap; }
+.host-cta__inner h2 { color: var(--color-white); margin-bottom: var(--space-2); }
+.host-cta__inner p { color: var(--color-blue-300); }
+
 /* Mission / Vision / Values — deliberately overlaps the intro section's
    bottom edge (negative margin matching .about-intro's own bottom padding)
    so the cards read as "floating" on top, same technique used for the
@@ -272,6 +295,9 @@
 @media (max-width: 1023px) {
   .about-intro__grid { grid-template-columns: 1fr; }
   .about-intro__img { order: -1; }
+  .host-intro__grid { grid-template-columns: 1fr; }
+  .host-intro__img { order: -1; }
+  .host-cta__inner { text-align: center; justify-content: center; flex-direction: column; }
   .about-mvv { grid-template-columns: 1fr; margin-top: var(--space-6); }
   .about-stats { grid-template-columns: repeat(3, 1fr); gap: var(--space-6); }
   .about-why-grid { grid-template-columns: repeat(3, 1fr); }
@@ -286,6 +312,9 @@
 @media (max-width: 767px) {
   .about-intro { padding-block: var(--space-8) var(--space-6); }
   .about-intro__pills { flex-direction: column; gap: var(--space-3); }
+  .host-intro { padding-block: var(--space-8) var(--space-6); }
+  .host-intro__actions { flex-direction: column; align-items: stretch; }
+  .host-intro__actions .btn { width: 100%; }
   .about-mvv__card { padding: var(--space-4); }
   .about-stats { grid-template-columns: repeat(2, 1fr); }
   .about-why-grid { grid-template-columns: repeat(2, 1fr); }
