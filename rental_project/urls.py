@@ -51,5 +51,14 @@ urlpatterns = [
     path('admin/', admin.site.urls),
 ]
 
-if settings.DEBUG:
+if settings.DEBUG or not settings.CLOUD_STORAGE_CONFIGURED:
+    # Django's own media serving is normally DEBUG-only (Django's docs
+    # correctly call it unsuitable for real production traffic/security) —
+    # but until real S3 credentials exist (CLOUD_STORAGE_CONFIGURED),
+    # nothing else serves /media/ at all, so uploaded photos would 404
+    # outright. This is a stopgap for a low-traffic deployment: perfectly
+    # fine to keep serving media this way once S3 is configured too (the
+    # condition then goes False and this block stops applying), but the
+    # underlying local-disk storage still doesn't persist across Render
+    # redeploys — turning on AWS_* in .env remains the real, permanent fix.
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
