@@ -1,6 +1,6 @@
 from django import forms
 
-from .models import ContactMessage, NewsletterSubscriber
+from .models import City, ContactMessage, NewsletterSubscriber
 
 
 class StyledModelForm(forms.ModelForm):
@@ -37,3 +37,16 @@ class ContactForm(StyledModelForm):
             'subject': forms.TextInput(attrs={'placeholder': 'Subject'}),
             'message': forms.Textarea(attrs={'placeholder': 'Your Message', 'rows': 6, 'class': 'contact-form__message'}),
         }
+
+
+class CityForm(StyledModelForm):
+    class Meta:
+        model = City
+        fields = ['name', 'order', 'is_active']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # StyledModelForm applies `.field` (a full-width bordered text-input
+        # style) to every widget, including checkboxes — fine for
+        # name/order, but it would badly distort the is_active checkbox.
+        self.fields['is_active'].widget.attrs.pop('class', None)

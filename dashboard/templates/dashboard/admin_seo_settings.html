@@ -1,0 +1,60 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}SEO Settings | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-cms-form{% endblock %}
+
+{% block content %}
+<div class="dash-breadcrumb"><a href="{% url 'dashboard:admin_cms' %}">&larr; Back to CMS Management</a></div>
+
+<div class="dash-page-head">
+    <h1 class="text-h2">{% include "partials/icon.html" with name="search" %} SEO Settings</h1>
+    <p>Sitewide tracking + per-page meta title and description, rendered as real &lt;meta&gt; tags.</p>
+</div>
+
+<div class="dash-section" style="max-width: 640px;">
+    <h2 class="text-h3" style="margin-bottom: var(--space-2);">Sitewide</h2>
+    <p class="slate" style="font-size:12px; margin-bottom: var(--space-4);">Leave an ID blank to keep that tracking script off the site entirely.</p>
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="profile-form-grid">
+            <div>
+                <label class="field-label" for="{{ form.google_analytics_id.id_for_label }}">Google Analytics ID</label>
+                {{ form.google_analytics_id }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ form.facebook_pixel_id.id_for_label }}">Facebook Pixel ID</label>
+                {{ form.facebook_pixel_id }}
+            </div>
+        </div>
+        <div style="margin-bottom: var(--space-4);">
+            <label class="field-label" for="{{ form.og_image.id_for_label }}">Default Social-Share Image (optional)</label>
+            {% if site_settings.og_image %}<img src="{{ site_settings.og_image.url }}" alt="Current OG image" style="max-height:60px; margin-bottom: var(--space-2); display:block;">{% endif %}
+            {{ form.og_image }}
+        </div>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+    </form>
+</div>
+
+<div class="dash-section">
+    <h2 class="text-h3" style="margin-bottom: var(--space-4);">Page Meta Titles &amp; Descriptions</h2>
+    <table class="record-table">
+        <thead>
+            <tr><th>Page</th><th>Meta Title</th><th>Meta Description</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for page in pages %}
+            <tr>
+                <td data-label="Page"><div class="record-property__title">{{ page.get_page_display }}</div></td>
+                <td data-label="Meta Title">{{ page.meta_title|default:"—" }}</td>
+                <td data-label="Meta Description"><span class="slate">{{ page.meta_description|default:"—"|truncatechars:80 }}</span></td>
+                <td data-label="Actions">
+                    <div class="record-actions">
+                        <a href="{% url 'dashboard:admin_page_seo_edit' page.pk %}" class="btn btn-primary btn-sm">Edit</a>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

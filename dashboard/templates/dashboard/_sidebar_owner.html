@@ -17,6 +17,9 @@
         <a href="{% url 'dashboard:owner_visits' %}" class="dash-sidebar__link {% if url_name == 'owner_visits' %}is-active{% endif %}">
             {% include "partials/icon.html" with name="calendar" %} <span>Property Visits</span>
         </a>
+        <a href="{% url 'dashboard:owner_bookings' %}" class="dash-sidebar__link {% if url_name == 'owner_bookings' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="calendar" %} <span>Bookings</span>
+        </a>
 
         <span class="dash-sidebar__section-label">Business</span>
         <a href="{% url 'subscriptions:plan_list' %}" class="dash-sidebar__link {% if app_name == 'subscriptions' %}is-active{% endif %}">

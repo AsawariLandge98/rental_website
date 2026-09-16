@@ -1,17 +1,24 @@
+import secrets
+
 from django.conf import settings
 from django.contrib.auth import login as auth_login
 from django.contrib.auth import logout as auth_logout
 from django.contrib import messages
 from django.contrib.auth import views as auth_views
+from django.contrib.auth.decorators import login_required
+from django.core.cache import cache
 from django.shortcuts import redirect, render
 from django.urls import reverse, reverse_lazy
+from django.utils import timezone
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
+
+from core.sms import SMSSendError, send_sms
 
 from .forms import (
     AdminLoginForm, CompleteProfileForm, EmailLoginForm, ForgotPasswordForm, RegisterForm, SetNewPasswordForm,
 )
-from .models import User
+from .models import MobileOTP, User
 
 ACCOUNT_TYPES = [
     {
@@ -183,9 +190,12 @@ def admin_login(request):
 
 
 # ---------------------------------------------------------------------------
-# Forgot password (Django's built-in token-based flow). Email is printed to
-# the runserver console in dev since no real SMTP/SMS provider is wired up
-# yet — see settings.EMAIL_BACKEND.
+# Forgot password (Django's built-in token-based flow). Uses whatever
+# EMAIL_BACKEND is configured — real SMTP once EMAIL_HOST/EMAIL_HOST_USER/
+# EMAIL_HOST_PASSWORD are set in .env, otherwise prints to the runserver
+# console (see settings.EMAIL_CONFIGURED). No code change needed here
+# either way — this view has always just called Django's own send_mail
+# machinery under the hood.
 # ---------------------------------------------------------------------------
 
 class ForgotPasswordView(auth_views.PasswordResetView):
@@ -209,3 +219,127 @@ class ForgotPasswordConfirmView(auth_views.PasswordResetConfirmView):
 
 class ForgotPasswordCompleteView(auth_views.PasswordResetCompleteView):
     template_name = 'accounts/password_reset_complete.html'
+
+
+# ---------------------------------------------------------------------------
+# Mobile OTP verification (Feature 24) — self-service and optional, not a
+# registration gate. is_mobile_verified stays a non-blocking status
+# indicator (the verify-pill on profile.html, the Mobile Number row on
+# settings.html/owner_settings.html), the same way is_email_verified
+# already works. Any logged-in user (tenant/owner/hotel/admin) can verify
+# their own mobile number from here — role-agnostic on purpose.
+# ---------------------------------------------------------------------------
+
+OTP_RESEND_COOLDOWN_SECONDS = 60
+OTP_MAX_SENDS_PER_HOUR = 5
+
+SETTINGS_URL_NAME_BY_ROLE = {
+    User.Role.TENANT: 'dashboard:tenant_settings',
+    User.Role.OWNER: 'dashboard:owner_settings',
+    User.Role.HOTEL: 'dashboard:owner_settings',
+    User.Role.ADMIN: 'dashboard:admin_settings',
+    User.Role.SUPER_ADMIN: 'dashboard:admin_settings',
+}
+
+
+def _settings_redirect(request):
+    return redirect(SETTINGS_URL_NAME_BY_ROLE.get(request.user.role, 'core:home'))
+
+
+@login_required
+@require_POST
+def mobile_verify_send(request):
+    user = request.user
+    next_url = _safe_next_url(request)
+
+    if not user.mobile_number:
+        messages.error(request, 'Add a mobile number in Settings before verifying it.')
+        return _settings_redirect(request)
+
+    if user.is_mobile_verified:
+        messages.info(request, 'Your mobile number is already verified.')
+        return _settings_redirect(request)
+
+    cooldown_key = f'otp_cooldown:{user.id}'
+    hourly_key = f'otp_hourly:{user.id}'
+    confirm_url = reverse('accounts:mobile_verify_confirm')
+    if next_url:
+        confirm_url = f'{confirm_url}?next={next_url}'
+
+    if cache.get(cooldown_key):
+        messages.error(request, 'Please wait a minute before requesting another code.')
+        return redirect(confirm_url)
+
+    sent_this_hour = cache.get(hourly_key, 0)
+    if sent_this_hour >= OTP_MAX_SENDS_PER_HOUR:
+        messages.error(request, 'Too many code requests. Please try again later.')
+        return _settings_redirect(request)
+
+    # Invalidate any still-pending code so only the newest one can verify.
+    MobileOTP.objects.filter(user=user, is_used=False).update(is_used=True)
+
+    code = f'{secrets.randbelow(1_000_000):06d}'
+    MobileOTP.objects.create(
+        user=user,
+        mobile_number=user.mobile_number,
+        code=code,
+        expires_at=timezone.now() + timezone.timedelta(minutes=MobileOTP.OTP_VALID_MINUTES),
+    )
+    cache.set(cooldown_key, True, OTP_RESEND_COOLDOWN_SECONDS)
+    cache.set(hourly_key, sent_this_hour + 1, 3600)
+
+    if settings.SMS_CONFIGURED:
+        try:
+            send_sms(
+                user.mobile_number,
+                f'Your Rentora verification code is {code}. It expires in {MobileOTP.OTP_VALID_MINUTES} minutes.',
+            )
+            messages.success(request, f'A verification code has been sent to {user.mobile_number}.')
+        except SMSSendError:
+            messages.error(request, "Couldn't send the SMS right now. Please try again in a moment.")
+    else:
+        # Dev fallback — no SMS gateway configured yet, so the code is
+        # shown directly instead of being texted (mirrors the console
+        # EMAIL_BACKEND's role for password reset before real SMTP existed).
+        messages.info(request, f'SMS gateway not configured yet — your code is {code} (dev mode).')
+
+    return redirect(confirm_url)
+
+
+@login_required
+def mobile_verify_confirm(request):
+    user = request.user
+    next_url = _safe_next_url(request)
+    otp = MobileOTP.objects.filter(user=user, is_used=False).order_by('-created_at').first()
+
+    if request.method == 'POST':
+        if not otp or not otp.is_valid:
+            messages.error(request, 'That code has expired or is no longer valid. Please request a new one.')
+        else:
+            entered = ''.join(request.POST.get(f'digit{i}', '') for i in range(1, MobileOTP.OTP_LENGTH + 1))
+            otp.attempts += 1
+            otp.save(update_fields=['attempts'])
+
+            if entered == otp.code:
+                otp.is_used = True
+                otp.save(update_fields=['is_used'])
+                user.is_mobile_verified = True
+                user.save(update_fields=['is_mobile_verified'])
+                messages.success(request, 'Mobile number verified.')
+                return redirect(next_url) if next_url else _settings_redirect(request)
+
+            if otp.attempts >= MobileOTP.MAX_ATTEMPTS:
+                otp.is_used = True
+                otp.save(update_fields=['is_used'])
+                messages.error(request, 'Too many incorrect attempts. Please request a new code.')
+            else:
+                messages.error(request, 'Incorrect code. Please try again.')
+
+        otp = MobileOTP.objects.filter(user=user, is_used=False).order_by('-created_at').first()
+
+    return render(request, 'accounts/mobile_verify.html', {
+        'otp_pending': bool(otp and otp.is_valid),
+        'mobile_number': user.mobile_number,
+        'otp_length_range': range(1, MobileOTP.OTP_LENGTH + 1),
+        'next': next_url or '',
+    })

@@ -5,7 +5,7 @@
 {% block wizard_card %}
 <h1 class="text-h2">Photos &amp; Media</h1>
 <p class="wizard-card__subtitle">
-    Add at least {{ property.MIN_PHOTOS_TO_PUBLISH }} photos before publishing (cover photo, living room, bedroom, kitchen, bathroom work well). Up to {{ property.MAX_PHOTOS }} photos total — {{ remaining_slots }} more can be added right now.
+    Add at least {{ min_photos_to_publish }} photos before publishing (cover photo, living room, bedroom, kitchen, bathroom work well). Up to {{ max_photos }} photos total — {{ remaining_slots }} more can be added right now.
 </p>
 
 {% if remaining_slots > 0 %}

@@ -18,28 +18,24 @@
 {% endif %}
 
 <div class="wizard-sidebar__card">
-    <h3>Build trust faster</h3>
+    <h3>Account Verification</h3>
     <ul class="wizard-trust-checklist">
-        <li class="is-done">
-            {% include "partials/icon.html" with name="check" cls="icon-sm" %}
-            <span>Mobile &amp; email verified</span>
+        <li class="{% if user.is_mobile_verified %}is-done{% endif %}">
+            {% if user.is_mobile_verified %}{% include "partials/icon.html" with name="check" cls="icon-sm" %}{% else %}<span class="wizard-trust-checklist__dot"></span>{% endif %}
+            <span>Mobile {% if user.is_mobile_verified %}verified{% else %}not verified{% endif %}</span>
         </li>
-        <li class="is-done">
-            {% include "partials/icon.html" with name="check" cls="icon-sm" %}
-            <span>Government ID on file</span>
-        </li>
-        <li>
-            <span class="wizard-trust-checklist__dot"></span>
-            <span>Ownership document <a href="{% url 'core:contact' %}">add now</a></span>
+        <li class="{% if user.is_email_verified %}is-done{% endif %}">
+            {% if user.is_email_verified %}{% include "partials/icon.html" with name="check" cls="icon-sm" %}{% else %}<span class="wizard-trust-checklist__dot"></span>{% endif %}
+            <span>Email {% if user.is_email_verified %}verified{% else %}not verified{% endif %}</span>
         </li>
     </ul>
 </div>
 
 <div class="wizard-sidebar__card wizard-sidebar__card--navy">
     <h3>Need a hand?</h3>
-    <p>Our listing team can fill this in with you over a 10-minute call.</p>
+    <p>Have questions while listing your property? Reach out to our team.</p>
     <a href="{% url 'core:contact' %}" class="btn btn-secondary-inverse btn-block">
         {% include "partials/icon.html" with name="headset" cls="icon-sm" %}
-        Request a callback
+        Contact Support
     </a>
 </div>

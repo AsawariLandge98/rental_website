@@ -283,33 +283,6 @@
 .step p { color: var(--color-slate); font-size: 12px; line-height: 17px; max-width: 16ch; }
 
 /* ==========================================================================
-   Testimonials
-   ========================================================================== */
-.testimonials-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--space-6);
-}
-.testimonial-card {
-  background: var(--color-white);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-card);
-  padding: var(--space-6);
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-  transition: box-shadow var(--transition-base) var(--ease), transform var(--transition-base) var(--ease), border-color var(--transition-base) var(--ease);
-}
-.testimonial-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); border-color: var(--color-blue-300); }
-.testimonial-card__quote { font-size: 14px; line-height: 22px; color: var(--color-ink); }
-.testimonial-card__person { display: flex; align-items: center; gap: var(--space-3); }
-.testimonial-card__avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; }
-.testimonial-card__name { font-weight: 600; font-size: 14px; }
-.testimonial-card__location { font-size: 12px; color: var(--color-slate); }
-.testimonial-card__stars { margin-left: auto; color: var(--color-premium-gold); display: flex; gap: 2px; }
-.testimonial-card__stars svg { width: 14px; height: 14px; }
-
-/* ==========================================================================
    Newsletter — moved to base.css (shared component, used by About too)
    ========================================================================== */
 
@@ -326,7 +299,6 @@
   .property-types { grid-template-columns: repeat(4, 1fr); }
   .featured-carousel__item { flex-basis: calc((100% - var(--space-6)) / 2); }
   .why-choose__grid { grid-template-columns: repeat(3, 1fr); }
-  .testimonials-grid { grid-template-columns: 1fr; }
 
   .steps { grid-template-columns: repeat(3, 1fr); row-gap: var(--space-8); }
   .steps::before { display: none; }
@@ -416,9 +388,4 @@
     background: repeating-linear-gradient(to bottom, var(--color-blue-300) 0 6px, transparent 6px 12px);
   }
   .step:nth-child(n+4) { display: none; }
-
-  /* Testimonials: single card, no carousel */
-  .testimonials-grid { display: block; }
-  .testimonial-card:not(:first-child) { display: none; }
-
 }

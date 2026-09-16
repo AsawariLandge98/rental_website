@@ -2,6 +2,8 @@ from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
 from django.db import models
 
+from core.validators import MaxFileSizeValidator
+
 
 class Amenity(models.Model):
     class Group(models.TextChoices):
@@ -111,9 +113,6 @@ class Property(models.Model):
         RENTED = 'rented', 'Rented'
         ARCHIVED = 'archived', 'Archived'
 
-    MIN_PHOTOS_TO_PUBLISH = 5
-    MAX_PHOTOS = 25
-
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='properties')
 
     # Step 1 — category (kept separate from step-3 "property type": category is
@@ -160,6 +159,10 @@ class Property(models.Model):
 
     # Step 6 — rent details
     monthly_rent = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    nightly_rate = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text='Per-night rate for Hotel / Guest House / Homestay listings — used for real bookings.',
+    )
     security_deposit = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     maintenance_charges = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True, default=0)
     electricity_charges = models.CharField(max_length=60, blank=True, help_text='e.g. "As per meter" or a flat amount')
@@ -207,8 +210,16 @@ class Property(models.Model):
         verbose_name_plural = 'properties'
         ordering = ['-created_at']
 
+    HOTEL_CATEGORIES = (Category.HOTEL, Category.GUEST_HOUSE, Category.HOMESTAY)
+
     def __str__(self):
         return self.title or f'Draft property #{self.pk}'
+
+    @property
+    def is_bookable(self):
+        """Hotel/Guest House/Homestay listings take real Bookings (dates +
+        nightly rate); everything else uses the existing Inquiry/Visit flow."""
+        return self.category in self.HOTEL_CATEGORIES
 
     def _joined_location(self, parts):
         """Joins location parts, dropping blanks and case-insensitive
@@ -270,9 +281,11 @@ class Property(models.Model):
     ]
 
     def missing_publish_requirements(self):
+        from cms.models import SiteSettings
+        min_photos = SiteSettings.load().min_photos_to_publish
         missing = [label for field, label in self.REQUIRED_FOR_PUBLISH if not getattr(self, field)]
-        if self.photos.count() < self.MIN_PHOTOS_TO_PUBLISH:
-            missing.append(f'At least {self.MIN_PHOTOS_TO_PUBLISH} photos (currently {self.photos.count()})')
+        if self.photos.count() < min_photos:
+            missing.append(f'At least {min_photos} photos (currently {self.photos.count()})')
         return missing
 
     @property
@@ -282,7 +295,7 @@ class Property(models.Model):
 
 class PropertyPhoto(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='photos')
-    image = models.ImageField(upload_to='properties/%Y/%m/')
+    image = models.ImageField(upload_to='properties/%Y/%m/', validators=[MaxFileSizeValidator(30)])
     caption = models.CharField(max_length=60, blank=True)
     is_cover = models.BooleanField(default=False)
     order = models.PositiveIntegerField(default=0)

@@ -1,0 +1,68 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}Inquiry to {{ inquiry.property.owner.full_name }} | Rentora{% endblock %}
+{% block body_class %}page-dash-inquiry-detail{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title">
+        <a href="{% url 'inquiries:my_inquiries' %}" class="icon-btn" aria-label="Back to My Inquiries">
+            {% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}
+        </a>
+        <h1 class="text-h2">Inquiry to {{ inquiry.property.owner.full_name }}</h1>
+    </div>
+</div>
+
+<div class="inquiry-detail-card">
+    <div class="inquiry-detail-card__property">
+        {% if inquiry.property.cover_photo %}
+        <img src="{{ inquiry.property.cover_photo.image.url }}" alt="" class="inquiry-detail-card__thumb">
+        {% else %}
+        <span class="inquiry-detail-card__thumb inquiry-detail-card__thumb--empty">{% include "partials/icon.html" with name="building" cls="icon-sm" %}</span>
+        {% endif %}
+        <div>
+            <a href="{% url 'properties:detail' inquiry.property.id %}" class="inquiry-detail-card__title">{{ inquiry.property.title|default:"Untitled draft" }}</a>
+            <div class="inquiry-detail-card__meta">{{ inquiry.property.short_location }}</div>
+        </div>
+        <span class="status-pill status-pill--{{ inquiry.status }}">{{ inquiry.get_status_display }}</span>
+        {% if inquiry.status == "open" %}
+        <form method="post" action="{% url 'inquiries:close_inquiry' inquiry.pk %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary btn-sm">Close</button>
+        </form>
+        {% endif %}
+    </div>
+</div>
+
+<div class="dash-section">
+    <h2 class="text-h3" style="margin-bottom: var(--space-4);">Conversation</h2>
+    <div class="inquiry-thread">
+        <div class="inquiry-message inquiry-message--mine">
+            <span class="dash-inquiry-avatar">{{ inquiry.tenant.full_name|first|upper }}</span>
+            <div class="inquiry-message__bubble">
+                <div class="inquiry-message__meta">{{ inquiry.created_at|timesince }} ago</div>
+                <div class="inquiry-message__text">{{ inquiry.message|default:"No message included." }}</div>
+            </div>
+        </div>
+        {% for reply in replies %}
+        <div class="inquiry-message {% if reply.sender_id == user.id %}inquiry-message--mine{% endif %}">
+            <span class="dash-inquiry-avatar">{{ reply.sender.full_name|first|upper }}</span>
+            <div class="inquiry-message__bubble">
+                <div class="inquiry-message__meta">{% if reply.sender_id == user.id %}{{ reply.created_at|timesince }} ago{% else %}{{ reply.sender.full_name }} &middot; {{ reply.created_at|timesince }} ago{% endif %}</div>
+                <div class="inquiry-message__text">{{ reply.message }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <form method="post" class="inquiry-reply-form">
+        {% csrf_token %}
+        <label class="field-label" for="replyMessage">Reply to {{ inquiry.property.owner.full_name }}</label>
+        <textarea name="message" id="replyMessage" class="field" rows="3" placeholder="Type your reply..." required></textarea>
+        <button type="submit" class="btn btn-primary">
+            {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
+            Send Reply
+        </button>
+    </form>
+</div>
+{% endblock %}

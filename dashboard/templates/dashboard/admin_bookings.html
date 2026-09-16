@@ -1,0 +1,113 @@
+{% extends "dashboard/_base.html" %}
+{% load humanize %}
+
+{% block title %}Bookings | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-bookings{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="calendar" %} Bookings</h1></div>
+    <p>Every hotel/homestay booking request on the platform.</p>
+</div>
+
+<div class="dash-stats">
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="calendar" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.total }}</div><div class="dash-stat-card__label">Total Bookings</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="clock" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.pending }}</div><div class="dash-stat-card__label">Pending Approval</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="check" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.confirmed }}</div><div class="dash-stat-card__label">Confirmed</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="x" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.declined }}</div><div class="dash-stat-card__label">Declined</div></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="x" %}</span>
+        <div><div class="dash-stat-card__value">{{ stats.cancelled }}</div><div class="dash-stat-card__label">Cancelled</div></div>
+    </div>
+</div>
+
+<div class="dash-section">
+    <form method="get" class="dash-filter-bar">
+        <div class="dash-filter-bar__search">
+            {% include "partials/icon.html" with name="search" cls="icon-sm" %}
+            <input type="text" name="q" value="{{ selected_q }}" placeholder="Search by tenant, property or host...">
+        </div>
+        <select name="status">
+            <option value="">All Status</option>
+            {% for value, label in status_options %}
+            <option value="{{ value }}" {% if value == selected_status %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Filter</button>
+        {% if selected_q or selected_status %}
+        <a href="{% url 'dashboard:admin_bookings' %}" class="btn btn-secondary btn-sm">Reset</a>
+        {% endif %}
+    </form>
+
+    {% if bookings %}
+    <table class="record-table">
+        <thead>
+            <tr><th>Tenant</th><th>Property</th><th>Host</th><th>Dates</th><th>Total</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+        {% for booking in bookings %}
+            <tr>
+                <td data-label="Tenant">{{ booking.tenant.full_name }}<br><span class="slate" style="font-size:12px;">{{ booking.tenant.email }}</span></td>
+                <td class="record-property-cell" data-label="Property">
+                    <div class="record-property">
+                        {% if booking.property.cover_photo %}<img src="{{ booking.property.cover_photo.image.url }}" alt="">{% endif %}
+                        <div>
+                            <div class="record-property__title">{{ booking.property.title|default:"Untitled draft" }}</div>
+                            <div class="record-property__loc">{{ booking.property.short_location }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Host">{{ booking.property.owner.full_name }}</td>
+                <td data-label="Dates">{{ booking.check_in|date:"d M" }} &ndash; {{ booking.check_out|date:"d M Y" }} <span class="record-subtext">({{ booking.nights }} night{{ booking.nights|pluralize }})</span></td>
+                <td data-label="Total">{% if booking.total_price %}&#8377;{{ booking.total_price|floatformat:"0"|intcomma }}{% else %}&mdash;{% endif %}</td>
+                <td data-label="Status"><span class="status-pill status-pill--{{ booking.status }}">{{ booking.get_status_display }}</span></td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if page_obj.paginator.num_pages > 1 %}
+    <div class="pagination">
+        <div class="pagination__pages">
+            {% if page_obj.has_previous %}
+            <a href="?{{ carry_qs }}&page={{ page_obj.previous_page_number }}" aria-label="Previous page">{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</a>
+            {% else %}
+            <button type="button" aria-label="Previous page" disabled>{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %}</button>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if num == page_obj.number %}
+                <button type="button" class="is-active">{{ num }}</button>
+                {% else %}
+                <a href="?{{ carry_qs }}&page={{ num }}">{{ num }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <a href="?{{ carry_qs }}&page={{ page_obj.next_page_number }}" aria-label="Next page">{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</a>
+            {% else %}
+            <button type="button" aria-label="Next page" disabled>{% include "partials/icon.html" with name="chevron-right" cls="icon-sm" %}</button>
+            {% endif %}
+        </div>
+        <span class="slate" style="font-size:13px;">Showing {{ page_obj.start_index }} to {{ page_obj.end_index }} of {{ page_obj.paginator.count }} bookings</span>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="dash-empty">
+        {% include "partials/icon.html" with name="calendar" %}
+        <p>No bookings match your filters.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -46,3 +46,13 @@ class VisitTests(TestCase):
         self.assertRedirects(response, reverse('visits:my_visits'))
         visit.refresh_from_db()
         self.assertEqual(visit.status, Visit.Status.CANCELLED)
+
+    def test_cannot_cancel_a_completed_visit(self):
+        visit = Visit.objects.create(
+            tenant=self.tenant, property=self.property,
+            scheduled_at=timezone.now() - timezone.timedelta(days=1), status=Visit.Status.COMPLETED,
+        )
+        response = self.client.post(reverse('visits:cancel_visit', args=[visit.pk]))
+        self.assertRedirects(response, reverse('visits:my_visits'))
+        visit.refresh_from_db()
+        self.assertEqual(visit.status, Visit.Status.COMPLETED)

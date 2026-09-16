@@ -1,0 +1,66 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}Cities | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-cms{% endblock %}
+
+{% block content %}
+<div class="dash-breadcrumb"><a href="{% url 'dashboard:admin_cms' %}">&larr; Back to CMS Management</a></div>
+
+<div class="dash-page-head listings-head">
+    <div>
+        <h1 class="text-h2">{% include "partials/icon.html" with name="map-pin" %} Cities</h1>
+        <p>Cities offered in the Search Results and Home quick-search dropdowns. Owners can still list in any city by typing it — this list only controls what's offered as a quick pick.</p>
+    </div>
+    <a href="{% url 'dashboard:admin_city_add' %}" class="btn btn-primary">
+        {% include "partials/icon.html" with name="plus-circle" cls="icon-sm" %}
+        Add City
+    </a>
+</div>
+
+<div class="dash-stats">
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="map-pin" %}</span>
+        <div><span class="dash-stat-card__value">{{ stats.total }}</span><span class="dash-stat-card__label">Total Cities</span></div>
+    </div>
+    <div class="dash-stat-card">
+        <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="check" %}</span>
+        <div><span class="dash-stat-card__value">{{ stats.active }}</span><span class="dash-stat-card__label">Active</span></div>
+    </div>
+</div>
+
+<div class="dash-section">
+    <table class="record-table">
+        <thead>
+            <tr><th>City</th><th>Order</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for city in cities %}
+            <tr>
+                <td data-label="City"><div class="record-property__title">{{ city.name }}</div></td>
+                <td data-label="Order">{{ city.order }}</td>
+                <td data-label="Status">
+                    <span class="status-pill {% if city.is_active %}status-pill--published{% else %}status-pill--draft{% endif %}">
+                        {% if city.is_active %}Active{% else %}Inactive{% endif %}
+                    </span>
+                </td>
+                <td data-label="Actions">
+                    <div class="record-actions">
+                        <a href="{% url 'dashboard:admin_city_edit' city.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+                        <form method="post" action="{% url 'dashboard:admin_city_toggle' city.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm">{% if city.is_active %}Deactivate{% else %}Activate{% endif %}</button>
+                        </form>
+                        <form method="post" action="{% url 'dashboard:admin_city_delete' city.pk %}" onsubmit="return confirm('Delete {{ city.name }}? This cannot be undone.');">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm" style="color:var(--color-error);">Delete</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="4" class="slate">No cities yet — add one above.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}Settings | Rentora{% endblock %}
+{% block body_class %}page-dash-settings{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="sliders" %} Settings</h1></div>
+    <p>Manage your account preferences and security settings.</p>
+</div>
+
+<div class="settings-layout">
+    <nav class="settings-nav">
+        <a href="#panel-account" data-panel="panel-account">{% include "partials/icon.html" with name="user" cls="icon-sm" %} Account Settings</a>
+        <a href="#panel-password" data-panel="panel-password">{% include "partials/icon.html" with name="lock" cls="icon-sm" %} Change Password</a>
+        <a href="#panel-notifications" data-panel="panel-notifications">{% include "partials/icon.html" with name="bell" cls="icon-sm" %} Notification Preferences</a>
+        <a href="#panel-privacy" data-panel="panel-privacy">{% include "partials/icon.html" with name="shield-check" cls="icon-sm" %} Privacy Settings</a>
+        <a href="#panel-language" data-panel="panel-language">{% include "partials/icon.html" with name="info" cls="icon-sm" %} Language</a>
+        <a href="#panel-delete" data-panel="panel-delete" class="is-danger">{% include "partials/icon.html" with name="x" cls="icon-sm" %} Delete Account</a>
+    </nav>
+
+    <div>
+        <div class="dash-section settings-panel" id="panel-account">
+            <div class="dash-section__head">
+                <h2 class="text-h3">Account Settings</h2>
+                <a href="{% url 'dashboard:owner_profile' %}" class="btn btn-secondary btn-sm">Edit Profile</a>
+            </div>
+            <div class="settings-info-grid">
+                <div class="settings-info-item">{% include "partials/icon.html" with name="user" %}<div><strong>Full Name</strong><span>{{ user.full_name }}</span></div></div>
+                <div class="settings-info-item">{% include "partials/icon.html" with name="phone" %}<div><strong>Mobile Number</strong><span>{{ user.mobile_number|default:"Not set" }}{% if user.mobile_number %}{% if user.is_mobile_verified %} &middot; <span class="status-pill status-pill--published">Verified</span>{% else %} &middot; <a href="{% url 'accounts:mobile_verify_confirm' %}?next={{ request.path }}">Verify</a>{% endif %}{% endif %}</span></div></div>
+                <div class="settings-info-item">{% include "partials/icon.html" with name="envelope" %}<div><strong>Email Address</strong><span>{{ user.email }}</span></div></div>
+                <div class="settings-info-item">{% include "partials/icon.html" with name="calendar" %}<div><strong>Member Since</strong><span>{{ user.date_joined|date:"d M Y" }}</span></div></div>
+            </div>
+        </div>
+
+        <div class="dash-section settings-panel" id="panel-password">
+            <h2 class="text-h3" style="margin-bottom: var(--space-4);">Change Password</h2>
+            <form method="post" action="{% url 'dashboard:owner_settings_password' %}" style="max-width:400px;">
+                {% csrf_token %}
+                <div style="margin-bottom: var(--space-4);">
+                    <label class="field-label" for="{{ password_form.old_password.id_for_label }}">Current Password</label>
+                    {{ password_form.old_password }}
+                </div>
+                <div style="margin-bottom: var(--space-4);">
+                    <label class="field-label" for="{{ password_form.new_password1.id_for_label }}">New Password</label>
+                    {{ password_form.new_password1 }}
+                </div>
+                <div style="margin-bottom: var(--space-4);">
+                    <label class="field-label" for="{{ password_form.new_password2.id_for_label }}">Confirm New Password</label>
+                    {{ password_form.new_password2 }}
+                </div>
+                <button type="submit" class="btn btn-primary">Update Password</button>
+            </form>
+        </div>
+
+        <div class="dash-section settings-panel" id="panel-notifications">
+            <h2 class="text-h3" style="margin-bottom: var(--space-2);">Notification Preferences</h2>
+            <p class="slate" style="font-size:13px; margin-bottom: var(--space-4);">Only Email notifications are actually sent today — SMS and Push are saved as a preference for when that's built.</p>
+            <form method="post" action="{% url 'dashboard:owner_settings_notifications' %}">
+                {% csrf_token %}
+                {% for field in notification_form %}
+                <div class="settings-row">
+                    <div><div class="settings-row__label">{{ field.label }}</div></div>
+                    <label class="switch">{{ field }}<span class="switch-track"></span></label>
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary" style="margin-top: var(--space-4);">Save Preferences</button>
+            </form>
+        </div>
+
+        <div class="dash-section settings-panel" id="panel-privacy">
+            <h2 class="text-h3" style="margin-bottom: var(--space-4);">Privacy Settings</h2>
+            <form method="post" action="{% url 'dashboard:owner_settings_privacy' %}">
+                {% csrf_token %}
+                {% for field in privacy_form %}
+                <div class="settings-row">
+                    <div><div class="settings-row__label">{{ field.label }}</div></div>
+                    <label class="switch">{{ field }}<span class="switch-track"></span></label>
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-primary" style="margin-top: var(--space-4);">Save Privacy Settings</button>
+            </form>
+        </div>
+
+        <div class="dash-section settings-panel" id="panel-language">
+            <h2 class="text-h3" style="margin-bottom: var(--space-4);">Language</h2>
+            <form method="post" action="{% url 'dashboard:owner_settings_language' %}" style="max-width:280px;">
+                {% csrf_token %}
+                <label class="field-label" for="{{ language_form.language.id_for_label }}">Preferred Language</label>
+                {{ language_form.language }}
+                <button type="submit" class="btn btn-primary" style="margin-top: var(--space-4);">Save</button>
+            </form>
+        </div>
+
+        <div class="danger-zone settings-panel" id="panel-delete">
+            <h3>Delete Account</h3>
+            <p class="slate" style="font-size:13px; margin-bottom: var(--space-4);">This deactivates your account and logs you out. Your data isn't permanently erased — contact support if you want it fully removed.</p>
+            <form method="post" action="{% url 'dashboard:owner_settings_delete' %}" style="max-width:360px;">
+                {% csrf_token %}
+                <label class="field-label" for="confirmDelete">Type DELETE to confirm</label>
+                <input type="text" name="confirm" id="confirmDelete" class="field" placeholder="DELETE" required style="margin-bottom: var(--space-4);">
+                <button type="submit" class="btn" style="background: var(--color-error); color: var(--color-white);">Deactivate My Account</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

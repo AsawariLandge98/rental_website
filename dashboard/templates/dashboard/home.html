@@ -5,38 +5,44 @@
 {% block body_class %}page-dash-home{% endblock %}
 
 {% block content %}
-<div class="dash-page-head">
-    <h1 class="text-h2">Welcome back, {{ user.full_name|default:user.email|truncatechars:20 }} 👋</h1>
-    <p>Find your perfect rental home and manage your activities easily.</p>
+<div class="dash-welcome">
+    <div>
+        <h1 class="text-h2">{{ greeting }}, {{ user.full_name|default:user.email|truncatechars:20 }} <span class="wave">👋</span></h1>
+        <p>Find your perfect rental home and manage your activities easily.</p>
+    </div>
+    <a href="{% url 'properties:search' %}" class="btn btn-primary">
+        {% include "partials/icon.html" with name="search" cls="icon-sm" %}
+        Explore Properties
+    </a>
 </div>
 
 <div class="dash-stats">
-    <div class="dash-stat-card">
+    <div class="dash-stat-card dash-stat-card--kpi dash-stat-card--pink">
         <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="heart" %}</span>
         <div>
-            <div class="dash-stat-card__value">{{ saved_count }}</div>
             <div class="dash-stat-card__label">Saved Properties</div>
+            <div class="dash-stat-card__value">{{ saved_count }}</div>
         </div>
     </div>
-    <div class="dash-stat-card">
+    <div class="dash-stat-card dash-stat-card--kpi dash-stat-card--primary">
         <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="chat" %}</span>
         <div>
-            <div class="dash-stat-card__value">{{ active_inquiries_count }}</div>
             <div class="dash-stat-card__label">Active Inquiries</div>
+            <div class="dash-stat-card__value">{{ active_inquiries_count }}</div>
         </div>
     </div>
-    <div class="dash-stat-card">
+    <div class="dash-stat-card dash-stat-card--kpi dash-stat-card--teal">
         <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="calendar" %}</span>
         <div>
-            <div class="dash-stat-card__value">{{ scheduled_visits_count }}</div>
             <div class="dash-stat-card__label">Upcoming Visits</div>
+            <div class="dash-stat-card__value">{{ scheduled_visits_count }}</div>
         </div>
     </div>
-    <div class="dash-stat-card">
+    <div class="dash-stat-card dash-stat-card--kpi dash-stat-card--success">
         <span class="dash-stat-card__icon">{% include "partials/icon.html" with name="bell" %}</span>
         <div>
-            <div class="dash-stat-card__value">{{ unread_notifications_count }}</div>
             <div class="dash-stat-card__label">New Notifications</div>
+            <div class="dash-stat-card__value">{{ unread_notifications_count }}</div>
         </div>
     </div>
 </div>
@@ -55,8 +61,8 @@
                 {% endfor %}
             </div>
             {% else %}
-            <div class="dash-empty">
-                {% include "partials/icon.html" with name="eye" %}
+            <div class="dash-empty dash-empty--compact">
+                <span class="dash-empty__icon">{% include "partials/icon.html" with name="eye" %}</span>
                 <p>Properties you view will show up here.</p>
                 <a href="{% url 'properties:search' %}" class="btn btn-primary btn-sm">Browse Properties</a>
             </div>
@@ -78,18 +84,6 @@
             <p class="slate" style="font-size:13px;">No recommendations yet — save a few properties so we can tailor suggestions.</p>
             {% endif %}
         </div>
-
-        <div class="dash-section">
-            <h2 class="text-h3" style="margin-bottom: var(--space-4);">Quick Actions</h2>
-            <div class="dash-quick-actions">
-                <a href="{% url 'properties:search' %}">{% include "partials/icon.html" with name="search" %}Search Property</a>
-                <a href="{% url 'dashboard:tenant_saved' %}">{% include "partials/icon.html" with name="heart" %}Saved Properties</a>
-                <a href="{% url 'inquiries:my_inquiries' %}">{% include "partials/icon.html" with name="chat" %}My Inquiries</a>
-                <a href="{% url 'visits:my_visits' %}">{% include "partials/icon.html" with name="calendar" %}My Visits</a>
-                <a href="{% url 'dashboard:tenant_profile' %}">{% include "partials/icon.html" with name="user" %}Update Profile</a>
-                <a href="{% url 'dashboard:tenant_help' %}">{% include "partials/icon.html" with name="headset" %}Help &amp; Support</a>
-            </div>
-        </div>
     </div>
 
     <div>
@@ -99,18 +93,23 @@
                 <a href="{% url 'visits:my_visits' %}" class="link-more">View All</a>
             </div>
             {% for visit in upcoming_visits %}
-            <div class="dash-visit-item">
-                {% if visit.property.cover_photo %}
-                <img src="{{ visit.property.cover_photo.image.url }}" alt="" class="dash-visit-item__thumb">
-                {% endif %}
+            <div class="dash-visit-item dash-visit-item--compact">
+                <span class="dash-visit-item__icon">{% include "partials/icon.html" with name="calendar" cls="icon-sm" %}</span>
                 <div class="dash-visit-item__body">
-                    <div class="dash-visit-item__title">{{ visit.property.title }} <span class="status-pill status-pill--{{ visit.status }}">{{ visit.get_status_display }}</span></div>
+                    <div class="dash-visit-item__title">{{ visit.property.title|default:"Untitled draft" }}</div>
                     <div class="dash-visit-item__meta">{{ visit.property.short_location }}</div>
-                    <div class="dash-visit-item__meta">{{ visit.scheduled_at|date:"d M Y \a\t g:i A" }}</div>
+                </div>
+                <div class="dash-visit-item__when">
+                    <div class="dash-visit-item__date">{{ visit.scheduled_at|date:"d M Y" }}</div>
+                    <div class="dash-visit-item__time">{{ visit.scheduled_at|date:"g:i A" }}</div>
+                    <span class="status-pill status-pill--{{ visit.status }}">{{ visit.get_status_display }}</span>
                 </div>
             </div>
             {% empty %}
-            <p class="slate" style="font-size:13px;">No visits scheduled yet.</p>
+            <div class="dash-empty dash-empty--compact">
+                <span class="dash-empty__icon">{% include "partials/icon.html" with name="calendar" %}</span>
+                <p>No visits scheduled yet.</p>
+            </div>
             {% endfor %}
         </div>
 
@@ -120,16 +119,58 @@
                 <a href="{% url 'notifications:list' %}" class="link-more">View All</a>
             </div>
             {% for n in latest_notifications %}
-            <div class="dash-notif-list-item">
-                <span class="dash-stat-card__icon" style="width:32px;height:32px;">{% include "partials/icon.html" with name="bell" cls="icon-sm" %}</span>
-                <div class="dash-visit-item__body">
-                    <div style="font-size:13px;">{{ n.message }}</div>
-                    <div class="dash-visit-item__meta">{{ n.created_at|timesince }} ago</div>
+            <div class="dash-notif-item {% if not n.is_read %}is-unread{% endif %}">
+                <span class="dash-notif-item__icon">{% include "partials/icon.html" with name="bell" cls="icon-sm" %}</span>
+                <div class="dash-notif-item__body">
+                    <div class="dash-notif-item__message">{{ n.message }}</div>
+                    <div class="dash-notif-item__meta">{{ n.created_at|timesince }} ago</div>
                 </div>
+                {% if not n.is_read %}<span class="dash-notif-item__dot" aria-hidden="true"></span>{% endif %}
             </div>
             {% empty %}
-            <p class="slate" style="font-size:13px;">No notifications yet.</p>
+            <div class="dash-empty dash-empty--compact">
+                <span class="dash-empty__icon">{% include "partials/icon.html" with name="bell" %}</span>
+                <p>No notifications yet.</p>
+            </div>
             {% endfor %}
+        </div>
+
+        <div class="dash-section">
+            <div class="dash-section__head">
+                <h2 class="text-h3">Quick Actions</h2>
+            </div>
+            <div class="dash-quick-actions">
+                <a href="{% url 'properties:search' %}">
+                    <span class="dash-quick-actions__icon">{% include "partials/icon.html" with name="search" %}</span>
+                    <span class="dash-quick-actions__label">Search Property</span>
+                </a>
+                <a href="{% url 'dashboard:tenant_saved' %}">
+                    <span class="dash-quick-actions__icon dash-quick-actions__icon--navy">{% include "partials/icon.html" with name="heart" %}</span>
+                    <span class="dash-quick-actions__label">Saved Properties</span>
+                </a>
+                <a href="{% url 'inquiries:my_inquiries' %}">
+                    <span class="dash-quick-actions__icon dash-quick-actions__icon--amber">
+                        {% include "partials/icon.html" with name="chat" %}
+                        {% if active_inquiries_count %}<span class="dash-quick-actions__badge">{{ active_inquiries_count }}</span>{% endif %}
+                    </span>
+                    <span class="dash-quick-actions__label">My Inquiries</span>
+                </a>
+                <a href="{% url 'visits:my_visits' %}">
+                    <span class="dash-quick-actions__icon dash-quick-actions__icon--blue">
+                        {% include "partials/icon.html" with name="calendar" %}
+                        {% if scheduled_visits_count %}<span class="dash-quick-actions__badge">{{ scheduled_visits_count }}</span>{% endif %}
+                    </span>
+                    <span class="dash-quick-actions__label">My Visits</span>
+                </a>
+                <a href="{% url 'dashboard:tenant_profile' %}">
+                    <span class="dash-quick-actions__icon dash-quick-actions__icon--success">{% include "partials/icon.html" with name="user" %}</span>
+                    <span class="dash-quick-actions__label">Update Profile</span>
+                </a>
+                <a href="{% url 'dashboard:tenant_help' %}">
+                    <span class="dash-quick-actions__icon">{% include "partials/icon.html" with name="headset" %}</span>
+                    <span class="dash-quick-actions__label">Help &amp; Support</span>
+                </a>
+            </div>
         </div>
     </div>
 </div>

@@ -27,7 +27,7 @@
             </div>
             <div class="settings-info-grid">
                 <div class="settings-info-item">{% include "partials/icon.html" with name="user" %}<div><strong>Full Name</strong><span>{{ user.full_name }}</span></div></div>
-                <div class="settings-info-item">{% include "partials/icon.html" with name="phone" %}<div><strong>Mobile Number</strong><span>{{ user.mobile_number|default:"Not set" }}</span></div></div>
+                <div class="settings-info-item">{% include "partials/icon.html" with name="phone" %}<div><strong>Mobile Number</strong><span>{{ user.mobile_number|default:"Not set" }}{% if user.mobile_number %}{% if user.is_mobile_verified %} &middot; <span class="status-pill status-pill--published">Verified</span>{% else %} &middot; <a href="{% url 'accounts:mobile_verify_confirm' %}?next={{ request.path }}">Verify</a>{% endif %}{% endif %}</span></div></div>
                 <div class="settings-info-item">{% include "partials/icon.html" with name="envelope" %}<div><strong>Email Address</strong><span>{{ user.email }}</span></div></div>
                 <div class="settings-info-item">{% include "partials/icon.html" with name="calendar" %}<div><strong>Member Since</strong><span>{{ user.date_joined|date:"d M Y" }}</span></div></div>
             </div>

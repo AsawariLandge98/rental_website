@@ -2,7 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.contrib.auth.password_validation import validate_password
 
-from accounts.models import TenantProfile, User
+from accounts.models import OwnerProfile, TenantProfile, User
 from .models import SupportTicket
 
 
@@ -57,6 +57,27 @@ class PrivacyPreferencesForm(StyledModelForm):
 class LanguageForm(StyledModelForm):
     class Meta:
         model = TenantProfile
+        fields = ['language']
+
+
+class OwnerNotificationPreferencesForm(StyledModelForm):
+    class Meta:
+        model = OwnerProfile
+        fields = [
+            'email_notifications', 'sms_notifications', 'new_inquiry_alerts',
+            'visit_reminders', 'push_notifications', 'offers_updates',
+        ]
+
+
+class OwnerPrivacyPreferencesForm(StyledModelForm):
+    class Meta:
+        model = OwnerProfile
+        fields = ['show_contact_to_tenants', 'allow_tenant_contact']
+
+
+class OwnerLanguageForm(StyledModelForm):
+    class Meta:
+        model = OwnerProfile
         fields = ['language']
 
 

@@ -7,11 +7,66 @@
 <div class="dash-page-head listings-head">
     <div>
         <h1 class="text-h2">{% include "partials/icon.html" with name="document" %} CMS Management</h1>
-        <p>Manage the FAQs shown on the public Contact page and the Tenant Help &amp; Support page.</p>
+        <p>Manage every editable public page, plus the FAQs shown on Contact and Tenant Help &amp; Support.</p>
     </div>
     <a href="{% url 'dashboard:admin_cms_faq_add' %}" class="btn btn-primary">
         {% include "partials/icon.html" with name="plus-circle" cls="icon-sm" %}
         Add New FAQ
+    </a>
+</div>
+
+<div class="dash-section">
+    <div class="dash-section__head">
+        <h2 class="text-h3">Website Pages</h2>
+    </div>
+    <table class="record-table">
+        <thead>
+            <tr><th>Page</th><th>URL</th><th>Status</th><th>Last Updated</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for page in pages %}
+            <tr>
+                <td data-label="Page"><div class="record-property__title">{{ page.title }}</div></td>
+                <td data-label="URL"><span class="slate">{{ page.url }}</span></td>
+                <td data-label="Status"><span class="status-pill status-pill--published">Live</span></td>
+                <td data-label="Last Updated">{% if page.updated_at %}{{ page.updated_at|timesince }} ago{% else %}&mdash;{% endif %}</td>
+                <td data-label="Actions">
+                    <div class="record-actions">
+                        <a href="{{ page.url }}" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">View</a>
+                        <a href="{{ page.manage_url }}" class="btn btn-primary btn-sm">{{ page.manage_label }}</a>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="help-cards">
+    <a href="{% url 'dashboard:admin_cities' %}" class="help-card">
+        <span class="help-card__icon">{% include "partials/icon.html" with name="map-pin" %}</span>
+        <h3>Cities</h3>
+        <p>Cities offered in the search dropdown.</p>
+    </a>
+    <a href="{% url 'dashboard:admin_content_blocks' %}" class="help-card">
+        <span class="help-card__icon">{% include "partials/icon.html" with name="grid" %}</span>
+        <h3>Content Blocks</h3>
+        <p>Home, About and Become a Host sections.</p>
+    </a>
+    <a href="{% url 'dashboard:admin_legal_pages' %}" class="help-card">
+        <span class="help-card__icon">{% include "partials/icon.html" with name="shield-check" %}</span>
+        <h3>Legal Pages</h3>
+        <p>Terms &amp; Conditions and Privacy Policy.</p>
+    </a>
+    <a href="{% url 'dashboard:admin_site_settings' %}" class="help-card">
+        <span class="help-card__icon">{% include "partials/icon.html" with name="sliders" %}</span>
+        <h3>Site Settings</h3>
+        <p>Platform name, logo, contact info and social links.</p>
+    </a>
+    <a href="{% url 'dashboard:admin_seo_settings' %}" class="help-card">
+        <span class="help-card__icon">{% include "partials/icon.html" with name="search" %}</span>
+        <h3>SEO Settings</h3>
+        <p>Per-page meta tags, Analytics and Pixel tracking.</p>
     </a>
 </div>
 

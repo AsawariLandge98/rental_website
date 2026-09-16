@@ -1,5 +1,14 @@
 from django.conf import settings
+from django.core.validators import FileExtensionValidator
 from django.db import models
+
+from core.validators import MaxFileSizeValidator
+
+# Real allowlist — arbitrary files (.exe, .php, .html/.svg that could be
+# served back and executed/rendered) were previously accepted with zero
+# validation. Covers what a support ticket plausibly needs: a screenshot or
+# a short document.
+SUPPORT_ATTACHMENT_EXTENSIONS = ['pdf', 'jpg', 'jpeg', 'png', 'webp', 'doc', 'docx', 'txt']
 
 
 class SupportTicket(models.Model):
@@ -18,8 +27,16 @@ class SupportTicket(models.Model):
     subject = models.CharField(max_length=150)
     category = models.CharField(max_length=15, choices=Category.choices, default=Category.OTHER)
     description = models.TextField()
-    attachment = models.FileField(upload_to='support_tickets/%Y/%m/', null=True, blank=True)
+    attachment = models.FileField(
+        upload_to='support_tickets/%Y/%m/', null=True, blank=True,
+        validators=[FileExtensionValidator(allowed_extensions=SUPPORT_ATTACHMENT_EXTENSIONS), MaxFileSizeValidator(5120)],
+        help_text='PDF, image or document — up to 5 MB.',
+    )
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN)
+    page_url = models.CharField(
+        max_length=255, blank=True,
+        help_text='Page the user was on when they raised this via the floating help widget.',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

@@ -4,6 +4,8 @@ Usage: {% include "partials/property_card.html" with property=p %}
 Expects a dict/object with: id, title, location, beds, baths, area, price, image, no_brokerage
 Optional: badge = "featured" | "premium" (derived from the listing's plan — never a verification claim, since verification isn't implemented)
 Optional: photo_count = total photos (renders a "1/N" pill on the cover image if present)
+Optional: rating + review_count = real Avg/Count from reviews.Review (see properties/views.py::_with_rating) — the badge only renders when review_count is truthy, so a listing with zero reviews shows no rating at all rather than a fake "0.0"
+
 Optional: show_actions=True renders View Details / Contact Owner buttons (search results)
 {% endcomment %}
 <article class="property-card">
@@ -48,6 +50,13 @@ Optional: show_actions=True renders View Details / Contact Owner buttons (search
         <h3 class="property-card__title">
             {% if property.id %}<a href="{% url 'properties:detail' property.id %}">{{ property.title }}</a>{% else %}{{ property.title }}{% endif %}
         </h3>
+        {% if property.review_count %}
+        <div class="property-card__rating">
+            {% include "partials/icon.html" with name="star" cls="icon-sm" %}
+            <strong>{{ property.rating|floatformat:1 }}</strong>
+            <span>({{ property.review_count }})</span>
+        </div>
+        {% endif %}
         {% if property.amenities %}
         <div class="property-card__amenities">
             {% for amenity in property.amenities %}
@@ -62,7 +71,7 @@ Optional: show_actions=True renders View Details / Contact Owner buttons (search
             <span class="property-card__location" title="{{ property.city }}">{{ property.city }}</span>
             <div class="property-card__price">
                 <span class="text-price-stat">&#8377;{{ property.price|floatformat:"0"|intcomma }}</span>
-                <span>/month</span>
+                <span>/{{ property.price_period|default:"month" }}</span>
             </div>
         </div>
         {% if show_actions %}

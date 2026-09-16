@@ -51,7 +51,12 @@ def my_visits(request):
 @require_POST
 def cancel_visit(request, pk):
     visit = get_object_or_404(Visit, pk=pk, tenant=request.user)
-    visit.status = Visit.Status.CANCELLED
-    visit.save(update_fields=['status'])
-    messages.success(request, 'Visit cancelled.')
+    # Only pending/scheduled visits are cancellable — same states the UI's
+    # own Cancel button is gated on. Without this, a completed visit could
+    # be retroactively cancelled via a direct POST, undermining it as a
+    # real "this visit actually happened" record.
+    if visit.status in (Visit.Status.PENDING, Visit.Status.SCHEDULED):
+        visit.status = Visit.Status.CANCELLED
+        visit.save(update_fields=['status'])
+        messages.success(request, 'Visit cancelled.')
     return redirect('visits:my_visits')

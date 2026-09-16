@@ -1,0 +1,60 @@
+{% comment %}
+Floating "Help & Support" launcher — bottom-right on every public page and
+every Tenant/Owner/Hotel dashboard page. Lets a logged-in user fire off a
+quick query about the page they're currently on without leaving it, or jump
+to the full Help & Support page. Hidden entirely for Admin/Super Admin
+(they provide support, not request it) and for guests it collapses to a
+login prompt instead of the form.
+{% endcomment %}
+{% if not user.is_authenticated or user.role == "tenant" or user.role == "owner" or user.role == "hotel" %}
+<div class="help-widget js-help-widget">
+    <button type="button" class="help-widget__toggle js-help-widget-toggle" aria-label="Help &amp; Support" aria-expanded="false">
+        {% include "partials/icon.html" with name="headset" %}
+    </button>
+
+    <div class="help-widget__panel js-help-widget-panel" hidden>
+        <div class="help-widget__head">
+            <h3>Need help?</h3>
+            <button type="button" class="icon-btn js-help-widget-close" aria-label="Close">
+                {% include "partials/icon.html" with name="x" cls="icon-sm" %}
+            </button>
+        </div>
+
+        {% if user.is_authenticated %}
+        <p class="help-widget__hint">Raise a quick query about this page, or open the full Help &amp; Support page.</p>
+
+        <form method="post" action="{% url 'dashboard:quick_support_ticket' %}" class="help-widget__form js-help-widget-form">
+            {% csrf_token %}
+            <input type="hidden" name="page_url" value="{{ request.path }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <input type="text" name="subject" class="field" placeholder="Subject" maxlength="150" required>
+            <select name="category" class="field">
+                <option value="account">Account</option>
+                <option value="property">Property</option>
+                <option value="inquiry">Inquiry / Visit</option>
+                <option value="payment">Payment</option>
+                <option value="other" selected>Other</option>
+            </select>
+            <textarea name="description" class="field" rows="3" placeholder="Describe your query..." maxlength="1000" required></textarea>
+            <button type="submit" class="btn btn-primary btn-block btn-sm js-help-widget-submit">
+                {% include "partials/icon.html" with name="send" cls="icon-sm" %}
+                Send Query
+            </button>
+        </form>
+
+        <div class="help-widget__success js-help-widget-success" hidden>
+            {% include "partials/icon.html" with name="check" cls="icon-sm" %}
+            <span>Sent — our team will get back to you.</span>
+        </div>
+
+        <a href="{% if user.role == 'tenant' %}{% url 'dashboard:tenant_help' %}{% else %}{% url 'dashboard:owner_help' %}{% endif %}" class="help-widget__full-link">
+            Go to full Help &amp; Support page
+            {% include "partials/icon.html" with name="arrow-right" cls="icon-sm" %}
+        </a>
+        {% else %}
+        <p class="help-widget__hint">Log in to raise a support query.</p>
+        <a href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}" class="btn btn-primary btn-block btn-sm">Log In</a>
+        {% endif %}
+    </div>
+</div>
+{% endif %}

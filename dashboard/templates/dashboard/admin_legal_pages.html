@@ -1,0 +1,38 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}Legal Pages | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-cms{% endblock %}
+
+{% block content %}
+<div class="dash-breadcrumb"><a href="{% url 'dashboard:admin_cms' %}">&larr; Back to CMS Management</a></div>
+
+<div class="dash-page-head">
+    <h1 class="text-h2">{% include "partials/icon.html" with name="shield-check" %} Legal Pages</h1>
+    <p>Terms &amp; Conditions and Privacy Policy — shown at registration and linked from the footer.</p>
+</div>
+
+<div class="dash-section">
+    <table class="record-table">
+        <thead>
+            <tr><th>Page</th><th>Last Updated</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+        {% for page in pages %}
+            <tr>
+                <td data-label="Page">
+                    <div class="record-property__title">{{ page.title }}</div>
+                    <div class="record-property__loc">/{{ page.slug }}/</div>
+                </td>
+                <td data-label="Last Updated">{{ page.updated_at|date:"d M Y, g:i A" }}</td>
+                <td data-label="Actions">
+                    <div class="record-actions">
+                        <a href="{% url 'core:legal_page' page.slug %}" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">View Live</a>
+                        <a href="{% url 'dashboard:admin_legal_page_edit' page.pk %}" class="btn btn-primary btn-sm">Edit</a>
+                    </div>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}System Settings | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-settings{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <h1 class="text-h2">{% include "partials/icon.html" with name="sliders" %} System Settings</h1>
+    <p>Platform-wide settings that are actually enforced somewhere — not a form full of switches that do nothing.</p>
+</div>
+
+<div class="dash-section">
+    <h2 class="text-h3" style="margin-bottom: var(--space-2);">Property Listing Limits</h2>
+    <p class="slate" style="font-size:13px; margin-bottom: var(--space-4);">Enforced live in the Add Property wizard's Photos step.</p>
+    <form method="post" style="max-width:400px;">
+        {% csrf_token %}
+        <div class="profile-form-grid">
+            <div>
+                <label class="field-label" for="{{ form.min_photos_to_publish.id_for_label }}">Min Photos to Publish</label>
+                {{ form.min_photos_to_publish }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ form.max_photos_per_listing.id_for_label }}">Max Photos per Listing</label>
+                {{ form.max_photos_per_listing }}
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="margin-top: var(--space-2);">Save Changes</button>
+    </form>
+</div>
+
+<div class="dash-grid-2">
+    <div class="dash-section">
+        <div class="dash-section__head">
+            <h2 class="text-h3">Contact &amp; Social</h2>
+            <a href="{% url 'dashboard:admin_site_settings' %}" class="link-more">Edit</a>
+        </div>
+        <div class="settings-info-grid">
+            <div class="settings-info-item">{% include "partials/icon.html" with name="phone" %}<div><strong>Support Phone</strong><span>{{ site_settings.support_phone|default:"Not set" }}</span></div></div>
+            <div class="settings-info-item">{% include "partials/icon.html" with name="envelope" %}<div><strong>Support Email</strong><span>{{ site_settings.support_email|default:"Not set" }}</span></div></div>
+        </div>
+    </div>
+
+    <div class="dash-section">
+        <h2 class="text-h3" style="margin-bottom: var(--space-4);">Integration Status</h2>
+        <div class="settings-info-grid">
+            {% for integration in integrations %}
+            <div class="settings-info-item">
+                {% include "partials/icon.html" with name="check" cls="icon-sm" %}
+                <div>
+                    <strong>{{ integration.name }}</strong>
+                    {% if integration.configured %}
+                    <span class="status-pill status-pill--published">Configured</span>
+                    {% else %}
+                    <span class="status-pill status-pill--draft">Not Configured</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <p class="slate" style="font-size:12px; margin: var(--space-4) 0;">Email delivery: {{ email_mode }}</p>
+        <form method="post" action="{% url 'dashboard:admin_send_test_email' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary btn-sm" {% if not email_configured %}title="Add EMAIL_HOST/EMAIL_HOST_USER/EMAIL_HOST_PASSWORD to .env first"{% endif %}>
+                {% include "partials/icon.html" with name="send" cls="icon-sm" %}
+                Send Test Email to {{ user.email }}
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

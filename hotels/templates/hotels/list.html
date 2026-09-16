@@ -48,8 +48,8 @@
                     <span>Property Type</span>
                     <select name="property_type">
                         <option value="">Any</option>
-                        {% for pt in property_type_options %}
-                        <option value="{{ pt }}" {% if pt == selected_property_type %}selected{% endif %}>{{ pt }}</option>
+                        {% for value, label in property_type_options %}
+                        <option value="{{ value }}" {% if value == selected_property_type %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </span>
@@ -91,28 +91,7 @@
         {% if stays %}
         <div class="stay-grid">
             {% for stay in stays %}
-            <article class="stay-card">
-                <div class="stay-card__media">
-                    <img src="{{ stay.image }}" alt="{{ stay.title }}" loading="lazy">
-                    <span class="badge stay-card__tag stay-card__tag--{{ stay.property_type|lower }}">{{ stay.property_type }}</span>
-                </div>
-                <div class="stay-card__body">
-                    <h3 class="stay-card__title">{{ stay.title }}</h3>
-                    <div class="stay-card__amenities">
-                        {% for a in stay.amenities|slice:":4" %}
-                        <span class="stay-card__amenity">{% include "partials/icon.html" with name=a.icon cls="icon-sm" %}{{ a.label }}</span>
-                        {% endfor %}
-                    </div>
-                    <div class="stay-card__footer">
-                        <span class="stay-card__location" title="{{ stay.location }}">{{ stay.location }}</span>
-                        <div class="stay-card__price">
-                            <span class="text-price-stat">&#8377;{{ stay.price }}</span>
-                            <span>/night</span>
-                        </div>
-                    </div>
-                    <span class="btn btn-secondary btn-sm btn-block is-disabled" title="Full stay details are coming soon" aria-disabled="true">Details Coming Soon</span>
-                </div>
-            </article>
+            {% include "partials/property_card.html" with property=stay show_actions=True %}
             {% endfor %}
         </div>
         {% else %}

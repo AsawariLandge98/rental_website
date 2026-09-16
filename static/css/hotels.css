@@ -30,82 +30,26 @@
 
 /* ==========================================================================
    Layout — full-width results, no filters panel and no sidebar (nothing
-   real to put in one right now).
+   real to put in one right now). Results render via the shared
+   partials/property_card.html — a hotel/homestay listing is just a real
+   Property with category=hotel|guest_house|homestay, so it reuses the
+   exact same card as every other listing (real save/contact included).
    ========================================================================== */
 .stay-layout { padding-block: var(--space-8) var(--space-12); }
 
-/* ==========================================================================
-   Stay grid + card — same flat, borderless language as .property-card /
-   .roommate-card
-   ========================================================================== */
 .stay-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* auto-fill, not auto-fit: auto-fit collapses empty tracks and lets the
+     1fr on a surviving track absorb ALL the freed space — with only 1-2
+     real listings (the common case right now) that stretches a lone card
+     to the full container width, badly distorting it. auto-fill keeps the
+     unused tracks as real (empty) grid columns instead of collapsing them,
+     so a card never grows past its natural size regardless of how few
+     stays exist, while still filling the row responsively once there are
+     enough to need it. */
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: var(--space-6);
 }
-
-.stay-card {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.stay-card__media {
-  position: relative;
-  aspect-ratio: 1 / 1;
-  background: var(--color-blue-50);
-  border-radius: 16px;
-  overflow: hidden;
-}
-.stay-card__media img { width: 100%; height: 100%; object-fit: cover; transition: transform .4s var(--ease); }
-.stay-card:hover .stay-card__media img { transform: scale(1.05); }
-.stay-card__tag { position: absolute; top: var(--space-3); left: var(--space-3); color: var(--color-white); }
-.stay-card__tag--resort { background: var(--color-premium-gold); color: var(--color-navy-900); }
-.stay-card__tag--homestay { background: var(--color-success); }
-.stay-card__tag--hotel { background: var(--color-blue-500); }
-
-.stay-card__body { flex: 1; padding-top: var(--space-3); display: flex; flex-direction: column; gap: 4px; }
-.stay-card__title { font: 600 15px/20px var(--font-heading); color: var(--color-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-.stay-card__amenities { display: flex; flex-wrap: wrap; gap: 6px; max-height: 50px; overflow: hidden; }
-.stay-card__amenity {
-  display: inline-flex;
-  flex-shrink: 0;
-  align-items: center;
-  gap: 4px;
-  height: 22px;
-  background: var(--color-offwhite);
-  color: var(--color-slate);
-  font-size: 11px;
-  font-weight: 500;
-  white-space: nowrap;
-  padding: 0 8px;
-  border-radius: var(--radius-pill);
-}
-.stay-card__amenity svg { width: 13px; height: 13px; flex-shrink: 0; }
-
-.stay-card__footer {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: var(--space-2);
-  margin-top: auto;
-  padding-top: 4px;
-}
-.stay-card__location {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  color: var(--color-slate);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.stay-card__price { display: flex; align-items: baseline; gap: 4px; flex-shrink: 0; }
-.stay-card__price .text-price-stat { color: var(--color-ink); }
-.stay-card__price span { font-size: 13px; color: var(--color-slate); }
-
-.stay-card .btn.is-disabled { margin-top: var(--space-2); pointer-events: none; opacity: .6; }
 
 /* ==========================================================================
    Responsive
@@ -114,13 +58,10 @@
   .hotel-hero { height: 220px; }
 
   .stay-layout { padding-block: var(--space-6) var(--space-8); }
-  .stay-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 767px) {
   .hotel-hero { height: 180px; }
   .hotel-hero__title { font-size: 1.375rem; }
   .hotel-hero__subtitle { font-size: 13px; }
-
-  .stay-grid { grid-template-columns: 1fr; }
 }

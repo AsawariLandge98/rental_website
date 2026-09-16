@@ -1,0 +1,58 @@
+databases:
+  - name: rentora-db
+    plan: free
+
+services:
+  - type: web
+    name: rentora
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate"
+    startCommand: "gunicorn rental_project.wsgi:application"
+    envVars:
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      - key: DJANGO_ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: rentora-db
+          property: connectionString
+      # Everything below is blank/unconfigured by design (same
+      # "scaffolding first, keys later" pattern used throughout the app) —
+      # fill these in via the Render dashboard once you have real values.
+      # The app runs fine with all of them left blank; it just keeps the
+      # matching feature in its safe fallback state (console email, local
+      # disk storage, dev-mode OTP, etc.) until you do.
+      - key: EMAIL_HOST
+        value: ""
+      - key: EMAIL_HOST_USER
+        value: ""
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        value: ""
+      - key: DJANGO_ADMINS
+        value: ""
+      - key: RAZORPAY_KEY_ID
+        value: ""
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        value: ""
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        value: ""
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_STORAGE_BUCKET_NAME
+        value: ""
+      - key: AWS_S3_REGION_NAME
+        value: ""
+      - key: SMS_API_URL
+        value: ""
+      - key: SMS_API_KEY
+        sync: false

@@ -16,6 +16,12 @@
         <a href="{% url 'dashboard:admin_visits' %}" class="dash-sidebar__link {% if url_name == 'admin_visits' %}is-active{% endif %}">
             {% include "partials/icon.html" with name="calendar" %} <span>Property Visits</span>
         </a>
+        <a href="{% url 'dashboard:admin_bookings' %}" class="dash-sidebar__link {% if url_name == 'admin_bookings' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="calendar" %} <span>Bookings</span>
+        </a>
+        <a href="{% url 'dashboard:admin_reviews' %}" class="dash-sidebar__link {% if url_name == 'admin_reviews' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="star" %} <span>Reviews</span>
+        </a>
         <a href="{% url 'dashboard:admin_payments' %}" class="dash-sidebar__link {% if url_name == 'admin_payments' %}is-active{% endif %}">
             {% include "partials/icon.html" with name="id-card" %} <span>Payments</span>
         </a>
@@ -28,7 +34,7 @@
         <a href="{% url 'dashboard:admin_support' %}" class="dash-sidebar__link {% if url_name == 'admin_support' %}is-active{% endif %}">
             {% include "partials/icon.html" with name="headset" %} <span>Support Tickets</span>
         </a>
-        <a href="{% url 'dashboard:admin_cms' %}" class="dash-sidebar__link {% if url_name == 'admin_cms' %}is-active{% endif %}">
+        <a href="{% url 'dashboard:admin_cms' %}" class="dash-sidebar__link {% if url_name == 'admin_cms' or url_name == 'admin_cms_faq_add' or url_name == 'admin_cms_faq_edit' or url_name == 'admin_cities' or url_name == 'admin_city_add' or url_name == 'admin_city_edit' or url_name == 'admin_content_blocks' or url_name == 'admin_content_block_add' or url_name == 'admin_content_block_edit' or url_name == 'admin_legal_pages' or url_name == 'admin_legal_page_edit' or url_name == 'admin_site_settings' or url_name == 'admin_seo_settings' or url_name == 'admin_page_seo_edit' %}is-active{% endif %}">
             {% include "partials/icon.html" with name="document" %} <span>CMS Management</span>
         </a>
         <a href="{% url 'dashboard:admin_audit_logs' %}" class="dash-sidebar__link {% if url_name == 'admin_audit_logs' %}is-active{% endif %}">

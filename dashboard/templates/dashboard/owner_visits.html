@@ -6,7 +6,7 @@
 {% block content %}
 <div class="dash-page-head">
     <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="calendar" %} Property Visits</h1></div>
-    <p>Visits tenants have requested for your listings. Approve or decline a request to confirm it.</p>
+    <p>Visits tenants have requested for your listings. Approve or decline a request, then mark it completed once it's actually happened.</p>
 </div>
 
 <div class="dash-stats">
@@ -58,7 +58,7 @@
         <tbody>
         {% for visit in visits %}
             <tr>
-                <td data-label="Tenant">{{ visit.tenant.full_name }}<br><span class="slate" style="font-size:12px;">{{ visit.tenant.email }}</span></td>
+                <td data-label="Tenant">{{ visit.tenant.full_name }}<br><span class="record-subtext">{{ visit.tenant.email }}</span></td>
                 <td class="record-property-cell" data-label="Property">
                     <div class="record-property">
                         {% if visit.property.cover_photo %}<img src="{{ visit.property.cover_photo.image.url }}" alt="">{% endif %}
@@ -79,12 +79,16 @@
                         </form>
                         <form method="post" action="{% url 'dashboard:owner_visit_decline' visit.pk %}" onsubmit="return confirm('Decline this visit request? The tenant will be notified.');">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-secondary btn-sm" style="color:var(--color-error);">Decline</button>
+                            <button type="submit" class="btn btn-secondary btn-sm btn-danger-text">Decline</button>
                         </form>
                         {% elif visit.status == "scheduled" %}
+                        <form method="post" action="{% url 'dashboard:owner_visit_complete' visit.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-primary btn-sm">Mark Completed</button>
+                        </form>
                         <form method="post" action="{% url 'dashboard:owner_visit_cancel' visit.pk %}" onsubmit="return confirm('Cancel this visit? The tenant will be notified.');">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-secondary btn-sm" style="color:var(--color-error);">Cancel</button>
+                            <button type="submit" class="btn btn-secondary btn-sm btn-danger-text">Cancel</button>
                         </form>
                         {% endif %}
                     </div>

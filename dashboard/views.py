@@ -3,47 +3,50 @@ from datetime import timedelta
 from django.contrib import messages
 from django.contrib.auth import logout as auth_logout
 from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth.decorators import login_required
+from django.conf import settings as django_settings
 from django.contrib.auth.forms import PasswordChangeForm
 from django.core.paginator import Paginator
-from django.db.models import Count, Q
-from django.http import Http404
+from django.db.models import Avg, Count, Max, Q
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from accounts.models import TenantProfile, User
-from cms.forms import FAQForm
-from cms.models import FAQ
-from inquiries.models import Inquiry
+from accounts.models import OwnerProfile, TenantProfile, User
+from cms.forms import (
+    ContentBlockForm, FAQForm, LegalPageForm, PageSEOForm, PropertyLimitsForm, SeoSettingsForm, SiteSettingsForm,
+)
+from cms.models import ContentBlock, FAQ, LegalPage, PageSEO, SiteSettings
+from core.forms import CityForm
+from core.models import City
+from inquiries.models import Inquiry, InquiryReply
+from bookings.models import Booking
+from bookings.views import _dates_overlap
 from notifications.models import Notification, notify
 from properties.models import Property
 from properties.views import _property_card_context, _saved_ids_for
 from subscriptions.forms import SubscriptionPlanForm
 from subscriptions.models import Payment, Subscription, SubscriptionPlan
+from reviews.models import Review
 from visits.models import Visit
 from .decorators import admin_required, owner_or_hotel_required, super_admin_required, tenant_required
 from .forms import (
     AccountBasicsForm, AdminCreateForm, LanguageForm, NotificationPreferencesForm,
+    OwnerLanguageForm, OwnerNotificationPreferencesForm, OwnerPrivacyPreferencesForm,
     PrivacyPreferencesForm, SupportTicketForm, TenantProfileForm,
 )
 from .models import AuditLog, SupportTicket, log_admin_action
 
-OWNER_COMING_SOON_SECTIONS = {
-    'settings': (
-        'Settings',
-        'Notification, privacy and language preferences are coming in a future update. You can already update '
-        'your name, phone number and password from My Profile.',
-    ),
-    'help': (
-        'Help & Support',
-        "A dedicated support ticket system for owners is coming in a future update. In the meantime, reach us "
-        "from the Contact page.",
-    ),
-}
-
 def _get_profile(user):
     profile, _ = TenantProfile.objects.get_or_create(user=user)
     return profile
+
+
+def _time_greeting():
+    hour = timezone.now().hour
+    return 'Good morning' if hour < 12 else 'Good afternoon' if hour < 17 else 'Good evening'
 
 
 @tenant_required
@@ -72,6 +75,7 @@ def tenant_home(request):
     ).select_related('property').order_by('scheduled_at')[:3]
 
     context = {
+        'greeting': _time_greeting(),
         'tenant_profile': tenant_profile,
         'saved_count': len(saved_ids),
         'active_inquiries_count': request.user.inquiries.filter(status=Inquiry.Status.OPEN).count(),
@@ -212,8 +216,6 @@ def owner_home(request):
     properties = request.user.properties.all()
     now = timezone.now()
     month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-    hour = now.hour
-    greeting = 'Good morning' if hour < 12 else 'Good afternoon' if hour < 17 else 'Good evening'
 
     open_inquiries = Inquiry.objects.filter(property__owner=request.user, status=Inquiry.Status.OPEN)
     stats = {
@@ -229,7 +231,7 @@ def owner_home(request):
     }
 
     context = {
-        'greeting': greeting,
+        'greeting': _time_greeting(),
         'stats': stats,
         'recent_properties': properties.prefetch_related('photos').annotate(
             inquiries_count=Count('inquiries', distinct=True),
@@ -308,6 +310,25 @@ def owner_inquiries(request):
 
 
 @owner_or_hotel_required
+def owner_inquiry_detail(request, pk):
+    inquiry = get_object_or_404(
+        Inquiry.objects.select_related('tenant', 'property'), pk=pk, property__owner=request.user,
+    )
+    if request.method == 'POST':
+        body = request.POST.get('message', '').strip()
+        if body:
+            InquiryReply.objects.create(inquiry=inquiry, sender=request.user, message=body)
+            notify(
+                inquiry.tenant, f'{request.user.full_name} replied about "{inquiry.property.title}".',
+                category=Notification.Category.INQUIRY, url=f'/tenant/dashboard/inquiries/{inquiry.pk}/',
+            )
+            return redirect('dashboard:owner_inquiry_detail', pk=inquiry.pk)
+
+    replies = inquiry.replies.select_related('sender')
+    return render(request, 'dashboard/owner_inquiry_detail.html', {'inquiry': inquiry, 'replies': replies})
+
+
+@owner_or_hotel_required
 @require_POST
 def owner_inquiry_set_status(request, pk, status):
     inquiry = get_object_or_404(Inquiry, pk=pk, property__owner=request.user)
@@ -316,7 +337,6 @@ def owner_inquiry_set_status(request, pk, status):
         raise Http404('Invalid status change.')
     inquiry.status = status
     inquiry.save(update_fields=['status'])
-    messages.success(request, f'Inquiry marked as {inquiry.get_status_display()}.')
     return redirect('dashboard:owner_inquiries')
 
 
@@ -366,7 +386,6 @@ def owner_visit_cancel(request, pk):
             visit.tenant, f'Your visit for "{visit.property.title or "a property"}" was cancelled by the owner.',
             category=Notification.Category.VISIT, url='/tenant/dashboard/visits/',
         )
-        messages.success(request, 'Visit cancelled.')
     return redirect('dashboard:owner_visits')
 
 
@@ -382,7 +401,6 @@ def owner_visit_approve(request, pk):
             f'Your visit for "{visit.property.title or "a property"}" on {visit.scheduled_at:%d %b %Y, %I:%M %p} was confirmed by the owner.',
             category=Notification.Category.VISIT, url='/tenant/dashboard/visits/',
         )
-        messages.success(request, 'Visit approved.')
     return redirect('dashboard:owner_visits')
 
 
@@ -397,16 +415,278 @@ def owner_visit_decline(request, pk):
             visit.tenant, f'Your visit request for "{visit.property.title or "a property"}" was declined by the owner.',
             category=Notification.Category.VISIT, url='/tenant/dashboard/visits/',
         )
-        messages.success(request, 'Visit declined.')
     return redirect('dashboard:owner_visits')
 
 
 @owner_or_hotel_required
-def owner_coming_soon(request, section):
-    if section not in OWNER_COMING_SOON_SECTIONS:
-        raise Http404('Unknown dashboard section.')
-    title, description = OWNER_COMING_SOON_SECTIONS[section]
-    return render(request, 'dashboard/owner_coming_soon.html', {'title': title, 'description': description})
+@require_POST
+def owner_visit_complete(request, pk):
+    """Real completion tracking — the owner is the one physically present,
+    so they're the one who can honestly confirm a visit actually happened
+    (same reasoning as them being the Approve/Decline gate). Only allowed
+    once the scheduled time has actually passed — can't mark a future
+    visit "completed" any more than a fake verification badge would be
+    allowed elsewhere on this site."""
+    visit = get_object_or_404(Visit, pk=pk, property__owner=request.user)
+    if visit.status != Visit.Status.SCHEDULED:
+        return redirect('dashboard:owner_visits')
+    if timezone.now() < visit.scheduled_at:
+        messages.error(request, "You can only mark a visit completed after its scheduled time has passed.")
+        return redirect('dashboard:owner_visits')
+    visit.status = Visit.Status.COMPLETED
+    visit.save(update_fields=['status'])
+    notify(
+        visit.tenant, f'Your visit for "{visit.property.title or "a property"}" was marked as completed.',
+        category=Notification.Category.VISIT, url='/tenant/dashboard/visits/',
+    )
+    return redirect('dashboard:owner_visits')
+
+
+@owner_or_hotel_required
+def owner_bookings(request):
+    all_bookings = Booking.objects.filter(property__owner=request.user).select_related('tenant', 'property')
+    stats = {
+        'total': all_bookings.count(),
+        'pending': all_bookings.filter(status=Booking.Status.PENDING).count(),
+        'confirmed': all_bookings.filter(status=Booking.Status.CONFIRMED).count(),
+        'declined': all_bookings.filter(status=Booking.Status.DECLINED).count(),
+        'cancelled': all_bookings.filter(status=Booking.Status.CANCELLED).count(),
+    }
+
+    queryset = all_bookings
+    q = request.GET.get('q', '').strip()
+    status = request.GET.get('status', '')
+    if q:
+        queryset = queryset.filter(Q(tenant__full_name__icontains=q) | Q(property__title__icontains=q))
+    if status:
+        queryset = queryset.filter(status=status)
+
+    paginator = Paginator(queryset.order_by('-created_at'), 10)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    carry_params = request.GET.copy()
+    carry_params.pop('page', None)
+
+    return render(request, 'dashboard/owner_bookings.html', {
+        'bookings': page_obj,
+        'page_obj': page_obj,
+        'carry_qs': carry_params.urlencode(),
+        'stats': stats,
+        'status_options': Booking.Status.choices,
+        'selected_q': q,
+        'selected_status': status,
+    })
+
+
+@owner_or_hotel_required
+@require_POST
+def owner_booking_confirm(request, pk):
+    booking = get_object_or_404(Booking, pk=pk, property__owner=request.user)
+    if booking.status != Booking.Status.PENDING:
+        return redirect('dashboard:owner_bookings')
+
+    # Two PENDING requests can exist for overlapping dates (the tenant-side
+    # overlap check in bookings/views.py::request_booking only blocks
+    # against already-CONFIRMED bookings) — re-check here so confirming one
+    # can't double-book a date range another confirmed booking already
+    # holds.
+    confirmed = Booking.objects.filter(
+        property=booking.property, status=Booking.Status.CONFIRMED,
+    ).exclude(pk=booking.pk)
+    if any(_dates_overlap(booking.check_in, booking.check_out, b.check_in, b.check_out) for b in confirmed):
+        messages.error(request, 'Those dates overlap with a booking you already confirmed for this property.')
+        return redirect('dashboard:owner_bookings')
+
+    booking.status = Booking.Status.CONFIRMED
+    booking.save(update_fields=['status'])
+    notify(
+        booking.tenant,
+        f'Your booking for "{booking.property.title or "a property"}" ({booking.check_in:%d %b} - {booking.check_out:%d %b}) was confirmed by the host.',
+        category=Notification.Category.VISIT, url='/tenant/dashboard/bookings/',
+    )
+    messages.success(request, 'Booking confirmed.')
+    return redirect('dashboard:owner_bookings')
+
+
+@owner_or_hotel_required
+@require_POST
+def owner_booking_decline(request, pk):
+    booking = get_object_or_404(Booking, pk=pk, property__owner=request.user)
+    if booking.status == Booking.Status.PENDING:
+        booking.status = Booking.Status.DECLINED
+        booking.save(update_fields=['status'])
+        notify(
+            booking.tenant, f'Your booking request for "{booking.property.title or "a property"}" was declined by the host.',
+            category=Notification.Category.VISIT, url='/tenant/dashboard/bookings/',
+        )
+        messages.success(request, 'Booking declined.')
+    return redirect('dashboard:owner_bookings')
+
+
+@admin_required
+def admin_bookings(request):
+    """Platform-wide, read-only oversight — mirrors admin_visits/Payments'
+    shape (no cancel/refund action here; that stays the tenant's or the
+    host's own call, same reasoning as Payments having no refund lever)."""
+    all_bookings = Booking.objects.select_related('tenant', 'property', 'property__owner')
+    stats = {
+        'total': all_bookings.count(),
+        'pending': all_bookings.filter(status=Booking.Status.PENDING).count(),
+        'confirmed': all_bookings.filter(status=Booking.Status.CONFIRMED).count(),
+        'declined': all_bookings.filter(status=Booking.Status.DECLINED).count(),
+        'cancelled': all_bookings.filter(status=Booking.Status.CANCELLED).count(),
+    }
+
+    queryset = all_bookings
+    q = request.GET.get('q', '').strip()
+    status = request.GET.get('status', '')
+    if q:
+        queryset = queryset.filter(
+            Q(tenant__full_name__icontains=q) | Q(property__title__icontains=q)
+            | Q(property__owner__full_name__icontains=q)
+        )
+    if status:
+        queryset = queryset.filter(status=status)
+
+    paginator = Paginator(queryset.order_by('-created_at'), 10)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    carry_params = request.GET.copy()
+    carry_params.pop('page', None)
+
+    return render(request, 'dashboard/admin_bookings.html', {
+        'bookings': page_obj,
+        'page_obj': page_obj,
+        'carry_qs': carry_params.urlencode(),
+        'stats': stats,
+        'status_options': Booking.Status.choices,
+        'selected_q': q,
+        'selected_status': status,
+    })
+
+
+def _get_owner_profile(user):
+    profile, _ = OwnerProfile.objects.get_or_create(user=user)
+    return profile
+
+
+@owner_or_hotel_required
+def owner_settings_home(request):
+    owner_profile = _get_owner_profile(request.user)
+    return render(request, 'dashboard/owner_settings.html', {
+        'owner_profile': owner_profile,
+        'notification_form': OwnerNotificationPreferencesForm(instance=owner_profile),
+        'privacy_form': OwnerPrivacyPreferencesForm(instance=owner_profile),
+        'language_form': OwnerLanguageForm(instance=owner_profile),
+        'password_form': PasswordChangeForm(user=request.user),
+    })
+
+
+@owner_or_hotel_required
+@require_POST
+def owner_settings_password(request):
+    form = PasswordChangeForm(user=request.user, data=request.POST)
+    if form.is_valid():
+        user = form.save()
+        update_session_auth_hash(request, user)
+        messages.success(request, 'Password changed.')
+    else:
+        messages.error(request, ' '.join(e for errs in form.errors.values() for e in errs))
+    return redirect('dashboard:owner_settings')
+
+
+@owner_or_hotel_required
+@require_POST
+def owner_settings_notifications(request):
+    form = OwnerNotificationPreferencesForm(request.POST, instance=_get_owner_profile(request.user))
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Notification preferences updated.')
+    return redirect('dashboard:owner_settings')
+
+
+@owner_or_hotel_required
+@require_POST
+def owner_settings_privacy(request):
+    form = OwnerPrivacyPreferencesForm(request.POST, instance=_get_owner_profile(request.user))
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Privacy settings updated.')
+    return redirect('dashboard:owner_settings')
+
+
+@owner_or_hotel_required
+@require_POST
+def owner_settings_language(request):
+    form = OwnerLanguageForm(request.POST, instance=_get_owner_profile(request.user))
+    if form.is_valid():
+        form.save()
+        messages.success(request, 'Language preference updated.')
+    return redirect('dashboard:owner_settings')
+
+
+@owner_or_hotel_required
+@require_POST
+def owner_settings_delete_account(request):
+    if request.POST.get('confirm', '').strip().upper() != 'DELETE':
+        messages.error(request, 'Type DELETE to confirm account deactivation.')
+        return redirect('dashboard:owner_settings')
+    user = request.user
+    user.is_active = False
+    user.save(update_fields=['is_active'])
+    auth_logout(request)
+    messages.success(request, 'Your account has been deactivated.')
+    return redirect('accounts:login')
+
+
+@owner_or_hotel_required
+def owner_help_support(request):
+    if request.method == 'POST':
+        form = SupportTicketForm(request.POST, request.FILES)
+        if form.is_valid():
+            ticket = form.save(commit=False)
+            ticket.user = request.user
+            ticket.save()
+            notify(
+                request.user, f'Your support ticket "{ticket.subject}" has been submitted.',
+                category=Notification.Category.TICKET, url='/owner/dashboard/help/',
+            )
+            return redirect('dashboard:owner_help')
+    else:
+        form = SupportTicketForm()
+    return render(request, 'dashboard/owner_help_support.html', {'form': form})
+
+
+@login_required
+@require_POST
+def quick_support_ticket(request):
+    """The floating Help & Support widget's compact form — reachable from
+    any page for any Tenant/Owner/Hotel user. Separate from the full
+    help_support/owner_help_support pages' own forms (no attachment field,
+    and it records which page the query came from via page_url)."""
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or '/'
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    if request.user.role not in User.PUBLIC_ROLES:
+        if is_ajax:
+            return JsonResponse({'ok': False, 'error': 'Not available for this account.'}, status=403)
+        return redirect(next_url)
+
+    form = SupportTicketForm(request.POST)
+    if form.is_valid():
+        ticket = form.save(commit=False)
+        ticket.user = request.user
+        ticket.page_url = request.POST.get('page_url', '')[:255]
+        ticket.save()
+        help_url = '/tenant/dashboard/help/' if request.user.role == User.Role.TENANT else '/owner/dashboard/help/'
+        notify(
+            request.user, f'Your support ticket "{ticket.subject}" has been submitted.',
+            category=Notification.Category.TICKET, url=help_url,
+        )
+        if is_ajax:
+            return JsonResponse({'ok': True})
+        return redirect(next_url)
+
+    if is_ajax:
+        return JsonResponse({'ok': False, 'errors': form.errors}, status=400)
+    return redirect(next_url)
 
 
 def _month_start():
@@ -554,12 +834,73 @@ def admin_profile_password(request):
 
 
 @super_admin_required
-def admin_settings_stub(request):
-    return render(request, 'dashboard/owner_coming_soon.html', {
-        'title': 'Settings',
-        'description': 'Platform-wide configuration settings are coming in a future update. You can already '
-                        'update your name, phone number and password from My Profile.',
+def admin_settings(request):
+    """Real, honest System Settings — only what actually has something to
+    back it: the listing photo limits actually enforced in the wizard, a
+    read-only summary of the contact-info Site Settings (edited on its own
+    page, not duplicated here), and a real read-only status of whether the
+    site's third-party integrations (Razorpay, Google Sign-In, real SMTP
+    email) are configured — with a genuine Send Test Email action for the
+    email one. Deliberately does not include commission/GST, 2FA,
+    branding, SEO or API-key fields — none of that exists anywhere in this
+    codebase to actually configure."""
+    settings_obj = SiteSettings.load()
+    if request.method == 'POST':
+        form = PropertyLimitsForm(request.POST, instance=settings_obj)
+        if form.is_valid():
+            form.save()
+            log_admin_action(request.user, 'Updated property listing limits', target_type='SiteSettings', target_id=1)
+            messages.success(request, 'Settings updated.')
+            return redirect('dashboard:admin_settings')
+    else:
+        form = PropertyLimitsForm(instance=settings_obj)
+
+    integrations = [
+        {
+            'name': 'Razorpay Payments',
+            'configured': bool(django_settings.RAZORPAY_KEY_ID and django_settings.RAZORPAY_KEY_SECRET),
+        },
+        {'name': 'Google Sign-In', 'configured': django_settings.GOOGLE_OAUTH_CONFIGURED},
+        {'name': 'Email (SMTP)', 'configured': django_settings.EMAIL_CONFIGURED},
+    ]
+    email_mode = 'Console (development — mail is printed to the server log, nothing is actually sent)' \
+        if not django_settings.EMAIL_CONFIGURED else f'SMTP — {django_settings.EMAIL_HOST}'
+
+    return render(request, 'dashboard/admin_settings.html', {
+        'form': form,
+        'integrations': integrations,
+        'email_mode': email_mode,
+        'email_configured': django_settings.EMAIL_CONFIGURED,
     })
+
+
+@super_admin_required
+@require_POST
+def admin_send_test_email(request):
+    """A genuine test send — not a status label. Real value: an admin can
+    confirm the SMTP credentials actually work (or see the real error —
+    wrong password, host unreachable, etc.) without digging through server
+    logs or waiting for a real user to hit password-reset."""
+    if not django_settings.EMAIL_CONFIGURED:
+        messages.error(request, 'Add EMAIL_HOST/EMAIL_HOST_USER/EMAIL_HOST_PASSWORD to .env first — see .env.example.')
+        return redirect('dashboard:admin_settings')
+
+    from django.core.mail import send_mail
+    try:
+        send_mail(
+            subject='Rentora — Test Email',
+            message=(
+                f'This is a real test email from your Rentora System Settings page, sent via '
+                f'{django_settings.EMAIL_HOST}. If you received this, SMTP is configured correctly.'
+            ),
+            from_email=django_settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[request.user.email],
+            fail_silently=False,
+        )
+        messages.success(request, f'Test email sent to {request.user.email} — check your inbox.')
+    except Exception as exc:
+        messages.error(request, f"Couldn't send test email: {exc}")
+    return redirect('dashboard:admin_settings')
 
 
 @admin_required
@@ -623,13 +964,14 @@ def admin_properties(request):
 @admin_required
 def admin_property_detail(request, pk):
     property_obj = get_object_or_404(Property.objects.select_related('owner', 'verified_by'), pk=pk)
+    min_photos = SiteSettings.load().min_photos_to_publish
     checklist = [
         (label, bool(getattr(property_obj, field)))
         for field, label in Property.REQUIRED_FOR_PUBLISH
     ]
     checklist.append((
-        f'At least {Property.MIN_PHOTOS_TO_PUBLISH} photos (currently {property_obj.photos.count()})',
-        property_obj.photos.count() >= Property.MIN_PHOTOS_TO_PUBLISH,
+        f'At least {min_photos} photos (currently {property_obj.photos.count()})',
+        property_obj.photos.count() >= min_photos,
     ))
     return render(request, 'dashboard/admin_property_detail.html', {
         'property': property_obj,
@@ -824,6 +1166,51 @@ def admin_visit_cancel(request, pk):
 
 
 @admin_required
+def admin_reviews(request):
+    all_reviews = Review.objects.select_related('tenant', 'property', 'property__owner')
+    stats = {
+        'total': all_reviews.count(),
+        'average': all_reviews.aggregate(avg=Avg('rating'))['avg'],
+    }
+
+    queryset = all_reviews
+    q = request.GET.get('q', '').strip()
+    rating = request.GET.get('rating', '')
+    if q:
+        queryset = queryset.filter(
+            Q(tenant__full_name__icontains=q) | Q(property__title__icontains=q) | Q(comment__icontains=q)
+        )
+    if rating.isdigit():
+        queryset = queryset.filter(rating=int(rating))
+
+    paginator = Paginator(queryset.order_by('-created_at'), 15)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    carry_params = request.GET.copy()
+    carry_params.pop('page', None)
+
+    return render(request, 'dashboard/admin_reviews.html', {
+        'reviews': page_obj,
+        'page_obj': page_obj,
+        'carry_qs': carry_params.urlencode(),
+        'stats': stats,
+        'rating_options': Review.RATING_CHOICES,
+        'selected_q': q,
+        'selected_rating': rating,
+    })
+
+
+@admin_required
+@require_POST
+def admin_review_delete(request, pk):
+    review = get_object_or_404(Review, pk=pk)
+    target_repr = f'{review.rating}★ by {review.tenant.full_name} on {review.property}'
+    review.delete()
+    log_admin_action(request.user, f'Deleted review ({target_repr})', target_type='Review', target_repr=target_repr)
+    messages.success(request, 'Review deleted.')
+    return redirect('dashboard:admin_reviews')
+
+
+@admin_required
 def admin_support(request):
     all_tickets = SupportTicket.objects.select_related('user')
     stats = {
@@ -984,6 +1371,61 @@ def admin_audit_logs(request):
     })
 
 
+def _cms_pages():
+    """Real "which public page, when was its editable content last touched"
+    rows for the CMS Management hub's Website Pages table. Every timestamp
+    here is a genuine Max(updated_at) over the actual content that backs
+    that page (ContentBlock rows, Contact-page FAQs, or the LegalPage
+    itself) — never a fabricated date. There's no draft/publish state for
+    these pages themselves (only the content blocks/FAQs within them can be
+    unpublished), so status is always "Live"."""
+    def block_updated(*placements):
+        return ContentBlock.objects.filter(placement__in=placements).aggregate(Max('updated_at'))['updated_at__max']
+
+    contact_updated = FAQ.objects.filter(placement=FAQ.Placement.CONTACT).aggregate(Max('updated_at'))['updated_at__max']
+    terms = LegalPage.objects.filter(slug=LegalPage.Slug.TERMS).first()
+    privacy = LegalPage.objects.filter(slug=LegalPage.Slug.PRIVACY).first()
+
+    pages = [
+        {
+            'title': 'Home', 'url': reverse('core:home'),
+            'updated_at': block_updated(ContentBlock.Placement.HOME_WHY_CHOOSE, ContentBlock.Placement.HOME_HOW_IT_WORKS),
+            'manage_url': reverse('dashboard:admin_content_blocks') + '?placement=home_why_choose',
+            'manage_label': 'Manage Content',
+        },
+        {
+            'title': 'About Us', 'url': reverse('core:about'),
+            'updated_at': block_updated(
+                ContentBlock.Placement.ABOUT_VALUES, ContentBlock.Placement.ABOUT_WHY_CHOOSE, ContentBlock.Placement.ABOUT_TRUST_STEPS,
+            ),
+            'manage_url': reverse('dashboard:admin_content_blocks') + '?placement=about_values',
+            'manage_label': 'Manage Content',
+        },
+        {
+            'title': 'Contact Us', 'url': reverse('core:contact'), 'updated_at': contact_updated,
+            'manage_url': reverse('dashboard:admin_cms') + '?placement=contact',
+            'manage_label': 'Manage FAQs',
+        },
+        {
+            'title': 'Become a Host', 'url': reverse('core:become_host'),
+            'updated_at': block_updated(ContentBlock.Placement.HOST_STEPS, ContentBlock.Placement.HOST_PERKS),
+            'manage_url': reverse('dashboard:admin_content_blocks') + '?placement=host_steps',
+            'manage_label': 'Manage Content',
+        },
+    ]
+    if terms:
+        pages.append({
+            'title': terms.title, 'url': reverse('core:legal_page', args=['terms']), 'updated_at': terms.updated_at,
+            'manage_url': reverse('dashboard:admin_legal_page_edit', args=[terms.pk]), 'manage_label': 'Edit',
+        })
+    if privacy:
+        pages.append({
+            'title': privacy.title, 'url': reverse('core:legal_page', args=['privacy']), 'updated_at': privacy.updated_at,
+            'manage_url': reverse('dashboard:admin_legal_page_edit', args=[privacy.pk]), 'manage_label': 'Edit',
+        })
+    return pages
+
+
 @admin_required
 def admin_cms_faqs(request):
     all_faqs = FAQ.objects.all()
@@ -1015,6 +1457,7 @@ def admin_cms_faqs(request):
         'placement_options': FAQ.Placement.choices,
         'selected_q': q,
         'selected_placement': placement,
+        'pages': _cms_pages(),
     })
 
 
@@ -1061,6 +1504,218 @@ def admin_cms_faq_toggle(request, pk):
     )
     messages.success(request, f'FAQ {"published" if faq.is_published else "unpublished"}.')
     return redirect('dashboard:admin_cms')
+
+
+@admin_required
+def admin_cities(request):
+    all_cities = City.objects.all()
+    return render(request, 'dashboard/admin_cities.html', {
+        'cities': all_cities,
+        'stats': {'total': all_cities.count(), 'active': all_cities.filter(is_active=True).count()},
+        'pages': _cms_pages(),
+    })
+
+
+@admin_required
+def admin_city_form(request, pk=None):
+    city = get_object_or_404(City, pk=pk) if pk else None
+    if request.method == 'POST':
+        form = CityForm(request.POST, instance=city)
+        if form.is_valid():
+            is_new = city is None
+            city = form.save()
+            log_admin_action(
+                request.user, f'{"Added" if is_new else "Updated"} city "{city.name}"',
+                target_type='City', target_id=city.pk, target_repr=city.name,
+            )
+            messages.success(request, f'City {"added" if is_new else "updated"}.')
+            return redirect('dashboard:admin_cities')
+    else:
+        form = CityForm(instance=city)
+
+    return render(request, 'dashboard/admin_city_form.html', {'form': form, 'city': city})
+
+
+@admin_required
+@require_POST
+def admin_city_delete(request, pk):
+    city = get_object_or_404(City, pk=pk)
+    name = city.name
+    city.delete()
+    log_admin_action(request.user, f'Deleted city "{name}"', target_type='City', target_repr=name)
+    messages.success(request, 'City deleted.')
+    return redirect('dashboard:admin_cities')
+
+
+@admin_required
+@require_POST
+def admin_city_toggle(request, pk):
+    city = get_object_or_404(City, pk=pk)
+    city.is_active = not city.is_active
+    city.save(update_fields=['is_active'])
+    log_admin_action(
+        request.user, f'{"Activated" if city.is_active else "Deactivated"} city "{city.name}"',
+        target_type='City', target_id=city.pk, target_repr=city.name,
+    )
+    messages.success(request, f'City {"activated" if city.is_active else "deactivated"}.')
+    return redirect('dashboard:admin_cities')
+
+
+@admin_required
+def admin_content_blocks(request):
+    all_blocks = ContentBlock.objects.all()
+    stats = {
+        'total': all_blocks.count(),
+        'published': all_blocks.filter(is_published=True).count(),
+        'placements': len(ContentBlock.Placement.choices),
+    }
+
+    queryset = all_blocks
+    q = request.GET.get('q', '').strip()
+    placement = request.GET.get('placement', '')
+    if q:
+        queryset = queryset.filter(Q(title__icontains=q) | Q(text__icontains=q))
+    if placement:
+        queryset = queryset.filter(placement=placement)
+
+    paginator = Paginator(queryset, 15)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    carry_params = request.GET.copy()
+    carry_params.pop('page', None)
+
+    return render(request, 'dashboard/admin_content_blocks.html', {
+        'blocks': page_obj,
+        'page_obj': page_obj,
+        'carry_qs': carry_params.urlencode(),
+        'stats': stats,
+        'placement_options': ContentBlock.Placement.choices,
+        'selected_q': q,
+        'selected_placement': placement,
+    })
+
+
+@admin_required
+def admin_content_block_form(request, pk=None):
+    block = get_object_or_404(ContentBlock, pk=pk) if pk else None
+    if request.method == 'POST':
+        form = ContentBlockForm(request.POST, instance=block)
+        if form.is_valid():
+            is_new = block is None
+            block = form.save()
+            log_admin_action(
+                request.user, f'{"Created" if is_new else "Updated"} content block "{block.title}"',
+                target_type='ContentBlock', target_id=block.pk, target_repr=block.title,
+            )
+            messages.success(request, f'Content block {"created" if is_new else "updated"}.')
+            return redirect('dashboard:admin_content_blocks')
+    else:
+        form = ContentBlockForm(instance=block)
+
+    return render(request, 'dashboard/admin_content_block_form.html', {'form': form, 'block': block})
+
+
+@admin_required
+@require_POST
+def admin_content_block_delete(request, pk):
+    block = get_object_or_404(ContentBlock, pk=pk)
+    title = block.title
+    block.delete()
+    log_admin_action(request.user, f'Deleted content block "{title}"', target_type='ContentBlock', target_repr=title)
+    messages.success(request, 'Content block deleted.')
+    return redirect('dashboard:admin_content_blocks')
+
+
+@admin_required
+@require_POST
+def admin_content_block_toggle(request, pk):
+    block = get_object_or_404(ContentBlock, pk=pk)
+    block.is_published = not block.is_published
+    block.save(update_fields=['is_published'])
+    log_admin_action(
+        request.user, f'{"Published" if block.is_published else "Unpublished"} content block "{block.title}"',
+        target_type='ContentBlock', target_id=block.pk, target_repr=block.title,
+    )
+    messages.success(request, f'Content block {"published" if block.is_published else "unpublished"}.')
+    return redirect('dashboard:admin_content_blocks')
+
+
+@admin_required
+def admin_legal_pages(request):
+    pages = LegalPage.objects.all()
+    return render(request, 'dashboard/admin_legal_pages.html', {'pages': pages})
+
+
+@admin_required
+def admin_legal_page_form(request, pk):
+    page = get_object_or_404(LegalPage, pk=pk)
+    if request.method == 'POST':
+        form = LegalPageForm(request.POST, instance=page)
+        if form.is_valid():
+            page = form.save()
+            log_admin_action(
+                request.user, f'Updated legal page "{page.title}"',
+                target_type='LegalPage', target_id=page.pk, target_repr=page.title,
+            )
+            messages.success(request, 'Legal page updated.')
+            return redirect('dashboard:admin_legal_pages')
+    else:
+        form = LegalPageForm(instance=page)
+
+    return render(request, 'dashboard/admin_legal_page_form.html', {'form': form, 'page': page})
+
+
+@admin_required
+def admin_site_settings(request):
+    settings_obj = SiteSettings.load()
+    if request.method == 'POST':
+        form = SiteSettingsForm(request.POST, request.FILES, instance=settings_obj)
+        if form.is_valid():
+            form.save()
+            log_admin_action(request.user, 'Updated site settings', target_type='SiteSettings', target_id=1)
+            messages.success(request, 'Site settings updated.')
+            return redirect('dashboard:admin_site_settings')
+    else:
+        form = SiteSettingsForm(instance=settings_obj)
+
+    return render(request, 'dashboard/admin_site_settings.html', {'form': form})
+
+
+@admin_required
+def admin_seo_settings(request):
+    settings_obj = SiteSettings.load()
+    if request.method == 'POST':
+        form = SeoSettingsForm(request.POST, request.FILES, instance=settings_obj)
+        if form.is_valid():
+            form.save()
+            log_admin_action(request.user, 'Updated SEO settings', target_type='SiteSettings', target_id=1)
+            messages.success(request, 'SEO settings updated.')
+            return redirect('dashboard:admin_seo_settings')
+    else:
+        form = SeoSettingsForm(instance=settings_obj)
+
+    return render(request, 'dashboard/admin_seo_settings.html', {
+        'form': form,
+        'pages': PageSEO.objects.all(),
+    })
+
+
+@admin_required
+def admin_page_seo_form(request, pk):
+    page_seo = get_object_or_404(PageSEO, pk=pk)
+    if request.method == 'POST':
+        form = PageSEOForm(request.POST, instance=page_seo)
+        if form.is_valid():
+            page_seo = form.save()
+            log_admin_action(
+                request.user, f'Updated SEO for "{page_seo.get_page_display()}"',
+                target_type='PageSEO', target_id=page_seo.pk, target_repr=page_seo.get_page_display(),
+            )
+            messages.success(request, 'Page SEO updated.')
+            return redirect('dashboard:admin_seo_settings')
+    else:
+        form = PageSEOForm(instance=page_seo)
+
+    return render(request, 'dashboard/admin_page_seo_form.html', {'form': form, 'page_seo': page_seo})
 
 
 @admin_required

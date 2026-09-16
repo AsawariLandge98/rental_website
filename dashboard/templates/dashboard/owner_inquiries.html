@@ -50,7 +50,7 @@
         <tbody>
         {% for inquiry in inquiries %}
             <tr>
-                <td data-label="Tenant">{{ inquiry.tenant.full_name }}<br><span class="slate" style="font-size:12px;">{{ inquiry.tenant.email }}</span></td>
+                <td data-label="Tenant">{{ inquiry.tenant.full_name }}<br><span class="record-subtext">{{ inquiry.tenant.email }}</span></td>
                 <td class="record-property-cell" data-label="Property">
                     <div class="record-property">
                         {% if inquiry.property.cover_photo %}<img src="{{ inquiry.property.cover_photo.image.url }}" alt="">{% endif %}
@@ -60,11 +60,12 @@
                         </div>
                     </div>
                 </td>
-                <td data-label="Message"><span class="slate" style="font-size:13px;">{{ inquiry.message|default:"No message"|truncatechars:80 }}</span></td>
+                <td data-label="Message"><a href="{% url 'dashboard:owner_inquiry_detail' inquiry.pk %}" class="slate" style="font-size:13px;">{{ inquiry.message|default:"No message"|truncatechars:80 }}</a></td>
                 <td data-label="Sent">{{ inquiry.created_at|date:"d M Y, g:i A" }}</td>
                 <td data-label="Status"><span class="status-pill status-pill--{{ inquiry.status }}">{{ inquiry.get_status_display }}</span></td>
                 <td data-label="Actions">
                     <div class="record-actions">
+                        <a href="{% url 'dashboard:owner_inquiry_detail' inquiry.pk %}" class="btn btn-primary btn-sm">View &amp; Reply</a>
                         {% if inquiry.status == "open" %}
                         <form method="post" action="{% url 'dashboard:owner_inquiry_set_status' inquiry.pk 'closed' %}">
                             {% csrf_token %}

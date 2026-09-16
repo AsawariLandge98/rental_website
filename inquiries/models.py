@@ -26,3 +26,21 @@ class Inquiry(models.Model):
 
     def __str__(self):
         return f'Inquiry from {self.tenant} for {self.property}'
+
+
+class InquiryReply(models.Model):
+    """A message in an inquiry's reply thread — sent by either the owner
+    or the tenant, after the tenant's original Inquiry.message. Keeping
+    this as a separate model (rather than adding fields to Inquiry) is
+    what lets both sides send more than one follow-up message."""
+
+    inquiry = models.ForeignKey(Inquiry, on_delete=models.CASCADE, related_name='replies')
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='inquiry_replies')
+    message = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f'Reply from {self.sender} on inquiry #{self.inquiry_id}'

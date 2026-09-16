@@ -1,0 +1,59 @@
+{% extends "dashboard/_base.html" %}
+{% load humanize %}
+
+{% block title %}My Bookings | Rentora{% endblock %}
+{% block body_class %}page-dash-bookings{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="calendar" %} My Bookings</h1></div>
+    <p>Track your hotel/homestay booking requests. The host needs to confirm a request before it's final.</p>
+</div>
+
+<div class="dash-section">
+    {% if bookings %}
+    <table class="record-table">
+        <thead>
+            <tr><th>Property</th><th>Host</th><th>Dates</th><th>Guests</th><th>Total</th><th>Status</th><th>Actions</th></tr>
+        </thead>
+        <tbody>
+            {% for booking in bookings %}
+            <tr>
+                <td class="record-property-cell">
+                    <div class="record-property">
+                        {% if booking.property.cover_photo %}<img src="{{ booking.property.cover_photo.image.url }}" alt="">{% endif %}
+                        <div>
+                            <div class="record-property__title"><a href="{% url 'properties:detail' booking.property.id %}">{{ booking.property.title }}</a></div>
+                            <div class="record-property__loc">{{ booking.property.short_location }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td data-label="Host">{{ booking.property.owner.full_name }}</td>
+                <td data-label="Dates">{{ booking.check_in|date:"d M" }} &ndash; {{ booking.check_out|date:"d M Y" }} <span class="record-subtext">({{ booking.nights }} night{{ booking.nights|pluralize }})</span></td>
+                <td data-label="Guests">{{ booking.guests }}</td>
+                <td data-label="Total">{% if booking.total_price %}&#8377;{{ booking.total_price|floatformat:"0"|intcomma }}{% else %}&mdash;{% endif %}</td>
+                <td data-label="Status"><span class="status-pill status-pill--{{ booking.status }}">{{ booking.get_status_display }}</span></td>
+                <td data-label="Actions">
+                    <div class="record-actions">
+                        <a href="{% url 'properties:detail' booking.property.id %}" class="btn btn-secondary btn-sm">View</a>
+                        {% if booking.status == "pending" or booking.status == "confirmed" %}
+                        <form method="post" action="{% url 'bookings:cancel_booking' booking.pk %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-secondary btn-sm">Cancel</button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="dash-empty">
+        {% include "partials/icon.html" with name="calendar" %}
+        <p>No bookings yet.</p>
+        <a href="{% url 'hotels:list' %}" class="btn btn-primary btn-sm">Browse Hotels &amp; Homestays</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -24,8 +24,15 @@ def _current_subscription(user):
 
 @owner_or_hotel_required
 def plan_list(request):
+    plans = list(SubscriptionPlan.objects.filter(is_active=True))
+    # The second-to-last plan by display order is the conventional "sweet
+    # spot" to call out on a pricing page — not the cheapest, not the
+    # priciest. A real editorial choice (like every other pricing page
+    # makes), not a claim about actual usage/popularity data we don't have.
+    recommended_plan_id = plans[-2].id if len(plans) >= 3 else None
     context = {
-        'plans': SubscriptionPlan.objects.filter(is_active=True),
+        'plans': plans,
+        'recommended_plan_id': recommended_plan_id,
         'current_subscription': _current_subscription(request.user),
         'razorpay_configured': _razorpay_client() is not None,
     }

@@ -16,6 +16,9 @@ db.sqlite3
 # Environment variables
 .env
 
+# Local credentials notes — never commit
+ADMIN_CREDENTIALS.md
+
 # Editor
 .vscode/
 .idea/

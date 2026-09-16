@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{% if posting %}Edit Posting{% else %}Post a Roommate Listing{% endif %} | Rentora{% endblock %}
+{% block body_class %}page-roommate-form{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/properties.css' %}">
+<link rel="stylesheet" href="{% static 'css/roommates.css' %}">
+{% endblock %}
+
+{% block content %}
+
+{% url 'roommates:list' as roommates_url %}
+<div class="container">
+    <nav class="breadcrumb">
+        {% include "partials/back_button.html" with fallback_url=roommates_url %}
+        <a href="{% url 'core:home' %}">Home</a>
+        <span>/</span>
+        <a href="{% url 'roommates:list' %}">Roommate Finder</a>
+        <span>/</span>
+        <span>{% if posting %}Edit Posting{% else %}New Posting{% endif %}</span>
+    </nav>
+
+    <div class="roommate-form-card">
+        <h1 class="text-h2">{% if posting %}Edit Your Posting{% else %}Post a Roommate Listing{% endif %}</h1>
+        <p class="slate">Real contact details from your account are shown to anyone who views this — no approval step.</p>
+
+        <form method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="wizard-grid">
+                <div>
+                    <label class="field-label" for="{{ form.posting_type.id_for_label }}">I am...</label>
+                    {{ form.posting_type }}
+                </div>
+                <div>
+                    <label class="field-label" for="{{ form.room_type.id_for_label }}">Room / Flat Type</label>
+                    {{ form.room_type }}
+                </div>
+            </div>
+            <div class="wizard-grid">
+                <div>
+                    <label class="field-label" for="{{ form.city.id_for_label }}">City</label>
+                    {{ form.city }}
+                </div>
+                <div>
+                    <label class="field-label" for="{{ form.area_locality.id_for_label }}">Area / Locality</label>
+                    {{ form.area_locality }}
+                </div>
+            </div>
+            <div class="wizard-grid">
+                <div>
+                    <label class="field-label" for="{{ form.monthly_rent.id_for_label }}">Monthly Rent / Your Share (&#8377;)</label>
+                    {{ form.monthly_rent }}
+                </div>
+                <div>
+                    <label class="field-label" for="{{ form.roommates_needed.id_for_label }}">Roommates Needed</label>
+                    {{ form.roommates_needed }}
+                </div>
+            </div>
+            <div class="wizard-grid">
+                <div>
+                    <label class="field-label" for="{{ form.gender_preference.id_for_label }}">Roommate Gender Preference</label>
+                    {{ form.gender_preference }}
+                </div>
+                <div>
+                    <label class="field-label" for="{{ form.occupation.id_for_label }}">Occupation</label>
+                    {{ form.occupation }}
+                </div>
+            </div>
+            <div class="wizard-grid">
+                <div>
+                    <label class="field-label" for="{{ form.move_in_date.id_for_label }}">Move-in Date (optional)</label>
+                    {{ form.move_in_date }}
+                </div>
+                <div>
+                    <label class="field-label" for="{{ form.photo.id_for_label }}">Photo (optional)</label>
+                    {% if posting.photo %}<img src="{{ posting.photo.url }}" alt="" style="height:40px; border-radius:8px; margin-bottom:6px; display:block;">{% endif %}
+                    {{ form.photo }}
+                </div>
+            </div>
+            <div style="margin-bottom: var(--space-4);">
+                <label class="field-label" for="{{ form.description.id_for_label }}">About (optional)</label>
+                {{ form.description }}
+            </div>
+
+            <div style="display:flex; gap: var(--space-3);">
+                <button type="submit" class="btn btn-primary">{% if posting %}Save Changes{% else %}Post Listing{% endif %}</button>
+                <a href="{% url 'roommates:list' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

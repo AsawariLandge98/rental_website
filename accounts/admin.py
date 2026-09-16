@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as DjangoUserAdmin
 
-from .models import TenantProfile, User
+from .models import MobileOTP, TenantProfile, User
 
 
 @admin.register(User)
@@ -31,3 +31,13 @@ class UserAdmin(DjangoUserAdmin):
 class TenantProfileAdmin(admin.ModelAdmin):
     list_display = ['user', 'preferred_city', 'occupation']
     search_fields = ['user__email', 'user__full_name']
+
+
+@admin.register(MobileOTP)
+class MobileOTPAdmin(admin.ModelAdmin):
+    """Read-only-in-spirit — for debugging the OTP flow, not for issuing
+    or editing codes by hand."""
+    list_display = ['user', 'mobile_number', 'is_used', 'attempts', 'created_at', 'expires_at']
+    list_filter = ['is_used']
+    search_fields = ['user__email', 'mobile_number']
+    readonly_fields = ['user', 'mobile_number', 'code', 'attempts', 'is_used', 'created_at', 'expires_at']

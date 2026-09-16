@@ -1,12 +1,14 @@
 from django.contrib import messages
+from django.http import Http404
 from django.shortcuts import redirect, render
+from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from accounts.models import User
-from cms.models import FAQ
+from cms.models import ContentBlock, FAQ, LegalPage, PageSEO
 from properties.models import Property
-from properties.views import BUDGET_OPTIONS, CITY_OPTIONS, _property_card_context, _saved_ids_for
+from properties.views import BUDGET_OPTIONS, _property_card_context, _saved_ids_for, _with_rating, get_city_options
 from .forms import ContactForm, NewsletterForm
 
 PROPERTY_TYPES = [
@@ -20,65 +22,31 @@ PROPERTY_TYPES = [
     {"label": "Plots & Land", "icon": "plot"},
 ]
 
-# Real, honest claims only — no "Verified" language anywhere on the site
-# since there's no verification system built yet (see Feature 02 doc).
-WHY_CHOOSE_US = [
-    {"icon": "heart", "title": "Zero Brokerage", "text": "No hidden charges. Deal directly with owners."},
-    {"icon": "chat", "title": "Direct Contact", "text": "Call, WhatsApp or email owners directly — no waiting."},
-    {"icon": "lock", "title": "Secure & Safe", "text": "Your data is protected with industry-standard security."},
-    {"icon": "calendar", "title": "Easy Scheduling", "text": "Request a visit in seconds — the owner confirms it directly."},
-    {"icon": "map-pin", "title": "Real Listings", "text": "Every listing is posted directly by its actual owner."},
-]
 
-HOW_IT_WORKS = [
-    {"icon": "search", "title": "1. Search", "text": "Search properties as per your need"},
-    {"icon": "heart", "title": "2. Shortlist", "text": "Save your favorite properties"},
-    {"icon": "chat", "title": "3. Connect", "text": "Connect directly with owners"},
-    {"icon": "calendar", "title": "4. Visit", "text": "Schedule visit at your convenience"},
-    {"icon": "document", "title": "5. Finalize", "text": "Finalize the deal with confidence"},
-    {"icon": "key", "title": "6. Move In", "text": "Move into your new home"},
-]
+def _blocks(placement):
+    return ContentBlock.objects.filter(placement=placement, is_published=True)
 
-TESTIMONIALS = [
-    {
-        "quote": "Found my dream home within a week! Talking to the owner directly made everything move fast.",
-        "name": "Priya Sharma",
-        "location": "Hyderabad",
-        "avatar": "https://i.pravatar.cc/88?img=47",
-        "rating": 5,
-    },
-    {
-        "quote": "No brokerage saved me a huge amount. The platform is easy to use and very reliable.",
-        "name": "Rohit Verma",
-        "location": "Bengaluru",
-        "avatar": "https://i.pravatar.cc/88?img=13",
-        "rating": 5,
-    },
-    {
-        "quote": "Direct contact with owners makes everything simple and transparent. Highly recommend Rentora!",
-        "name": "Anjali Patel",
-        "location": "Pune",
-        "avatar": "https://i.pravatar.cc/88?img=32",
-        "rating": 5,
-    },
-]
+
+def _page_seo(page):
+    return PageSEO.objects.filter(page=page).first()
 
 
 def home(request):
     saved_ids = _saved_ids_for(request.user)
     featured_properties = [
-        _property_card_context(p, saved_ids) for p in
-        Property.objects.filter(status=Property.Status.PUBLISHED).prefetch_related('photos', 'amenities').order_by('-created_at')[:12]
+        _property_card_context(p, saved_ids) for p in _with_rating(
+            Property.objects.filter(status=Property.Status.PUBLISHED).prefetch_related('photos', 'amenities'),
+        ).order_by('-created_at')[:12]
     ]
     context = {
         "property_types": PROPERTY_TYPES,
         "featured_properties": featured_properties,
-        "why_choose_us": WHY_CHOOSE_US,
-        "how_it_works": HOW_IT_WORKS,
-        "testimonials": TESTIMONIALS,
-        "city_options": CITY_OPTIONS,
+        "why_choose_us": _blocks(ContentBlock.Placement.HOME_WHY_CHOOSE),
+        "how_it_works": _blocks(ContentBlock.Placement.HOME_HOW_IT_WORKS),
+        "city_options": get_city_options(),
         "property_type_options": Property.PropertyType.choices,
         "budget_options": BUDGET_OPTIONS,
+        "page_seo": _page_seo(PageSEO.Page.HOME),
     }
     return render(request, "core/home.html", context)
 
@@ -98,52 +66,11 @@ def subscribe_newsletter(request):
     return redirect(next_url)
 
 
-ABOUT_VALUES = [
-    "Transparency in every step",
-    "Safety and security for all users",
-    "Respect and trust in every interaction",
-    "Innovation for a better rental experience",
-]
-
-ABOUT_WHY_CHOOSE = [
-    {"icon": "key", "title": "Zero Brokerage", "text": "Save your hard-earned money. Connect directly with property owners."},
-    {"icon": "chat", "title": "Direct Contact", "text": "Talk directly with owners. No middlemen, no extra charges."},
-    {"icon": "calendar", "title": "Easy Scheduling", "text": "Request a property visit in seconds — the owner confirms it."},
-    {"icon": "lock", "title": "Secure Platform", "text": "Your personal data is protected with industry-leading security."},
-    {"icon": "map-pin", "title": "Growing Coverage", "text": "New cities and properties are added directly by owners, every day."},
-    {"icon": "headset", "title": "Responsive Support", "text": "Reach our support team any time you need help."},
-]
-
-# Real, honest steps describing what actually happens today — replaces a
-# previous "5-step verification process" section that described mobile/ID/
-# property verification which isn't built (see Feature 02 doc).
-HOW_TRUST_WORKS = [
-    {"icon": "id-card", "title": "1. Create Account", "text": "Sign up with your name, email and mobile number."},
-    {"icon": "house", "title": "2. Real Listings", "text": "Owners publish their own properties directly — no middlemen."},
-    {"icon": "chat", "title": "3. Direct Contact", "text": "Reach owners by call, WhatsApp or email, instantly."},
-    {"icon": "calendar", "title": "4. Request a Visit", "text": "Pick a time that works for you — the owner confirms it."},
-    {"icon": "flag", "title": "5. Move In", "text": "Finalize directly with the owner — zero brokerage, ever."},
-]
-
-
-BECOME_HOST_STEPS = [
-    {"icon": "house", "title": "1. Tell us about your property", "text": "Choose a category, add your location and the real details tenants care about."},
-    {"icon": "camera", "title": "2. Make it stand out", "text": "Add real photos, amenities and your contact preferences."},
-    {"icon": "key", "title": "3. Publish and connect", "text": "Set your rent and availability, go live, and hear from tenants directly."},
-]
-
-BECOME_HOST_PERKS = [
-    {"icon": "heart", "title": "Zero brokerage, zero listing fees", "text": "List for free. No commission taken from your rent, ever."},
-    {"icon": "chat", "title": "Direct tenant contact", "text": "Tenants reach you directly by call, WhatsApp or email — no middlemen."},
-    {"icon": "sliders", "title": "You stay in control", "text": "Set your own rent, availability and how tenants can reach you."},
-    {"icon": "headset", "title": "Real support when you need it", "text": "Our team is happy to help if you get stuck putting your listing together."},
-]
-
-
 def become_host(request):
     context = {
-        "steps": BECOME_HOST_STEPS,
-        "perks": BECOME_HOST_PERKS,
+        "steps": _blocks(ContentBlock.Placement.HOST_STEPS),
+        "perks": _blocks(ContentBlock.Placement.HOST_PERKS),
+        "page_seo": _page_seo(PageSEO.Page.BECOME_HOST),
     }
     return render(request, "core/become_host.html", context)
 
@@ -158,9 +85,10 @@ def about(request):
     ]
     context = {
         "stats": stats,
-        "values": ABOUT_VALUES,
-        "why_choose": ABOUT_WHY_CHOOSE,
-        "trust_steps": HOW_TRUST_WORKS,
+        "values": _blocks(ContentBlock.Placement.ABOUT_VALUES),
+        "why_choose": _blocks(ContentBlock.Placement.ABOUT_WHY_CHOOSE),
+        "trust_steps": _blocks(ContentBlock.Placement.ABOUT_TRUST_STEPS),
+        "page_seo": _page_seo(PageSEO.Page.ABOUT),
     }
     return render(request, "core/about.html", context)
 
@@ -178,5 +106,19 @@ def contact(request):
     context = {
         "faqs": FAQ.objects.filter(placement=FAQ.Placement.CONTACT, is_published=True),
         "form": form,
+        "page_seo": _page_seo(PageSEO.Page.CONTACT),
     }
     return render(request, "core/contact.html", context)
+
+
+def legal_page(request, slug):
+    try:
+        page = LegalPage.objects.get(slug=slug)
+    except LegalPage.DoesNotExist:
+        raise Http404('Page not found.')
+    return render(request, "core/legal_page.html", {"page": page, "page_seo": _page_seo(slug)})
+
+
+def robots_txt(request):
+    sitemap_url = request.build_absolute_uri(reverse('sitemap'))
+    return render(request, "robots.txt", {"sitemap_url": sitemap_url}, content_type="text/plain")

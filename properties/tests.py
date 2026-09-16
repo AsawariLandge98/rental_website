@@ -3,8 +3,10 @@ import tempfile
 
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from accounts.models import User
+from cms.models import SiteSettings
 from .models import Amenity, Property, PropertyPhoto, SavedProperty
 
 # A minimal valid 1x1 GIF, so Pillow (used by ImageField validation) accepts it.
@@ -49,6 +51,23 @@ class PropertyModelTests(TestCase):
             city='Bengaluru', area_locality='Koramangala', monthly_rent=20000,
         )
         for i in range(5):
+            PropertyPhoto.objects.create(property=prop, image=make_photo(), order=i)
+        self.assertEqual(prop.missing_publish_requirements(), [])
+        self.assertTrue(prop.can_publish)
+
+    def test_min_photos_to_publish_is_a_real_admin_setting_not_hardcoded(self):
+        # Super Admin can change the minimum from System Settings — confirms
+        # this reads SiteSettings live rather than a hardcoded constant.
+        settings_obj = SiteSettings.load()
+        settings_obj.min_photos_to_publish = 2
+        settings_obj.save()
+
+        prop = Property.objects.create(
+            owner=self.owner, category=Property.Category.RESIDENTIAL,
+            title='Studio', description='Cozy studio', property_type=Property.PropertyType.APARTMENT,
+            city='Bengaluru', area_locality='Koramangala', monthly_rent=15000,
+        )
+        for i in range(2):
             PropertyPhoto.objects.create(property=prop, image=make_photo(), order=i)
         self.assertEqual(prop.missing_publish_requirements(), [])
         self.assertTrue(prop.can_publish)
@@ -466,6 +485,52 @@ class OwnerContactTests(TestCase):
         self.assertContains(response, 'id="contactSheet"')
 
 
+class PropertyReviewsDisplayTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            email='owner@example.com', password='StrongPass123', full_name='Test Owner', role=User.Role.OWNER,
+        )
+        self.tenant = User.objects.create_user(
+            email='tenant@example.com', password='StrongPass123', full_name='Test Tenant', role=User.Role.TENANT,
+        )
+        self.property = Property.objects.create(
+            owner=self.owner, title='2BHK Flat', status=Property.Status.PUBLISHED,
+            city='Nagpur', monthly_rent=15000,
+        )
+
+    def test_no_reviews_shows_honest_empty_state(self):
+        response = self.client.get(f'/properties/{self.property.pk}/')
+        self.assertContains(response, 'No reviews yet')
+        self.assertEqual(response.context['review_count'], 0)
+
+    def test_real_review_and_average_render(self):
+        from reviews.models import Review
+        Review.objects.create(tenant=self.tenant, property=self.property, rating=4, comment='Really liked it here.')
+        response = self.client.get(f'/properties/{self.property.pk}/')
+        self.assertContains(response, 'Really liked it here.')
+        self.assertContains(response, 'Test Tenant')
+        self.assertEqual(response.context['review_count'], 1)
+        self.assertEqual(response.context['review_average'], 4)
+
+    def test_write_review_form_only_shown_after_completed_visit(self):
+        from visits.models import Visit
+        response = self.client.get(f'/properties/{self.property.pk}/')
+        self.assertFalse(response.context['can_review'])
+
+        self.client.force_login(self.tenant)
+        response = self.client.get(f'/properties/{self.property.pk}/')
+        self.assertFalse(response.context['can_review'])
+        self.assertContains(response, 'Complete a visit to this property to leave a review.')
+
+        Visit.objects.create(
+            tenant=self.tenant, property=self.property,
+            scheduled_at=timezone.now() - timezone.timedelta(days=1), status=Visit.Status.COMPLETED,
+        )
+        response = self.client.get(f'/properties/{self.property.pk}/')
+        self.assertTrue(response.context['can_review'])
+        self.assertContains(response, 'Write a Review')
+
+
 class SavedPropertyTests(TestCase):
     def setUp(self):
         self.owner = User.objects.create_user(
@@ -534,3 +599,96 @@ class SearchPaginationTests(TestCase):
     def test_empty_state_when_no_results(self):
         response = self.client.get('/properties/?city=NoSuchCity')
         self.assertContains(response, 'No properties match your search')
+
+
+class PropertyDetailBookingUiTests(TestCase):
+    """Feature 26 — property_detail.html shows a real "Request to Book"
+    flow for bookable listings (Hotel/Guest House/Homestay) instead of the
+    regular-rental "Schedule Visit" button."""
+
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            email='owner@example.com', password='StrongPass123', full_name='Test Owner', role=User.Role.OWNER,
+        )
+        self.tenant = User.objects.create_user(
+            email='tenant@example.com', password='StrongPass123', full_name='Test Tenant', role=User.Role.TENANT,
+        )
+        self.hotel = Property.objects.create(
+            owner=self.owner, title='Lakeview Homestay', status=Property.Status.PUBLISHED,
+            category=Property.Category.HOMESTAY, city='Nagpur', nightly_rate=2000,
+        )
+        self.rental = Property.objects.create(
+            owner=self.owner, title='2BHK Flat', status=Property.Status.PUBLISHED,
+            category=Property.Category.RESIDENTIAL, city='Nagpur', monthly_rent=15000,
+        )
+        self.client.force_login(self.tenant)
+
+    def test_bookable_property_shows_request_to_book_not_schedule_visit(self):
+        response = self.client.get(f'/properties/{self.hotel.pk}/')
+        self.assertContains(response, 'Request to Book')
+        self.assertContains(response, 'js-booking-trigger')
+        self.assertNotContains(response, 'js-visit-trigger')
+
+    def test_regular_rental_still_shows_schedule_visit_not_booking(self):
+        response = self.client.get(f'/properties/{self.rental.pk}/')
+        self.assertContains(response, 'Schedule Visit')
+        self.assertContains(response, 'js-visit-trigger')
+        self.assertNotContains(response, 'js-booking-trigger')
+
+    def test_bookable_property_context_flag_is_true(self):
+        response = self.client.get(f'/properties/{self.hotel.pk}/')
+        self.assertTrue(response.context['property']['is_bookable'])
+
+
+class RatingBadgeOnCardsTests(TestCase):
+    """Feature 26 — a real average-rating badge on property/hotel/search
+    grid cards, annotated at the queryset level (properties/views.py::
+    _with_rating) to avoid an N+1 query per card. Deliberately deferred out
+    of Feature 23 (Reviews) for exactly this reason; built now."""
+
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            email='owner@example.com', password='StrongPass123', full_name='Owner', role=User.Role.OWNER,
+        )
+        self.tenant = User.objects.create_user(
+            email='tenant@example.com', password='StrongPass123', full_name='Tenant', role=User.Role.TENANT,
+        )
+        self.other_tenant = User.objects.create_user(
+            email='tenant2@example.com', password='StrongPass123', full_name='Tenant Two', role=User.Role.TENANT,
+        )
+        self.reviewed = Property.objects.create(
+            owner=self.owner, title='Reviewed Flat', status=Property.Status.PUBLISHED,
+            city='Bengaluru', monthly_rent=20000,
+        )
+        self.unreviewed = Property.objects.create(
+            owner=self.owner, title='Unreviewed Flat', status=Property.Status.PUBLISHED,
+            city='Bengaluru', monthly_rent=18000,
+        )
+
+    def test_search_results_show_a_real_rating_badge_only_when_reviewed(self):
+        from reviews.models import Review
+        Review.objects.create(tenant=self.tenant, property=self.reviewed, rating=5)
+        Review.objects.create(tenant=self.other_tenant, property=self.reviewed, rating=3)
+
+        response = self.client.get('/properties/')
+        self.assertContains(response, 'Reviewed Flat')
+        self.assertContains(response, 'property-card__rating')
+        self.assertContains(response, '4.0')  # (5+3)/2
+
+        properties_by_title = {p['title']: p for p in response.context['properties']}
+        self.assertEqual(properties_by_title['Reviewed Flat']['review_count'], 2)
+        self.assertEqual(properties_by_title['Unreviewed Flat']['review_count'], 0)
+        self.assertIsNone(properties_by_title['Unreviewed Flat']['rating'])
+
+    def test_home_page_featured_grid_shows_real_rating(self):
+        from reviews.models import Review
+        Review.objects.create(tenant=self.tenant, property=self.reviewed, rating=4)
+        response = self.client.get('/')
+        self.assertContains(response, 'property-card__rating')
+        self.assertContains(response, '4.0')
+
+    def test_no_fake_rating_shown_for_an_unreviewed_listing(self):
+        response = self.client.get('/properties/')
+        # Only one card has the rating markup (Reviewed Flat has 0 reviews
+        # too here), so it should not appear at all on this page.
+        self.assertNotContains(response, 'property-card__rating')

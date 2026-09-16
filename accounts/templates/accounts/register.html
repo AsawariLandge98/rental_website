@@ -93,7 +93,7 @@
                     {% if form.confirm_password.errors %}<span class="field-error">{{ form.confirm_password.errors.0 }}</span>{% endif %}
                 </div>
 
-                <label class="checkbox-row">{{ form.accept_terms }} I agree to the <a href="#" class="link-more">Terms &amp; Conditions</a> and <a href="#" class="link-more">Privacy Policy</a></label>
+                <label class="checkbox-row">{{ form.accept_terms }} I agree to the <a href="{% url 'core:legal_page' 'terms' %}" target="_blank" class="link-more">Terms &amp; Conditions</a> and <a href="{% url 'core:legal_page' 'privacy' %}" target="_blank" class="link-more">Privacy Policy</a></label>
                 {% if form.accept_terms.errors %}<span class="field-error">{{ form.accept_terms.errors.0 }}</span>{% endif %}
 
                 <button type="submit" class="btn btn-primary btn-block">Create Account</button>

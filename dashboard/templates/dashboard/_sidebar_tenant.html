@@ -1,6 +1,7 @@
 {% with url_name=request.resolver_match.url_name app_name=request.resolver_match.app_name %}
 <aside class="dash-sidebar" id="dashSidebar">
     <nav class="dash-sidebar__nav">
+        <span class="dash-sidebar__section-label">Main</span>
         <a href="{% url 'dashboard:tenant' %}" class="dash-sidebar__link {% if url_name == 'tenant' %}is-active{% endif %}">
             {% include "partials/icon.html" with name="house" %} <span>Dashboard</span>
         </a>
@@ -16,6 +17,11 @@
         <a href="{% url 'visits:my_visits' %}" class="dash-sidebar__link {% if app_name == 'visits' %}is-active{% endif %}">
             {% include "partials/icon.html" with name="calendar" %} <span>My Visits</span>
         </a>
+        <a href="{% url 'bookings:my_bookings' %}" class="dash-sidebar__link {% if app_name == 'bookings' %}is-active{% endif %}">
+            {% include "partials/icon.html" with name="calendar" %} <span>My Bookings</span>
+        </a>
+
+        <span class="dash-sidebar__section-label">Other</span>
         <a href="{% url 'notifications:list' %}" class="dash-sidebar__link {% if app_name == 'notifications' %}is-active{% endif %}">
             {% include "partials/icon.html" with name="bell" %} <span>Notifications</span>
             {% if unread_notifications_count %}<span class="dash-sidebar__badge">{{ unread_notifications_count }}</span>{% endif %}
@@ -31,11 +37,20 @@
         </a>
     </nav>
 
-    <form method="post" action="{% url 'accounts:logout' %}" class="dash-sidebar__logout">
-        {% csrf_token %}
-        <button type="submit" class="dash-sidebar__link">
-            {% include "partials/icon.html" with name="logout" %} <span>Logout</span>
-        </button>
-    </form>
+    <div class="dash-sidebar__bottom">
+        <a href="{% url 'dashboard:tenant_profile' %}" class="dash-sidebar__profile">
+            <span class="header-account__avatar header-account__avatar--initials">{{ user.full_name|first|upper }}</span>
+            <span class="dash-sidebar__profile-text">
+                <span class="dash-sidebar__profile-name">{{ user.full_name|default:user.email|truncatechars:18 }}</span>
+                <span class="dash-sidebar__profile-role">{{ user.get_role_display }}</span>
+            </span>
+        </a>
+        <form method="post" action="{% url 'accounts:logout' %}" class="dash-sidebar__logout">
+            {% csrf_token %}
+            <button type="submit" class="dash-sidebar__link">
+                {% include "partials/icon.html" with name="logout" %} <span>Logout</span>
+            </button>
+        </form>
+    </div>
 </aside>
 {% endwith %}

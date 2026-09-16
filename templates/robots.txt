@@ -1,0 +1,13 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /tenant/dashboard/
+Disallow: /owner/dashboard/
+Disallow: /hotel/dashboard/
+Disallow: /admin/dashboard/
+Disallow: /super-admin/dashboard/
+Disallow: /accounts/mobile/
+Disallow: /accounts/complete-profile/
+Disallow: /accounts/reset/
+Disallow: /accounts/internal-login/
+
+Sitemap: {{ sitemap_url }}

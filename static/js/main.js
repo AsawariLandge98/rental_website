@@ -13,9 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
   initContactSheet();
   initVisitSheet();
   initInquirySheet();
+  initBookingSheet();
   initScrollReveal();
   initSortSelect();
   initFeaturedCarousel();
+  initHelpWidget();
 });
 
 function initSortSelect() {
@@ -145,6 +147,10 @@ function initVisitSheet() {
 
 function initInquirySheet() {
   initSlideSheet('inquirySheet', 'inquirySheetBackdrop', 'inquirySheetClose', '.js-inquiry-trigger');
+}
+
+function initBookingSheet() {
+  initSlideSheet('bookingSheet', 'bookingSheetBackdrop', 'bookingSheetClose', '.js-booking-trigger');
 }
 
 function initHeroSlider() {
@@ -424,4 +430,62 @@ function initFeaturedCarousel() {
   }
 
   buildDots();
+}
+
+function initHelpWidget() {
+  const widget = document.querySelector('.js-help-widget');
+  if (!widget) return;
+  const toggle = widget.querySelector('.js-help-widget-toggle');
+  const panel = widget.querySelector('.js-help-widget-panel');
+  const closeBtn = widget.querySelector('.js-help-widget-close');
+  const form = widget.querySelector('.js-help-widget-form');
+  const success = widget.querySelector('.js-help-widget-success');
+
+  function openPanel() {
+    panel.hidden = false;
+    toggle.setAttribute('aria-expanded', 'true');
+  }
+  function closePanel() {
+    panel.hidden = true;
+    toggle.setAttribute('aria-expanded', 'false');
+    if (form && success) {
+      form.hidden = false;
+      success.hidden = true;
+    }
+  }
+
+  toggle.addEventListener('click', () => {
+    if (panel.hidden) openPanel(); else closePanel();
+  });
+  if (closeBtn) closeBtn.addEventListener('click', closePanel);
+
+  document.addEventListener('click', (e) => {
+    if (!panel.hidden && !widget.contains(e.target)) closePanel();
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !panel.hidden) closePanel();
+  });
+
+  if (form) {
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const submitBtn = form.querySelector('.js-help-widget-submit');
+      submitBtn.disabled = true;
+      fetch(form.action, {
+        method: 'POST',
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        body: new FormData(form),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.ok) {
+            form.hidden = true;
+            success.hidden = false;
+            form.reset();
+          }
+        })
+        .catch(() => {})
+        .finally(() => { submitBtn.disabled = false; });
+    });
+  }
 }

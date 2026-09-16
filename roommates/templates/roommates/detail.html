@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block title %}{{ posting.room_type }} in {{ posting.city }} | Roommate | Rentora{% endblock %}
+{% block body_class %}page-roommate-detail{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/properties.css' %}">
+<link rel="stylesheet" href="{% static 'css/roommates.css' %}">
+{% endblock %}
+
+{% block content %}
+
+{% url 'roommates:list' as roommates_url %}
+<div class="container">
+    <nav class="breadcrumb">
+        {% include "partials/back_button.html" with fallback_url=roommates_url %}
+        <a href="{% url 'core:home' %}">Home</a>
+        <span>/</span>
+        <a href="{% url 'roommates:list' %}">Roommate Finder</a>
+        <span>/</span>
+        <span>{{ posting.room_type }}</span>
+    </nav>
+
+    {% if is_owner %}
+    <div class="roommate-owner-bar">
+        <span>{% include "partials/icon.html" with name="info" cls="icon-sm" %} This is your posting.</span>
+        <div class="record-actions">
+            <a href="{% url 'roommates:edit' posting.pk %}" class="btn btn-secondary btn-sm">Edit</a>
+            <form method="post" action="{% url 'roommates:toggle_active' posting.pk %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary btn-sm">{% if posting.is_active %}Mark as Filled{% else %}Reactivate{% endif %}</button>
+            </form>
+            <form method="post" action="{% url 'roommates:delete' posting.pk %}" onsubmit="return confirm('Delete this posting? This cannot be undone.');">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-secondary btn-sm" style="color:var(--color-error);">Delete</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="detail-layout">
+        <div class="detail-main">
+            <div class="roommate-detail-media">
+                {% if posting.photo %}
+                <img src="{{ posting.photo.url }}" alt="{{ posting.room_type }}">
+                {% else %}
+                <span class="roommate-detail-media--empty">{% include "partials/icon.html" with name="house" %}</span>
+                {% endif %}
+                <span class="badge roommate-card__tag roommate-card__tag--{{ posting.badge_color }}">{{ posting.badge_label }}</span>
+            </div>
+
+            <div class="detail-card">
+                <h1 class="text-h1">{{ posting.room_type }}</h1>
+                <p class="slate">{{ posting.display_location }}</p>
+
+                <div class="roommate-detail-tags">
+                    <span class="roommate-card__tag-chip">{{ posting.get_posting_type_display }}</span>
+                    {% if posting.poster_age %}<span class="roommate-card__tag-chip">{{ posting.poster_age }} yrs</span>{% endif %}
+                    <span class="roommate-card__tag-chip">{{ posting.get_occupation_display }}</span>
+                    <span class="roommate-card__tag-chip">Prefers: {{ posting.get_gender_preference_display }}</span>
+                    {% if posting.move_in_date %}<span class="roommate-card__tag-chip">Move in {{ posting.move_in_date|date:"d M Y" }}</span>{% endif %}
+                </div>
+
+                {% if posting.description %}
+                <h2 class="detail-section-title">About</h2>
+                <p class="about-text">{{ posting.description }}</p>
+                {% endif %}
+            </div>
+
+            <div class="detail-card owner-card">
+                <div class="owner-card__head">
+                    <span class="header-account__avatar header-account__avatar--initials owner-card__avatar">{{ posting.poster.full_name|first|upper }}</span>
+                    <div>
+                        <div class="owner-card__name">{{ posting.poster.full_name }}</div>
+                        <div class="owner-card__role">Posted {{ posting.created_at|timesince }} ago</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="detail-sidebar">
+            <div class="detail-card price-card">
+                <div class="price-row">
+                    <span class="amount">&#8377;{{ posting.monthly_rent|floatformat:"0"|intcomma }}</span>
+                    <span class="slate">/month</span>
+                </div>
+                {% if contact_options %}
+                <button type="button" class="btn btn-primary btn-block js-contact-trigger">
+                    {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
+                    Contact {{ posting.poster.full_name|default:"Poster"|truncatechars:16 }}
+                </button>
+                {% else %}
+                <p class="slate" style="font-size:13px;">No contact details available for this posting yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="contact-sheet-backdrop" id="contactSheetBackdrop"></div>
+<div class="contact-sheet" id="contactSheet">
+    <div class="contact-sheet__handle"></div>
+    <div class="contact-sheet__head">
+        <h3>Contact {{ posting.poster.full_name }}</h3>
+        <button type="button" class="contact-sheet__close" id="contactSheetClose" aria-label="Close">
+            {% include "partials/icon.html" with name="x" cls="icon-sm" %}
+        </button>
+    </div>
+    <div class="contact-sheet__options">
+        {% for option in contact_options %}
+        <a href="{{ option.href }}" class="contact-sheet__option" {% if option.type == "whatsapp" %}target="_blank" rel="noopener"{% endif %}>
+            <span class="contact-sheet__option-icon contact-sheet__option-icon--{{ option.type }}">
+                {% include "partials/icon.html" with name=option.icon %}
+            </span>
+            <span>
+                <strong>{{ option.label }}</strong>
+                <small>{{ option.sublabel }}</small>
+            </span>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

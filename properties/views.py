@@ -2,16 +2,25 @@ from urllib.parse import quote
 
 from django.contrib import messages
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Avg, Count, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
+from core.models import City
 from dashboard.decorators import tenant_required
+from reviews.models import Review
+from visits.models import Visit
 from .models import Property, SavedProperty
 
-CITY_OPTIONS = ['Bengaluru', 'Hyderabad', 'Mumbai', 'Pune']
+
+def get_city_options():
+    """The admin-managed city list for the search/quick-search dropdown
+    (core.City) — real, editable from /admin/dashboard/cms/cities/, not a
+    hardcoded list. Property.city itself stays free text elsewhere, so an
+    owner can still list in a city that isn't in this curated shortlist."""
+    return list(City.objects.filter(is_active=True).values_list('name', flat=True))
 
 BUDGET_OPTIONS = [
     ('0-15000', 'Under ₹15,000'),
@@ -41,13 +50,36 @@ def _property_card_context(property_obj, saved_ids=frozenset()):
         'parking': property_obj.get_parking_display() if property_obj.parking else '',
         'amenities': amenities[:6],
         'amenities_more': max(len(amenities) - 6, 0),
-        'price': property_obj.monthly_rent or 0,
+        # Hotel/Guest House/Homestay listings are priced per night, not per
+        # month — real, wizard-collected nightly_rate, previously never
+        # actually consumed anywhere (every card/detail page silently
+        # showed monthly_rent labeled "/month" even for these).
+        'price': (property_obj.nightly_rate or 0) if property_obj.is_bookable else (property_obj.monthly_rent or 0),
+        'price_period': 'night' if property_obj.is_bookable else 'month',
+        'is_bookable': property_obj.is_bookable,
         'badge': property_obj.badge,
         'no_brokerage': property_obj.no_brokerage,
         'image': cover.image.url if cover else '',
         'is_saved': property_obj.pk in saved_ids,
         'photo_count': len(property_obj.photos.all()),
+        # Only real when the queryset was annotated with these two (see
+        # `_with_rating()` below) — never fabricated. getattr defaults to
+        # None/0 so callers that pass an un-annotated instance (e.g. a
+        # single property_detail() lookup, which computes its own separate
+        # real review_average already) don't crash; the card template
+        # treats a None rating as "no reviews yet" and hides the badge.
+        'rating': getattr(property_obj, 'avg_rating', None),
+        'review_count': getattr(property_obj, 'review_count', 0),
     }
+
+
+def _with_rating(queryset):
+    """Attaches a real average rating + review count to a Property queryset
+    in one query (Avg/Count over the real reviews.Review relation) — used
+    everywhere a grid of property cards is rendered, so the rating badge
+    never costs an extra query per card (the N+1 this was deliberately
+    deferred to avoid back in Feature 23)."""
+    return queryset.annotate(avg_rating=Avg('reviews__rating'), review_count=Count('reviews', distinct=True))
 
 
 def _saved_ids_for(user):
@@ -110,7 +142,9 @@ BEDROOM_OPTIONS = [
 
 
 def search_results(request):
-    queryset = Property.objects.filter(status=Property.Status.PUBLISHED).prefetch_related('photos', 'amenities')
+    queryset = _with_rating(
+        Property.objects.filter(status=Property.Status.PUBLISHED).prefetch_related('photos', 'amenities'),
+    )
 
     q = request.GET.get('q', '').strip()
     city = request.GET.get('city')
@@ -177,7 +211,7 @@ def search_results(request):
         'carry_qs': carry_params.urlencode(),
         'selected_per_page': per_page,
         'selected_sort': sort,
-        'city_options': CITY_OPTIONS,
+        'city_options': get_city_options(),
         'property_type_options': Property.PropertyType.choices,
         'budget_options': BUDGET_OPTIONS,
         'selected_q': q,
@@ -240,7 +274,23 @@ def property_detail(request, pk):
 
     amenities = [{'icon': a.icon, 'label': a.name} for a in property_obj.amenities.all()]
 
+    reviews = Review.objects.filter(property=property_obj).select_related('tenant')
+    review_average = reviews.aggregate(avg=Avg('rating'))['avg']
+    review_count = reviews.count()
+    user_review = None
+    can_review = False
+    if request.user.is_authenticated and request.user.role == 'tenant':
+        user_review = reviews.filter(tenant=request.user).first()
+        can_review = user_review is not None or Visit.objects.filter(
+            tenant=request.user, property=property_obj, status=Visit.Status.COMPLETED,
+        ).exists()
+
     context = {
+        "reviews": reviews,
+        "review_average": review_average,
+        "review_count": review_count,
+        "user_review": user_review,
+        "can_review": can_review,
         "property": _property_card_context(property_obj, saved_ids) | {'id': property_obj.pk},
         "property_description": property_obj.description,
         "contact_options": _owner_contact_options(property_obj),

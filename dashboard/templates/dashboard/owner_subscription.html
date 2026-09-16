@@ -4,28 +4,37 @@
 {% block body_class %}page-dash-owner-subscription{% endblock %}
 
 {% block content %}
-<div class="dash-page-head">
-    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="star" %} Subscription Plan</h1></div>
-    <p>Choose the plan that fits how many properties you list.</p>
+<div class="dash-page-head dash-page-head--center">
+    <h1 class="text-h2">Simple, Transparent Pricing</h1>
+    <p>Choose the plan that fits how many properties you list. Upgrade or downgrade any time.</p>
 </div>
 
 {% if not razorpay_configured %}
-<div class="alert alert-info" style="margin-bottom: var(--space-5);">
+<div class="alert alert-info dash-page-banner">
     {% include "partials/icon.html" with name="info" cls="icon-sm" %}
     Payments aren't switched on yet — the platform's payment gateway is still being configured. You're on the Free plan for now.
 </div>
 {% endif %}
 
 {% if current_subscription %}
-<div class="dash-section" style="margin-bottom: var(--space-5);">
-    <h2 class="text-h3" style="margin-bottom: var(--space-2);">Your Current Plan</h2>
-    <p><strong>{{ current_subscription.plan.name }}</strong> &mdash; renews {{ current_subscription.current_period_end|date:"d M Y" }}</p>
+<div class="current-plan-card">
+    <span class="current-plan-card__icon">{% include "partials/icon.html" with name="star" %}</span>
+    <div class="current-plan-card__body">
+        <span class="current-plan-card__label">Your Current Plan</span>
+        <strong class="current-plan-card__name">{{ current_subscription.plan.name }}</strong>
+        <span class="current-plan-card__renew">Renews {{ current_subscription.current_period_end|date:"d M Y" }}</span>
+    </div>
 </div>
 {% endif %}
 
 <div class="plan-grid">
     {% for plan in plans %}
-    <div class="plan-card {% if current_subscription.plan_id == plan.id %}plan-card--current{% endif %}">
+    <div class="plan-card {% if current_subscription.plan_id == plan.id %}plan-card--current{% elif plan.id == recommended_plan_id %}plan-card--recommended{% endif %}">
+        {% if current_subscription.plan_id == plan.id %}
+        <span class="plan-card__tag">Current</span>
+        {% elif plan.id == recommended_plan_id %}
+        <span class="plan-card__tag plan-card__tag--recommended">Recommended</span>
+        {% endif %}
         <h3 class="text-h3">{{ plan.name }}</h3>
         <div class="plan-card__price">&#8377;{{ plan.price|floatformat:"0" }}<span>/month</span></div>
         <ul class="plan-card__features">
@@ -38,11 +47,11 @@
             {% endfor %}
         </ul>
         {% if current_subscription.plan_id == plan.id %}
-        <button class="btn btn-secondary" disabled style="width:100%;">Current Plan</button>
+        <button class="btn btn-secondary btn-block" disabled>Current Plan</button>
         {% elif razorpay_configured %}
-        <button class="btn btn-primary js-subscribe" data-plan-id="{{ plan.id }}" style="width:100%;">Subscribe</button>
+        <button class="btn btn-primary btn-block js-subscribe" data-plan-id="{{ plan.id }}">Subscribe</button>
         {% else %}
-        <button class="btn btn-secondary" disabled style="width:100%;">Not Available Yet</button>
+        <button class="btn btn-secondary btn-block" disabled>Not Available Yet</button>
         {% endif %}
     </div>
     {% endfor %}

@@ -1,0 +1,99 @@
+{% extends "dashboard/_base.html" %}
+{% load static %}
+
+{% block title %}Verify Mobile Number | Rentora{% endblock %}
+{% block body_class %}page-mobile-verify{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="dash-page-head">
+    <div class="dash-page-head__title"><h1 class="text-h2">{% include "partials/icon.html" with name="smartphone" %} Verify Mobile Number</h1></div>
+    <p>Confirm you own this number so owners/tenants can trust it's really you.</p>
+</div>
+
+<div class="dash-section" style="max-width: 480px;">
+    {% if mobile_number %}
+        {% if not otp_pending %}
+        <div class="fp-hero" style="padding-block: var(--space-4) var(--space-6);">
+            <p>We'll text a 6-digit code to <strong>{{ mobile_number }}</strong>.</p>
+        </div>
+        <form method="post" action="{% url 'accounts:mobile_verify_send' %}">
+            {% csrf_token %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+            <button type="submit" class="btn btn-primary btn-block">
+                {% include "partials/icon.html" with name="send" cls="icon-sm" %}
+                Send Verification Code
+            </button>
+        </form>
+        {% else %}
+        <div class="fp-hero" style="padding-block: var(--space-4) var(--space-6);">
+            <p>Enter the 6-digit code sent to <strong>{{ mobile_number }}</strong>.</p>
+        </div>
+        <form method="post" id="otpForm">
+            {% csrf_token %}
+            {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+            <div class="otp-row" id="otpRow">
+                {% for i in otp_length_range %}
+                <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-box" name="digit{{ i }}" autocomplete="one-time-code" {% if forloop.first %}autofocus{% endif %}>
+                {% endfor %}
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+                {% include "partials/icon.html" with name="check" cls="icon-sm" %}
+                Verify Code
+            </button>
+        </form>
+        <div class="fp-resend" style="margin-top: var(--space-4);">
+            Didn't get it?
+            <form method="post" action="{% url 'accounts:mobile_verify_send' %}" style="display:inline;">
+                {% csrf_token %}
+                {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+                <button type="submit" class="btn-link">Resend code</button>
+            </form>
+        </div>
+        {% endif %}
+    {% else %}
+    <div class="alert alert-info">
+        {% include "partials/icon.html" with name="info" cls="icon-sm" %}
+        Add a mobile number in Settings first, then come back here to verify it.
+    </div>
+    {% endif %}
+
+    {% if next %}
+    <p style="margin-top: var(--space-4);"><a href="{{ next }}">{% include "partials/icon.html" with name="chevron-left" cls="icon-sm" %} Back</a></p>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var boxes = document.querySelectorAll('#otpRow .otp-box');
+    boxes.forEach(function (box, index) {
+        box.addEventListener('input', function () {
+            box.value = box.value.replace(/[^0-9]/g, '');
+            if (box.value && index < boxes.length - 1) {
+                boxes[index + 1].focus();
+            }
+        });
+        box.addEventListener('keydown', function (e) {
+            if (e.key === 'Backspace' && !box.value && index > 0) {
+                boxes[index - 1].focus();
+            }
+        });
+        box.addEventListener('paste', function (e) {
+            var pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/[^0-9]/g, '');
+            if (!pasted) return;
+            e.preventDefault();
+            pasted.split('').forEach(function (digit, i) {
+                if (boxes[i]) boxes[i].value = digit;
+            });
+            var next = boxes[Math.min(pasted.length, boxes.length - 1)];
+            if (next) next.focus();
+        });
+    });
+})();
+</script>
+{% endblock %}

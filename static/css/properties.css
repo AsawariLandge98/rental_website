@@ -209,7 +209,10 @@
 
 .results-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  /* auto-fill, not auto-fit — see static/css/hotels.css .stay-grid for the
+     full reasoning: auto-fit stretches a lone/few result(s) to the full
+     row width instead of keeping them at a normal card size. */
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: var(--space-6);
 }
 
@@ -246,12 +249,10 @@
 @media (max-width: 1023px) {
   .search-toolbar__bar { flex-wrap: wrap; }
   .search-toolbar__field { flex: 1 1 45%; border-right: none; border-bottom: 1px solid var(--color-border); padding-block: var(--space-2); }
-  .results-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 767px) {
   .search-layout { grid-template-columns: 1fr; padding-block: var(--space-4) var(--space-8); }
-  .results-grid { grid-template-columns: 1fr; }
 
   .search-toolbar__bar { flex-direction: column; padding: var(--space-3); }
   .search-toolbar__field { border-bottom: 1px solid var(--color-border); flex: none; }
@@ -406,7 +407,7 @@
 .read-more-toggle.is-open svg { transform: rotate(180deg); }
 
 /* Amenities */
-.amenities-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-3); }
+.amenities-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: var(--space-3); }
 .amenity-pill {
   display: flex;
   align-items: center;
@@ -460,6 +461,59 @@
   color: #7A5B12;
 }
 .privacy-note svg { color: var(--color-warning); flex-shrink: 0; }
+
+/* Reviews & Ratings */
+.review-summary-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4); }
+.review-summary-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-blue-50);
+  color: var(--color-blue-700);
+  border-radius: var(--radius-pill);
+  padding: 6px 12px;
+  font-size: 13px;
+}
+.review-summary-badge svg { color: var(--color-premium-gold); fill: currentColor; }
+.review-summary-badge strong { font-size: 14px; }
+
+.review-list { display: flex; flex-direction: column; gap: var(--space-5); }
+.review-item + .review-item { padding-top: var(--space-5); border-top: 1px solid var(--color-border); }
+.review-item__head { display: flex; align-items: center; gap: var(--space-3); }
+.review-item__avatar { width: 40px; height: 40px; flex-shrink: 0; }
+.review-item__body { flex: 1; min-width: 0; }
+.review-item__name { font: 600 14px var(--font-heading); color: var(--color-ink); }
+.review-item__meta { font-size: 12px; color: var(--color-slate); }
+.review-item__stars { display: flex; gap: 2px; flex-shrink: 0; color: var(--color-premium-gold); }
+.review-item__stars svg { width: 14px; height: 14px; fill: currentColor; }
+.review-item__comment { margin-top: var(--space-2); font-size: 14px; line-height: 22px; color: var(--color-ink); white-space: pre-wrap; word-break: break-word; }
+
+.review-form { margin-top: var(--space-6); padding-top: var(--space-5); border-top: 1px solid var(--color-border); }
+.review-form textarea { resize: vertical; margin-top: var(--space-3); }
+
+/* Pure-CSS star picker: radios in reverse DOM order + a row-reverse
+   container so :checked/:hover can select "this star and everything to
+   its left" using only ~ sibling combinators, no JS. */
+.star-rating {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  gap: 4px;
+  width: fit-content;
+}
+.star-rating input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.star-rating label {
+  font-size: 28px;
+  line-height: 1;
+  color: var(--color-border);
+  cursor: pointer;
+  transition: color var(--transition-fast) var(--ease);
+}
+.star-rating input:checked ~ label,
+.star-rating label:hover,
+.star-rating label:hover ~ label {
+  color: var(--color-premium-gold);
+}
 
 /* Sidebar */
 .price-card .price-row { display: flex; align-items: baseline; gap: var(--space-2); margin-bottom: var(--space-4); }
@@ -542,14 +596,12 @@
   .detail-layout { grid-template-columns: 1fr; }
   .gallery__thumbs { grid-template-columns: repeat(4, 1fr); }
   .location-grid { grid-template-columns: 1fr; }
-  .amenities-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 @media (max-width: 767px) {
   .detail-card { padding: var(--space-4); border-radius: 0; margin-inline: calc(-1 * var(--space-4)); margin-bottom: var(--space-3); border-left: none; border-right: none; }
   .gallery__hero { border-radius: 0; margin-inline: calc(-1 * var(--space-4)); width: auto; aspect-ratio: 4 / 3.2; }
   .gallery__thumbs { margin-inline: var(--space-4); grid-template-columns: repeat(4, 1fr); }
-  .amenities-grid { grid-template-columns: repeat(2, 1fr); }
 
   /* The page's own contact bar takes over the fixed bottom slot */
   body.page-property-detail { padding-bottom: 76px; }
@@ -598,73 +650,36 @@
 .wizard-topbar__row { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-6); flex-wrap: wrap; margin-bottom: var(--space-5); }
 .wizard-topbar__row .dash-page-head__title { align-items: flex-start; }
 .wizard-topbar__row .dash-page-head__title svg { margin-top: 3px; }
-.wizard-topbar__subtitle { color: var(--color-slate); font-size: 14px; max-width: 56ch; margin-top: 2px; }
 .wizard-topbar__actions { display: flex; align-items: center; gap: var(--space-4); flex-shrink: 0; }
-.wizard-topbar__saved { display: inline-flex; align-items: center; gap: 6px; color: var(--color-slate); font-size: 13px; white-space: nowrap; }
 
 .wizard-progress-card {
   background: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  padding: var(--space-5) var(--space-6);
+  padding: var(--space-6);
   margin-bottom: var(--space-6);
+  box-shadow: var(--shadow-card);
 }
 .wizard-progress-card__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   font: 700 12px var(--font-body);
   color: var(--color-slate);
   text-transform: uppercase;
   letter-spacing: .03em;
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-4);
 }
-.wizard-progress-card__pct { color: var(--color-blue-500); text-transform: none; letter-spacing: normal; }
-.wizard-progress-bar { height: 4px; border-radius: var(--radius-pill); background: var(--color-border); margin-bottom: var(--space-5); overflow: hidden; }
-.wizard-progress-bar__fill { height: 100%; background: var(--color-blue-500); border-radius: var(--radius-pill); transition: width var(--transition-base) var(--ease); }
 .wizard-progress-card .step-indicator { overflow-x: auto; padding-bottom: 4px; }
 
 .wizard-layout { display: grid; grid-template-columns: 1fr 340px; gap: var(--space-6); align-items: start; margin-bottom: var(--space-16); }
-.wizard-layout--3col { grid-template-columns: 1fr 260px 280px; }
 
-.wizard-steps-summary { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
-.wizard-steps-summary li {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  padding: 6px var(--space-2);
-  border-radius: var(--radius-control);
-  font-size: 13px;
-  color: var(--color-slate);
-}
-.wizard-steps-summary li.is-active { background: var(--color-blue-50); color: var(--color-blue-700); font-weight: 600; }
-.wizard-steps-summary li.is-done { color: var(--color-ink); }
-.wizard-steps-summary__num {
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font: 700 11px var(--font-body);
-  background: var(--color-offwhite);
-  color: var(--color-slate);
-}
-.wizard-steps-summary li.is-active .wizard-steps-summary__num { background: var(--color-blue-500); color: var(--color-white); }
-.wizard-steps-summary li.is-done .wizard-steps-summary__num { background: #E9F9EF; color: var(--color-success); }
-.wizard-steps-summary li.is-done .wizard-steps-summary__num svg { width: 11px; height: 11px; }
-
-.wizard-sidebar { display: flex; flex-direction: column; gap: var(--space-4); position: sticky; top: 88px; }
-.wizard-sidebar__card { background: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: var(--space-5); box-shadow: var(--shadow-card); }
-.wizard-sidebar__card h3 { margin-bottom: var(--space-3); font-size: 15px; }
+.wizard-sidebar { display: flex; flex-direction: column; gap: var(--space-5); position: sticky; top: 88px; }
+.wizard-sidebar__card { background: var(--color-white); border: 1px solid var(--color-border); border-radius: var(--radius-card); padding: var(--space-6); box-shadow: var(--shadow-card); }
+.wizard-sidebar__card h3 { margin-bottom: var(--space-4); font-size: 15px; }
 .wizard-sidebar__row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); padding-block: var(--space-2); border-top: 1px solid var(--color-border); font-size: 13px; }
 .wizard-sidebar__row:first-of-type { border-top: none; }
 .wizard-sidebar__row span:first-child { color: var(--color-slate); }
 .wizard-trust-checklist { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-3); }
 .wizard-trust-checklist li { display: flex; align-items: center; gap: var(--space-2); font-size: 13px; color: var(--color-ink); line-height: 1.4; }
 .wizard-trust-checklist li svg { flex-shrink: 0; color: var(--color-success); }
-.wizard-trust-checklist li a { color: var(--color-blue-500); font-weight: 600; }
 .wizard-trust-checklist__dot { flex-shrink: 0; width: 14px; height: 14px; border-radius: 50%; border: 1.5px dashed var(--color-border); }
 .wizard-sidebar__card--navy { background: var(--color-navy-900); color: var(--color-white); border: none; }
 .wizard-sidebar__card--navy p { color: var(--color-blue-300); font-size: 13px; margin-bottom: var(--space-4); }
@@ -686,21 +701,6 @@
 .wizard-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-5); margin-bottom: var(--space-4); }
 .wizard-grid-full { grid-column: 1 / -1; }
 .wizard-field textarea.field { min-height: 110px; resize: vertical; }
-
-.wizard-info-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--space-2);
-  background: var(--color-blue-50);
-  color: var(--color-blue-700);
-  border-radius: var(--radius-control);
-  padding: var(--space-3) var(--space-4);
-  margin-top: var(--space-4);
-  font-size: 13px;
-  line-height: 1.5;
-}
-.wizard-info-banner svg { flex-shrink: 0; margin-top: 2px; }
-.wizard-info-banner p { margin: 0; }
 
 .wizard-actions {
   display: flex;
@@ -816,6 +816,13 @@
   .wizard-layout { grid-template-columns: 1fr; }
   .wizard-sidebar { position: static; flex-direction: row; flex-wrap: wrap; }
   .wizard-sidebar__card { flex: 1 1 260px; }
+
+  /* Ten steps' worth of circles + labels can't fit any phone or tablet
+     width, even scrolled — the "Step X of 10 · Label" text above already
+     says the same thing, so the circle row is redundant here and just
+     gets dropped. */
+  .wizard-progress-card .step-indicator { display: none; }
+  .wizard-progress-card__head { margin-bottom: 0; }
 }
 
 @media (max-width: 767px) {

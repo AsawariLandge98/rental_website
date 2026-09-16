@@ -5,7 +5,7 @@ from django.views.decorators.http import require_POST
 from dashboard.decorators import tenant_required
 from notifications.models import Notification, notify
 from properties.models import Property
-from .models import Inquiry
+from .models import Inquiry, InquiryReply
 
 
 @tenant_required
@@ -34,10 +34,28 @@ def my_inquiries(request):
 
 
 @tenant_required
+def inquiry_detail(request, pk):
+    inquiry = get_object_or_404(
+        Inquiry.objects.select_related('property', 'property__owner'), pk=pk, tenant=request.user,
+    )
+    if request.method == 'POST':
+        body = request.POST.get('message', '').strip()
+        if body:
+            InquiryReply.objects.create(inquiry=inquiry, sender=request.user, message=body)
+            notify(
+                inquiry.property.owner, f'{request.user.full_name} replied about "{inquiry.property.title}".',
+                category=Notification.Category.INQUIRY, url=f'/owner/dashboard/inquiries/{inquiry.pk}/',
+            )
+            return redirect('inquiries:inquiry_detail', pk=inquiry.pk)
+
+    replies = inquiry.replies.select_related('sender')
+    return render(request, 'dashboard/inquiry_detail.html', {'inquiry': inquiry, 'replies': replies})
+
+
+@tenant_required
 @require_POST
 def close_inquiry(request, pk):
     inquiry = get_object_or_404(Inquiry, pk=pk, tenant=request.user)
     inquiry.status = Inquiry.Status.CLOSED
     inquiry.save(update_fields=['status'])
-    messages.success(request, 'Inquiry closed.')
     return redirect('inquiries:my_inquiries')

@@ -20,10 +20,17 @@
         <div class="profile-head__meta">Profile {{ tenant_profile.completion_percent }}% complete &middot; Member since {{ user.date_joined|date:"M Y" }}</div>
     </div>
     <div class="profile-head__verify">
-        <span class="verify-pill {% if user.is_mobile_verified %}verify-pill--yes{% else %}verify-pill--no{% endif %}">
+        {% if user.is_mobile_verified %}
+        <span class="verify-pill verify-pill--yes">
             {% include "partials/icon.html" with name="phone" cls="icon-sm" %}
-            {% if user.is_mobile_verified %}Mobile Verified{% else %}Mobile Not Verified{% endif %}
+            Mobile Verified
         </span>
+        {% else %}
+        <a href="{% url 'accounts:mobile_verify_confirm' %}?next={{ request.path }}" class="verify-pill verify-pill--no">
+            {% include "partials/icon.html" with name="phone" cls="icon-sm" %}
+            Mobile Not Verified &middot; Verify Now
+        </a>
+        {% endif %}
         <span class="verify-pill {% if user.is_email_verified %}verify-pill--yes{% else %}verify-pill--no{% endif %}">
             {% include "partials/icon.html" with name="envelope" cls="icon-sm" %}
             {% if user.is_email_verified %}Email Verified{% else %}Email Not Verified{% endif %}

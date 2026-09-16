@@ -32,7 +32,7 @@
                 <td data-label="Status"><span class="status-pill status-pill--{{ inquiry.status }}">{{ inquiry.get_status_display }}</span></td>
                 <td data-label="Actions">
                     <div class="record-actions">
-                        <a href="{% url 'properties:detail' inquiry.property.id %}" class="btn btn-secondary btn-sm">View</a>
+                        <a href="{% url 'inquiries:inquiry_detail' inquiry.pk %}" class="btn btn-primary btn-sm">View &amp; Reply</a>
                         {% if inquiry.status == "open" %}
                         <form method="post" action="{% url 'inquiries:close_inquiry' inquiry.pk %}">
                             {% csrf_token %}

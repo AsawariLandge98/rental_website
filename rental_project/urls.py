@@ -17,9 +17,17 @@ Including another URLconf
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
 
+from core.sitemaps import PropertySitemap, StaticViewSitemap
+from core.views import robots_txt
+
+SITEMAPS = {'static': StaticViewSitemap, 'properties': PropertySitemap}
+
 urlpatterns = [
+    path('sitemap.xml', sitemap, {'sitemaps': SITEMAPS}, name='sitemap'),
+    path('robots.txt', robots_txt, name='robots_txt'),
     # dashboard.urls owns /admin/dashboard/... — must be tried before the
     # Django admin site below, whose catch-all view otherwise intercepts
     # any /admin/* path (redirecting non-Django-staff users to
@@ -36,7 +44,9 @@ urlpatterns = [
     path('', include('dashboard.urls')),
     path('tenant/dashboard/inquiries/', include('inquiries.urls')),
     path('tenant/dashboard/visits/', include('visits.urls')),
+    path('tenant/dashboard/bookings/', include('bookings.urls')),
     path('tenant/dashboard/notifications/', include('notifications.urls')),
+    path('tenant/dashboard/reviews/', include('reviews.urls')),
     path('owner/dashboard/subscription/', include('subscriptions.urls')),
     path('admin/', admin.site.urls),
 ]

@@ -135,7 +135,6 @@ def start_listing(request):
             property_obj = form.save(commit=False)
             property_obj.owner = request.user
             property_obj.save()
-            messages.success(request, 'Draft listing created — fill in the details below. You can save and come back any time.')
             return redirect('properties:manage_step', pk=property_obj.pk, step=STEP_SLUGS[0])
     else:
         form = CategoryForm()
@@ -202,13 +201,17 @@ def edit_step(request, pk, step):
 
 
 def _photos_step(request, property_obj, idx):
+    from cms.models import SiteSettings
+    site_settings = SiteSettings.load()
+    max_photos = site_settings.max_photos_per_listing
+
     if request.method == 'POST':
         files = request.FILES.getlist('images')
-        remaining = Property.MAX_PHOTOS - property_obj.photos.count()
+        remaining = max_photos - property_obj.photos.count()
         if not files:
             messages.error(request, 'Choose at least one photo to upload.')
         elif len(files) > remaining:
-            messages.error(request, f'You can add {remaining} more photo(s) — {property_obj.MAX_PHOTOS} maximum per listing.')
+            messages.error(request, f'You can add {remaining} more photo(s) — {max_photos} maximum per listing.')
         else:
             has_cover = property_obj.photos.filter(is_cover=True).exists()
             next_order = property_obj.photos.count()
@@ -229,7 +232,9 @@ def _photos_step(request, property_obj, idx):
         'current_index': idx,
         'prev_url': _prev_step_url(property_obj, 'photos'),
         'photos': property_obj.photos.all(),
-        'remaining_slots': Property.MAX_PHOTOS - property_obj.photos.count(),
+        'remaining_slots': max_photos - property_obj.photos.count(),
+        'max_photos': max_photos,
+        'min_photos_to_publish': site_settings.min_photos_to_publish,
         'wizard_nav': WIZARD_NAV,
     }
     return render(request, 'properties/manage/step_photos.html', context)

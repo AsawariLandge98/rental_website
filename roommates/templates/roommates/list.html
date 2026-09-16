@@ -39,30 +39,30 @@
             <label class="search-toolbar__field">
                 {% include "partials/icon.html" with name="map-pin" %}
                 <span class="search-toolbar__field-label">
-                    <span>Area / Locality</span>
+                    <span>City / Locality</span>
                     <input type="text" name="q" value="{{ selected_q }}" placeholder="e.g. Koramangala" style="border:none; outline:none; font:600 14px var(--font-body); width:100%;">
                 </span>
             </label>
             <label class="search-toolbar__field">
-                {% include "partials/icon.html" with name="users" %}
+                {% include "partials/icon.html" with name="sliders" %}
                 <span class="search-toolbar__field-label">
-                    <span>Gender</span>
-                    <select name="gender">
+                    <span>Type</span>
+                    <select name="type">
                         <option value="">Any</option>
-                        {% for g in gender_options %}
-                        <option value="{{ g }}" {% if g == selected_gender %}selected{% endif %}>{{ g }}</option>
+                        {% for value, label in posting_type_options %}
+                        <option value="{{ value }}" {% if value == selected_type %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </span>
             </label>
             <label class="search-toolbar__field">
-                {% include "partials/icon.html" with name="bed" %}
+                {% include "partials/icon.html" with name="users" %}
                 <span class="search-toolbar__field-label">
-                    <span>Room Type</span>
-                    <select name="room_type">
+                    <span>Gender Preference</span>
+                    <select name="gender">
                         <option value="">Any</option>
-                        {% for rt in room_type_options %}
-                        <option value="{{ rt }}" {% if rt == selected_room_type %}selected{% endif %}>{{ rt }}</option>
+                        {% for value, label in gender_options %}
+                        <option value="{{ value }}" {% if value == selected_gender %}selected{% endif %}>{{ label }}</option>
                         {% endfor %}
                     </select>
                 </span>
@@ -83,7 +83,7 @@
                 {% include "partials/icon.html" with name="search" %}
                 Search
             </button>
-            {% if selected_gender or selected_room_type or selected_budget or selected_q %}
+            {% if selected_type or selected_gender or selected_budget or selected_q %}
             <a href="{% url 'roommates:list' %}" class="btn btn-secondary">Clear</a>
             {% endif %}
         </form>
@@ -104,29 +104,32 @@
         {% if roommates %}
         <div class="roommate-grid">
             {% for r in roommates %}
-            <article class="roommate-card">
+            <a href="{% url 'roommates:detail' r.pk %}" class="roommate-card">
                 <div class="roommate-card__media">
-                    <img src="{{ r.image }}" alt="{{ r.room_type }} in {{ r.location }}" loading="lazy">
-                    <span class="badge roommate-card__tag roommate-card__tag--{{ r.badge_color }}">{{ r.badge }}</span>
+                    {% if r.photo %}
+                    <img src="{{ r.photo.url }}" alt="{{ r.room_type }} in {{ r.display_location }}" loading="lazy">
+                    {% else %}
+                    <span class="roommate-card__media--empty">{% include "partials/icon.html" with name="house" %}</span>
+                    {% endif %}
+                    <span class="badge roommate-card__tag roommate-card__tag--{{ r.badge_color }}">{{ r.badge_label }}</span>
                 </div>
                 <div class="roommate-card__body">
-                    <h3 class="roommate-card__name">{{ r.name }}</h3>
+                    <h3 class="roommate-card__name">{{ r.poster.full_name }}</h3>
                     <div class="roommate-card__tags">
-                        <span class="roommate-card__tag-chip">{{ r.gender }}</span>
-                        <span class="roommate-card__tag-chip">{{ r.age }} yrs</span>
-                        <span class="roommate-card__tag-chip">{{ r.occupation }}</span>
+                        <span class="roommate-card__tag-chip">{{ r.get_gender_preference_display }}</span>
+                        {% if r.poster_age %}<span class="roommate-card__tag-chip">{{ r.poster_age }} yrs</span>{% endif %}
+                        <span class="roommate-card__tag-chip">{{ r.get_occupation_display }}</span>
                     </div>
                     <p class="roommate-card__room">{{ r.room_type }}</p>
                     <div class="roommate-card__footer">
-                        <span class="roommate-card__location" title="{{ r.location }}">{{ r.location }}</span>
+                        <span class="roommate-card__location" title="{{ r.display_location }}">{{ r.display_location }}</span>
                         <div class="roommate-card__price">
-                            <span class="text-price-stat">&#8377;{{ r.price|intcomma }}</span>
+                            <span class="text-price-stat">&#8377;{{ r.monthly_rent|intcomma }}</span>
                             <span>/month</span>
                         </div>
                     </div>
-                    <span class="btn btn-secondary btn-sm btn-block is-disabled" title="Full roommate profiles are coming soon" aria-disabled="true">Profile Coming Soon</span>
                 </div>
-            </article>
+            </a>
             {% endfor %}
         </div>
         {% else %}
@@ -142,12 +145,19 @@
     <!-- Sidebar -->
     <aside class="listing-sidebar">
         <div class="sidebar-card sidebar-card--tint">
-            <h3>Create Your Profile</h3>
-            <p>Post your profile and let others find the perfect match.</p>
-            <a href="{% url 'accounts:register' %}" class="btn btn-primary btn-block">
+            <h3>Post Your Listing</h3>
+            <p>Looking for a roommate, or have a room to offer? Post it and let others find you.</p>
+            {% if user.is_authenticated %}
+            <a href="{% url 'roommates:create' %}" class="btn btn-primary btn-block">
                 {% include "partials/icon.html" with name="plus-circle" cls="icon-sm" %}
-                Create Profile
+                Post a Listing
             </a>
+            {% else %}
+            <a href="{% url 'accounts:login' %}?next={% url 'roommates:create' %}" class="btn btn-primary btn-block">
+                {% include "partials/icon.html" with name="plus-circle" cls="icon-sm" %}
+                Post a Listing
+            </a>
+            {% endif %}
         </div>
     </aside>
 </div>

@@ -59,6 +59,7 @@
                 <td data-label="Subject">
                     <div class="record-property__title">{{ ticket.subject }}</div>
                     <div class="record-property__loc">{{ ticket.description|truncatechars:80 }}</div>
+                    {% if ticket.page_url %}<div class="record-subtext">Raised from: {{ ticket.page_url }}</div>{% endif %}
                 </td>
                 <td data-label="User">{{ ticket.user.full_name }}<br><span class="slate" style="font-size:12px;">{{ ticket.user.email }}</span></td>
                 <td data-label="Category">{{ ticket.get_category_display }}</td>

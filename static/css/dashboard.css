@@ -232,6 +232,8 @@
 .dash-page-head__title { display: flex; align-items: center; gap: var(--space-2); }
 .dash-page-head__title svg { color: var(--color-blue-500); }
 .dash-page-head p { color: var(--color-slate); font-size: 14px; margin-top: var(--space-1); }
+.dash-page-head--center { text-align: center; max-width: 52ch; margin-inline: auto; margin-bottom: var(--space-8); }
+.dash-page-head--center p { font-size: 15px; margin-top: var(--space-2); }
 .dash-breadcrumb { font-size: 13px; color: var(--color-slate); margin-bottom: var(--space-1); }
 .dash-breadcrumb a { color: var(--color-blue-500); }
 
@@ -297,8 +299,8 @@
   display: flex;
   align-items: center;
   gap: var(--space-5);
-  padding: var(--space-5);
-  margin-inline: calc(-1 * var(--space-5));
+  padding: var(--space-5) var(--space-6);
+  margin-inline: calc(-1 * var(--space-6));
   border-top: 1px solid var(--color-border);
   transition: background var(--transition-fast) var(--ease);
 }
@@ -343,8 +345,8 @@
   display: flex;
   align-items: flex-start;
   gap: var(--space-4);
-  padding: var(--space-4) var(--space-5);
-  margin-inline: calc(-1 * var(--space-5));
+  padding: var(--space-4) var(--space-6);
+  margin-inline: calc(-1 * var(--space-6));
   border-top: 1px solid var(--color-border);
   text-decoration: none;
   transition: background var(--transition-fast) var(--ease);
@@ -352,7 +354,6 @@
 .dash-notif-item:first-child { border-top: none; border-top-left-radius: var(--radius-card); border-top-right-radius: var(--radius-card); }
 .dash-notif-item:last-child { border-bottom-left-radius: var(--radius-card); border-bottom-right-radius: var(--radius-card); }
 .dash-notif-item:hover { background: var(--color-offwhite); }
-.dash-notif-item.is-unread { background: var(--color-blue-50); }
 .dash-notif-item__icon {
   width: 36px; height: 36px; flex-shrink: 0;
   border-radius: 50%;
@@ -360,27 +361,31 @@
   color: var(--color-slate);
   display: flex; align-items: center; justify-content: center;
 }
-.dash-notif-item.is-unread .dash-notif-item__icon { background: var(--color-blue-500); color: var(--color-white); }
 .dash-notif-item__body { flex: 1; min-width: 0; }
 .dash-notif-item__message { font-size: 14px; color: var(--color-ink); line-height: 20px; }
-.dash-notif-item.is-unread .dash-notif-item__message { font-weight: 600; }
 .dash-notif-item__meta { font-size: 12px; color: var(--color-slate); margin-top: 4px; }
 .dash-notif-item__dot { width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: var(--color-blue-500); flex-shrink: 0; }
 
 .dash-grid-2 { display: grid; grid-template-columns: 2fr 1fr; gap: var(--space-6); align-items: start; }
+.dash-grid-2 > div { min-width: 0; }
 
 .dash-section {
   background: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  padding: var(--space-5);
+  padding: var(--space-6);
   margin-bottom: var(--space-6);
 }
-.dash-section__head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-5); }
+.dash-section__head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); margin-bottom: var(--space-5); }
+.dash-section__head h2 { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-section__head .link-more { flex-shrink: 0; }
 
-.dash-property-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--space-4); }
+/* auto-fill, not auto-fit — see static/css/hotels.css .stay-grid: auto-fit
+   stretches a lone/few card(s) to the full row width instead of a normal
+   card size (e.g. Recently Viewed with just 1-2 properties). */
+.dash-property-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: var(--space-4); }
 
-.dash-quick-actions { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--space-3); }
+.dash-quick-actions { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: var(--space-3); }
 .dash-quick-actions a {
   display: flex; flex-direction: column; align-items: center; gap: var(--space-2);
   padding: var(--space-4) var(--space-2);
@@ -431,6 +436,7 @@
 
 .dash-visit-item, .dash-notif-list-item {
   display: flex;
+  align-items: center;
   gap: var(--space-3);
   padding-block: var(--space-3);
   border-top: 1px solid var(--color-border);
@@ -470,11 +476,13 @@
   width: 36px;
   height: 36px;
   flex-shrink: 0;
+  overflow: hidden;
   border-radius: 50%;
   background: var(--color-blue-500);
   color: var(--color-white);
   font: 600 14px var(--font-body);
 }
+.dash-inquiry-avatar img { width: 100%; height: 100%; object-fit: cover; }
 .dash-inquiry-icon {
   display: flex;
   align-items: center;
@@ -489,6 +497,44 @@
 .dash-inquiry-title { font-size: 14px; color: var(--color-ink); }
 .dash-inquiry-title strong { font-weight: 600; }
 .dash-inquiry-message { font-size: 12px; color: var(--color-slate); font-style: italic; margin-top: var(--space-1); }
+
+/* ==========================================================================
+   Inquiry detail — property summary strip + reply thread (owner + tenant)
+   ========================================================================== */
+.inquiry-detail-card {
+  background: var(--color-white);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-6);
+}
+.inquiry-detail-card__property { display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
+.inquiry-detail-card__thumb { width: 56px; height: 56px; border-radius: var(--radius-control); object-fit: cover; flex-shrink: 0; background: var(--color-offwhite); border: 1px solid var(--color-border); }
+.inquiry-detail-card__thumb--empty { display: flex; align-items: center; justify-content: center; color: var(--color-blue-300); background: var(--color-blue-50); border-color: var(--color-blue-50); }
+.inquiry-detail-card__property > div { flex: 1; min-width: 0; }
+.inquiry-detail-card__title { font: 600 15px var(--font-heading); color: var(--color-ink); }
+.inquiry-detail-card__title:hover { color: var(--color-blue-500); }
+.inquiry-detail-card__meta { font-size: 13px; color: var(--color-slate); margin-top: 2px; }
+
+.inquiry-thread { display: flex; flex-direction: column; gap: var(--space-4); margin-bottom: var(--space-6); }
+.inquiry-message { display: flex; align-items: flex-start; gap: var(--space-3); }
+.inquiry-message--mine { flex-direction: row-reverse; }
+.inquiry-message--mine .dash-inquiry-avatar { display: none; }
+.inquiry-message__bubble { max-width: 70%; background: var(--color-offwhite); border-radius: var(--radius-card); padding: var(--space-3) var(--space-4); }
+.inquiry-message--mine .inquiry-message__bubble { background: var(--color-blue-500); }
+.inquiry-message__meta { font-size: 11px; color: var(--color-slate); margin-bottom: 4px; }
+.inquiry-message--mine .inquiry-message__meta { color: rgba(255, 255, 255, .8); text-align: right; }
+.inquiry-message__text { font-size: 14px; line-height: 20px; color: var(--color-ink); white-space: pre-wrap; word-break: break-word; }
+.inquiry-message--mine .inquiry-message__text { color: var(--color-white); }
+
+.inquiry-reply-form { border-top: 1px solid var(--color-border); padding-top: var(--space-5); }
+.inquiry-reply-form textarea { resize: vertical; margin-bottom: var(--space-3); }
+
+@media (max-width: 640px) {
+  .inquiry-detail-card__property { align-items: flex-start; }
+  .inquiry-message__bubble { max-width: 85%; }
+}
 
 /* Status pills read as circular "unread dot" badges when the label is very
    short (e.g. "OPEN") while longer labels (e.g. "PENDING APPROVAL") render
@@ -510,21 +556,21 @@
 
 .dash-empty {
   text-align: center;
-  padding: var(--space-8) var(--space-4);
+  padding: var(--space-6) var(--space-4);
   color: var(--color-slate);
 }
 .dash-empty__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 56px;
   border-radius: 50%;
   background: var(--color-blue-50);
   color: var(--color-blue-300);
   margin-bottom: var(--space-3);
 }
-.dash-empty__icon svg { width: 28px; height: 28px; }
+.dash-empty__icon svg { width: 24px; height: 24px; }
 .dash-empty h3 { color: var(--color-ink); margin-bottom: var(--space-1); font-size: 15px; }
 .dash-empty p { margin-bottom: var(--space-3); font-size: 14px; max-width: 32ch; margin-inline: auto; }
 .dash-empty--compact { padding: var(--space-5) var(--space-4); }
@@ -557,27 +603,75 @@
 /* ==========================================================================
    Subscription plan cards
    ========================================================================== */
-.plan-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); align-items: stretch; }
+.dash-page-banner { margin-bottom: var(--space-5); }
+
+.current-plan-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background: var(--color-blue-50);
+  border: 1px solid #DCEBFF;
+  border-radius: var(--radius-card);
+  padding: var(--space-5) var(--space-6);
+  margin-bottom: var(--space-6);
+}
+.current-plan-card__icon {
+  width: 48px; height: 48px; flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--color-white);
+  color: var(--color-blue-500);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-card);
+}
+.current-plan-card__body { display: flex; flex-direction: column; gap: 2px; }
+.current-plan-card__label { font: 600 12px var(--font-body); color: var(--color-blue-700); text-transform: uppercase; letter-spacing: .03em; }
+.current-plan-card__name { font: 700 18px var(--font-heading); color: var(--color-ink); }
+.current-plan-card__renew { font-size: 13px; color: var(--color-slate); }
+
+.plan-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-5); align-items: stretch; }
 .plan-card {
+  position: relative;
   display: flex; flex-direction: column;
   background: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
-  padding: var(--space-5);
+  padding: var(--space-6);
   box-shadow: var(--shadow-card);
+  transition: transform var(--transition-fast) var(--ease), box-shadow var(--transition-fast) var(--ease);
 }
+.plan-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
 .plan-card--current { border-color: var(--color-blue-500); box-shadow: 0 0 0 3px var(--color-blue-50); }
-.plan-card__price { font: 700 26px var(--font-heading); color: var(--color-ink); margin: var(--space-2) 0 var(--space-3); }
+.plan-card--current:hover { transform: none; box-shadow: 0 0 0 3px var(--color-blue-50); }
+.plan-card--recommended { border-color: var(--color-navy-900); box-shadow: var(--shadow-lg); transform: translateY(-8px); z-index: 1; }
+.plan-card--recommended:hover { transform: translateY(-10px); }
+.plan-card__tag {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-4);
+  background: var(--color-blue-500);
+  color: var(--color-white);
+  font: 700 11px var(--font-body);
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  padding: 3px 10px;
+  border-radius: var(--radius-pill);
+}
+.plan-card__tag--recommended { background: var(--color-navy-900); }
+.plan-card__price { font: 700 28px var(--font-heading); color: var(--color-ink); margin: var(--space-2) 0 var(--space-4); }
 .plan-card__price span { font: 500 13px var(--font-body); color: var(--color-slate); }
-.plan-card__features { list-style: none; padding: 0; margin: 0 0 var(--space-4); flex: 1; }
-.plan-card__features li { display: flex; align-items: flex-start; gap: var(--space-2); font-size: 13px; padding: var(--space-1) 0; color: var(--color-ink); }
-.plan-card__features svg { flex-shrink: 0; color: var(--color-success); margin-top: 2px; }
+.plan-card__features { list-style: none; padding: 0; margin: 0 0 var(--space-5); flex: 1; display: flex; flex-direction: column; gap: 2px; }
+.plan-card__features li { display: flex; align-items: flex-start; gap: var(--space-2); font-size: 13px; line-height: 1.5; padding: var(--space-1) 0; color: var(--color-ink); }
+.plan-card__features svg { flex-shrink: 0; color: var(--color-success); margin-top: 3px; }
 
 @media (max-width: 1023px) {
   .plan-grid { grid-template-columns: repeat(2, 1fr); }
+  .plan-card--recommended { transform: none; }
+  .plan-card--recommended:hover { transform: translateY(-2px); }
 }
 @media (max-width: 640px) {
   .plan-grid { grid-template-columns: 1fr; }
+  .current-plan-card { flex-direction: column; align-items: flex-start; text-align: left; }
+  .dash-page-head--center { text-align: left; margin-inline: 0; }
 }
 
 /* ==========================================================================
@@ -610,6 +704,8 @@
   display: flex; align-items: center; justify-content: center;
 }
 .record-actions { display: flex; gap: var(--space-2); flex-wrap: wrap; }
+.record-subtext { font-size: 12px; color: var(--color-slate); }
+.btn-danger-text { color: var(--color-error); }
 
 .record-card { display: none; }
 
@@ -651,16 +747,27 @@
     margin-bottom: var(--space-3);
     padding: var(--space-3);
   }
-  .record-table td { border-bottom: none; padding: var(--space-1) 0; }
+  .record-table td { border-bottom: none; padding: 6px 0; }
+  /* An inline (not flex) label: short scalar fields (Type, Price, Status...)
+     end up label-then-value on one line — the stacked layout was the main
+     reason these mobile cards ran so tall. A flex row was tried here before
+     but it fought any cell whose value has its own internal <br> (Tenant/
+     Owner cells showing name then email on two lines), cramming both onto
+     one line and orphaning part of the name. Plain inline content sidesteps
+     that: the label prefixes the first line, a <br> in the value still
+     breaks normally, and a block child (the Actions button row) still drops
+     to its own line same as before, so no special-casing is needed. */
   .record-table td[data-label]::before {
-    content: attr(data-label);
-    display: block;
+    content: attr(data-label) ":";
+    margin-right: var(--space-2);
     font: 600 11px var(--font-body);
     color: var(--color-slate);
     text-transform: uppercase;
-    margin-bottom: var(--space-1);
   }
   .record-table td.record-property-cell::before { display: none; }
+
+  .record-actions { gap: 6px; }
+  .record-actions .btn { padding: 6px 12px; font-size: 12px; }
 }
 
 /* ==========================================================================
@@ -700,6 +807,8 @@
 .settings-info-item svg { color: var(--color-blue-500); margin-top: 2px; flex-shrink: 0; }
 .settings-info-item strong { display: block; font-size: 13px; }
 .settings-info-item span { font-size: 12px; color: var(--color-slate); }
+.settings-info-item .status-pill { font-size: 11px; color: inherit; }
+.settings-info-item .status-pill--published { color: var(--color-success); }
 
 /* Toggle switch */
 .switch { position: relative; display: inline-block; width: 42px; height: 24px; flex-shrink: 0; }
@@ -749,6 +858,8 @@
 }
 .verify-pill--yes { background: #E9F9EF; color: var(--color-success); }
 .verify-pill--no { background: var(--color-offwhite); color: var(--color-slate); }
+a.verify-pill { text-decoration: none; }
+a.verify-pill--no:hover { background: var(--color-blue-50); color: var(--color-blue-700); }
 
 .profile-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-4); margin-bottom: var(--space-4); }
 .profile-form-grid-full { grid-column: 1 / -1; }
@@ -756,13 +867,18 @@
 /* ==========================================================================
    Help & Support
    ========================================================================== */
-.help-cards { display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--space-4); margin-bottom: var(--space-6); }
+.help-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--space-4); margin-bottom: var(--space-6); }
 .help-card {
+  display: block;
   background: var(--color-white);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-card);
   padding: var(--space-5);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color var(--transition-fast) var(--ease), box-shadow var(--transition-fast) var(--ease);
 }
+a.help-card:hover { border-color: var(--color-blue-300); box-shadow: var(--shadow-card); }
 .help-card__icon {
   width: 44px; height: 44px;
   border-radius: var(--radius-control);
@@ -818,13 +934,9 @@
   }
   .dash-sidebar-backdrop.is-open { opacity: 1; pointer-events: auto; }
 
-  .dash-stats { grid-template-columns: repeat(2, 1fr); }
   .dash-grid-2 { grid-template-columns: 1fr; }
-  .dash-property-grid { grid-template-columns: repeat(2, 1fr); }
-  .dash-quick-actions { grid-template-columns: repeat(3, 1fr); }
   .settings-layout { grid-template-columns: 1fr; }
   .settings-nav { position: static; flex-direction: row; overflow-x: auto; }
-  .help-cards { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 640px) {
@@ -832,12 +944,13 @@
   .dash-topbar__brand .brand__name { display: none; }
   .dash-topbar__title { border-left: none; padding-left: 0; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .dash-main { padding: var(--space-4); }
-  .dash-stats { grid-template-columns: 1fr 1fr; gap: var(--space-3); }
-  .dash-stat-card { padding: var(--space-3); gap: var(--space-2); }
-  .dash-stat-card__value { font-size: 30px; }
-  .dash-property-grid { grid-template-columns: 1fr; }
-  .dash-quick-actions { grid-template-columns: 1fr 1fr; }
-  .help-cards { grid-template-columns: 1fr; }
+  .dash-stats { grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+  .dash-stat-card { padding: var(--space-2) var(--space-3); gap: var(--space-2); }
+  .dash-stat-card__icon { width: 30px; height: 30px; }
+  .dash-stat-card__icon svg { width: 16px; height: 16px; }
+  .dash-stat-card__value { font-size: 18px; }
+  .dash-stat-card__label { font-size: 10px; line-height: 1.3; }
+  .dash-stat-card__trend { font-size: 9px; }
   .profile-form-grid { grid-template-columns: 1fr; }
   .settings-info-grid { grid-template-columns: 1fr; }
   .profile-head { flex-direction: column; align-items: flex-start; text-align: left; }
@@ -851,12 +964,11 @@
 }
 
 /* Smallest phones (iPhone SE, older/budget Android — ~320-400px wide).
-   Two-up stat tiles and a two-up quick-actions grid get too tight for a
-   40px number or a two-line label at this width, so both collapse to a
-   single column here instead of just shrinking further. */
+   .dash-stats stays a fixed 2-up grid (set at 640px above) all the way
+   down; .dash-quick-actions is an auto-fit/minmax grid that already
+   collapses to as many columns as fit at this width on its own. */
 @media (max-width: 400px) {
-  .dash-stats { grid-template-columns: 1fr; }
   .dash-stat-card { flex-direction: row; }
-  .dash-quick-actions { grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+  .dash-quick-actions { gap: var(--space-2); }
   .dash-property-row__thumb, .dash-visit-item__thumb { width: 48px; height: 48px; }
 }

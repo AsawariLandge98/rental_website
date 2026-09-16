@@ -1,8 +1,19 @@
 from django import forms
 from django.contrib.auth import authenticate
 from django.contrib.auth.forms import PasswordResetForm, SetPasswordForm
+from django.core.cache import cache
 
 from .models import User
+
+# Real brute-force lockout on login (public + admin) — previously nothing
+# throttled repeated password guesses at all. Keyed by request IP via
+# Django's cache framework; the default LocMemCache (no CACHES override in
+# settings.py) keeps this state per-process — correct for a single dev
+# server, but each worker process in a real multi-worker deployment would
+# track attempts independently. Swapping in a shared cache backend (Redis/
+# Memcached) later is a one-line settings change, no code change needed.
+LOGIN_MAX_ATTEMPTS = 5
+LOGIN_LOCKOUT_SECONDS = 15 * 60
 
 
 def _field_input(attrs=None, **extra):
@@ -126,16 +137,27 @@ class EmailLoginForm(forms.Form):
         self.request = request
         super().__init__(*args, **kwargs)
 
+    def _attempts_cache_key(self):
+        ip = self.request.META.get('REMOTE_ADDR', 'unknown') if self.request else 'unknown'
+        return f'login_attempts:{ip}'
+
     def clean(self):
         cleaned_data = super().clean()
         email = cleaned_data.get('email')
         password = cleaned_data.get('password')
         if email and password:
+            key = self._attempts_cache_key()
+            attempts = cache.get(key, 0)
+            if attempts >= LOGIN_MAX_ATTEMPTS:
+                raise forms.ValidationError('Too many failed login attempts. Please try again in a few minutes.')
+
             user = authenticate(self.request, username=email, password=password)
             if user is None or user.role not in self.allowed_roles:
+                cache.set(key, attempts + 1, LOGIN_LOCKOUT_SECONDS)
                 raise forms.ValidationError(self.generic_error)
             if not user.is_active:
                 raise forms.ValidationError('This account has been deactivated.')
+            cache.delete(key)
             cleaned_data['user'] = user
         return cleaned_data
 

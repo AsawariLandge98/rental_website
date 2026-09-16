@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% load static humanize %}
 
-{% block title %}About Us | Rentora{% endblock %}
+{% block title %}{{ page_seo.meta_title|default:"About Us | Rentora" }}{% endblock %}
+{% block meta_description %}{% if page_seo.meta_description %}<meta name="description" content="{{ page_seo.meta_description }}">{% endif %}{% endblock %}
 {% block body_class %}page-about{% endblock %}
 
 {% block extra_css %}
@@ -66,7 +67,7 @@
             <h3>Our Values</h3>
             <ul>
                 {% for value in values %}
-                <li>{% include "partials/icon.html" with name="check" cls="icon-sm" %} {{ value }}</li>
+                <li>{% include "partials/icon.html" with name="check" cls="icon-sm" %} {{ value.title }}</li>
                 {% endfor %}
             </ul>
         </div>

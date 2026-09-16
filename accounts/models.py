@@ -2,6 +2,9 @@ from django.conf import settings
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.contrib.auth.models import PermissionsMixin
 from django.db import models
+from django.utils import timezone
+
+from core.validators import MaxFileSizeValidator
 
 
 class UserManager(BaseUserManager):
@@ -75,6 +78,40 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.role in self.INTERNAL_ROLES
 
 
+class MobileOTP(models.Model):
+    """A single one-time code issued for mobile-number verification
+    (Feature 24). One row per send attempt — resending invalidates any
+    still-unused prior code for the same user (accounts/views.py marks
+    them used before creating a new one), so `latest unused, unexpired,
+    matching code` is always the single row that can pass verification."""
+
+    OTP_LENGTH = 6
+    OTP_VALID_MINUTES = 10
+    MAX_ATTEMPTS = 5
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='mobile_otps')
+    mobile_number = models.CharField(max_length=15)
+    code = models.CharField(max_length=OTP_LENGTH)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    is_used = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'OTP for {self.mobile_number} ({"used" if self.is_used else "pending"})'
+
+    @property
+    def is_expired(self):
+        return timezone.now() >= self.expires_at
+
+    @property
+    def is_valid(self):
+        return not self.is_used and not self.is_expired and self.attempts < self.MAX_ATTEMPTS
+
+
 class TenantProfile(models.Model):
     """Tenant-only profile/preference data, kept off the core `User` model
     since owner/hotel/admin accounts don't need any of these fields."""
@@ -119,7 +156,9 @@ class TenantProfile(models.Model):
     date_of_birth = models.DateField(null=True, blank=True)
     occupation = models.CharField(max_length=100, blank=True)
     about = models.CharField(max_length=300, blank=True)
-    profile_photo = models.ImageField(upload_to='profiles/%Y/%m/', null=True, blank=True)
+    profile_photo = models.ImageField(
+        upload_to='profiles/%Y/%m/', null=True, blank=True, validators=[MaxFileSizeValidator(2048)],
+    )
 
     # Rental preferences
     preferred_city = models.CharField(max_length=60, blank=True)
@@ -160,3 +199,33 @@ class TenantProfile(models.Model):
     def completion_percent(self):
         filled = sum(1 for f in self.PROFILE_FIELDS if getattr(self, f))
         return round(filled / len(self.PROFILE_FIELDS) * 100)
+
+
+class OwnerProfile(models.Model):
+    """Owner/Hotel-only preference data — same shape as TenantProfile's
+    notification/privacy/language groups, kept as its own model since these
+    fields don't apply to Tenant/Admin accounts. Same 'real, persisted
+    preference — not everything is wired to delivery infra yet' pattern as
+    TenantProfile (see its own comment): only Email is actually sent today."""
+
+    class Language(models.TextChoices):
+        ENGLISH = 'en', 'English'
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='owner_profile')
+
+    # Notification preferences
+    email_notifications = models.BooleanField(default=True)
+    sms_notifications = models.BooleanField(default=True)
+    new_inquiry_alerts = models.BooleanField(default=True)
+    visit_reminders = models.BooleanField(default=True)
+    push_notifications = models.BooleanField(default=True)
+    offers_updates = models.BooleanField(default=False)
+
+    # Privacy preferences
+    show_contact_to_tenants = models.BooleanField(default=True)
+    allow_tenant_contact = models.BooleanField(default=True)
+
+    language = models.CharField(max_length=5, choices=Language.choices, default=Language.ENGLISH)
+
+    def __str__(self):
+        return f'Owner profile: {self.user}'

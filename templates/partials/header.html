@@ -2,12 +2,16 @@
 <header class="site-header">
     <div class="container site-header__bar">
         <a href="{% url 'core:home' %}" class="brand">
+            {% if site_settings.logo %}
+            <img src="{{ site_settings.logo.url }}" alt="{{ site_settings.platform_name }}" class="brand__logo">
+            {% else %}
             <svg class="brand__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M3 11.5 12 4l9 7.5" />
                 <path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9" />
             </svg>
+            {% endif %}
             <span class="brand__text">
-                <span class="brand__name">Rentora</span>
+                <span class="brand__name">{{ site_settings.platform_name }}</span>
                 <span class="brand__tagline">NO BROKERAGE. ONLY TRUST.</span>
             </span>
         </a>

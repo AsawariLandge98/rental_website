@@ -1,0 +1,48 @@
+{% extends "dashboard/_base.html" %}
+
+{% block title %}{% if block %}Edit Content Block{% else %}Add Content Block{% endif %} | Rentora{% endblock %}
+{% block body_class %}page-dash-admin-cms-form{% endblock %}
+
+{% block content %}
+<div class="dash-breadcrumb"><a href="{% url 'dashboard:admin_content_blocks' %}">&larr; Back to Content Blocks</a></div>
+
+<div class="dash-page-head">
+    <h1 class="text-h2">{% if block %}Edit Content Block{% else %}Add New Content Block{% endif %}</h1>
+</div>
+
+<div class="dash-section" style="max-width: 640px;">
+    <form method="post">
+        {% csrf_token %}
+        <div style="margin-bottom: var(--space-4);">
+            <label class="field-label" for="{{ form.placement.id_for_label }}">Section</label>
+            {{ form.placement }}
+        </div>
+        <div style="margin-bottom: var(--space-4);">
+            <label class="field-label" for="{{ form.title.id_for_label }}">Title</label>
+            {{ form.title }}
+        </div>
+        <div style="margin-bottom: var(--space-4);">
+            <label class="field-label" for="{{ form.text.id_for_label }}">Text (optional)</label>
+            {{ form.text }}
+        </div>
+        <div class="profile-form-grid">
+            <div>
+                <label class="field-label" for="{{ form.icon.id_for_label }}">Icon name (optional)</label>
+                {{ form.icon }}
+            </div>
+            <div>
+                <label class="field-label" for="{{ form.order.id_for_label }}">Display Order</label>
+                {{ form.order }}
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap: var(--space-2); margin: var(--space-2) 0 var(--space-4);">
+            {{ form.is_published }}
+            <label class="field-label" for="{{ form.is_published.id_for_label }}" style="margin:0;">Published (visible to visitors)</label>
+        </div>
+        <div style="display:flex; gap: var(--space-3);">
+            <button type="submit" class="btn btn-primary">{% if block %}Save Changes{% else %}Create Block{% endif %}</button>
+            <a href="{% url 'dashboard:admin_content_blocks' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

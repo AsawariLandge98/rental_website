@@ -124,6 +124,62 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Reviews & Ratings -->
+            <div class="detail-card">
+                <div class="review-summary-head">
+                    <h2 class="detail-section-title" style="margin-bottom:0;">Reviews &amp; Ratings</h2>
+                    {% if review_count %}
+                    <div class="review-summary-badge">
+                        {% include "partials/icon.html" with name="star" cls="icon-sm" %}
+                        <strong>{{ review_average|floatformat:"1" }}</strong>
+                        <span>({{ review_count }} review{{ review_count|pluralize }})</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if reviews %}
+                <div class="review-list">
+                    {% for review in reviews %}
+                    <div class="review-item">
+                        <div class="review-item__head">
+                            <span class="header-account__avatar header-account__avatar--initials review-item__avatar">{{ review.tenant.full_name|first|upper }}</span>
+                            <div class="review-item__body">
+                                <div class="review-item__name">{{ review.tenant.full_name }}</div>
+                                <div class="review-item__meta">{{ review.created_at|timesince }} ago</div>
+                            </div>
+                            <div class="review-item__stars">
+                                {% for _ in review.rating|times %}{% include "partials/icon.html" with name="star" cls="icon-sm" %}{% endfor %}
+                            </div>
+                        </div>
+                        {% if review.comment %}<p class="review-item__comment">{{ review.comment }}</p>{% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="slate" style="font-size:14px;">No reviews yet — be the first to visit and share your experience.</p>
+                {% endif %}
+
+                {% if can_review %}
+                <div class="review-form">
+                    <h3 class="text-h4">{% if user_review %}Edit Your Review{% else %}Write a Review{% endif %}</h3>
+                    <form method="post" action="{% url 'reviews:submit' property.id %}">
+                        {% csrf_token %}
+                        <div class="star-rating">
+                            <input type="radio" name="rating" value="5" id="ratingStar5" {% if user_review.rating == 5 %}checked{% endif %} required><label for="ratingStar5" title="5 Stars">&#9733;</label>
+                            <input type="radio" name="rating" value="4" id="ratingStar4" {% if user_review.rating == 4 %}checked{% endif %}><label for="ratingStar4" title="4 Stars">&#9733;</label>
+                            <input type="radio" name="rating" value="3" id="ratingStar3" {% if user_review.rating == 3 %}checked{% endif %}><label for="ratingStar3" title="3 Stars">&#9733;</label>
+                            <input type="radio" name="rating" value="2" id="ratingStar2" {% if user_review.rating == 2 %}checked{% endif %}><label for="ratingStar2" title="2 Stars">&#9733;</label>
+                            <input type="radio" name="rating" value="1" id="ratingStar1" {% if user_review.rating == 1 %}checked{% endif %}><label for="ratingStar1" title="1 Star">&#9733;</label>
+                        </div>
+                        <textarea name="comment" class="field" rows="3" maxlength="1000" placeholder="Share your real experience...">{{ user_review.comment|default:"" }}</textarea>
+                        <button type="submit" class="btn btn-primary btn-sm" style="margin-top:var(--space-3);">{% if user_review %}Update Review{% else %}Submit Review{% endif %}</button>
+                    </form>
+                </div>
+                {% elif request.user.is_authenticated and request.user.role == "tenant" %}
+                <p class="slate" style="font-size:12px; margin-top:var(--space-3);">Complete a visit to this property to leave a review.</p>
+                {% endif %}
+            </div>
         </div>
 
         <!-- Sidebar -->
@@ -131,7 +187,7 @@
             <div class="detail-card price-card">
                 <div class="price-row">
                     <span class="amount">&#8377;{{ property.price|floatformat:"0"|intcomma }}</span>
-                    <span class="slate">/month</span>
+                    <span class="slate">/{{ property.price_period|default:"month" }}</span>
                     {% if property.no_brokerage %}<span class="badge badge-success-outline" style="margin-left:auto;">No Brokerage</span>{% endif %}
                 </div>
                 <dl>
@@ -150,10 +206,17 @@
                     {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
                     Send Inquiry
                 </button>
+                {% if property.is_bookable %}
+                <button type="button" class="btn btn-primary btn-block js-booking-trigger">
+                    {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
+                    Request to Book
+                </button>
+                {% else %}
                 <button type="button" class="btn btn-secondary btn-block js-visit-trigger">
                     {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
                     Schedule Visit
                 </button>
+                {% endif %}
                 {% else %}
                 <a href="{% url 'accounts:login' %}?next={% url 'properties:detail' property.id %}" class="btn btn-secondary btn-block">
                     {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
@@ -161,7 +224,7 @@
                 </a>
                 <a href="{% url 'accounts:login' %}?next={% url 'properties:detail' property.id %}" class="btn btn-secondary btn-block">
                     {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
-                    Schedule Visit
+                    {% if property.is_bookable %}Request to Book{% else %}Schedule Visit{% endif %}
                 </a>
                 {% endif %}
                 <div class="price-card__quick-actions">
@@ -216,7 +279,7 @@
                         {% if sp.badge %}<span class="badge badge-{{ sp.badge }}" style="margin-bottom:4px;">{{ sp.badge|title }}</span>{% endif %}
                         <div class="similar-property__title"><a href="{% url 'properties:detail' sp.id %}">{{ sp.title }}</a></div>
                         <div class="similar-property__location">{% include "partials/icon.html" with name="map-pin" %} {{ sp.short_location }}</div>
-                        <div class="similar-property__price">&#8377;{{ sp.price|floatformat:"0"|intcomma }}/month</div>
+                        <div class="similar-property__price">&#8377;{{ sp.price|floatformat:"0"|intcomma }}/{{ sp.price_period|default:"month" }}</div>
                         {% if sp.no_brokerage %}<span class="badge badge-success-outline" style="margin-top:4px;">No Brokerage</span>{% endif %}
                     </div>
                 </div>
@@ -249,10 +312,17 @@
     </a>
     {% endif %}
     {% if user.is_authenticated and user.role == "tenant" %}
+    {% if property.is_bookable %}
+    <button type="button" class="btn btn-secondary js-booking-trigger">
+        {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
+        Book
+    </button>
+    {% else %}
     <button type="button" class="btn btn-secondary js-visit-trigger">
         {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
         Visit
     </button>
+    {% endif %}
     <button type="button" class="btn btn-secondary js-inquiry-trigger">
         {% include "partials/icon.html" with name="chat" cls="icon-sm" %}
         Inquiry
@@ -260,7 +330,7 @@
     {% else %}
     <a href="{% url 'accounts:login' %}?next={% url 'properties:detail' property.id %}" class="btn btn-secondary">
         {% include "partials/icon.html" with name="calendar" cls="icon-sm" %}
-        Visit
+        {% if property.is_bookable %}Book{% else %}Visit{% endif %}
     </a>
     {% endif %}
     {% if contact_options %}
@@ -272,6 +342,55 @@
 </div>
 
 {% if user.is_authenticated and user.role == "tenant" %}
+{% if property.is_bookable %}
+<div class="contact-sheet-backdrop" id="bookingSheetBackdrop"></div>
+<div class="contact-sheet" id="bookingSheet">
+    <div class="contact-sheet__handle"></div>
+    <div class="contact-sheet__head">
+        <h3>Request to Book</h3>
+        <button type="button" class="contact-sheet__close" id="bookingSheetClose" aria-label="Close">
+            {% include "partials/icon.html" with name="x" cls="icon-sm" %}
+        </button>
+    </div>
+    <form method="post" action="{% url 'bookings:request_booking' property.id %}" id="bookingForm">
+        {% csrf_token %}
+        <label class="field-label" for="bookingCheckIn">Check-in</label>
+        <input type="date" name="check_in" id="bookingCheckIn" class="field" required min="{% now "Y-m-d" %}" style="margin-bottom: var(--space-3);">
+        <label class="field-label" for="bookingCheckOut">Check-out</label>
+        <input type="date" name="check_out" id="bookingCheckOut" class="field" required min="{% now "Y-m-d" %}" style="margin-bottom: var(--space-3);">
+        <label class="field-label" for="bookingGuests">Guests</label>
+        <input type="number" name="guests" id="bookingGuests" class="field" value="1" min="1" step="1" style="margin-bottom: var(--space-3);">
+        <label class="field-label" for="bookingMessage">Message to the host (optional)</label>
+        <textarea name="message" id="bookingMessage" class="field" rows="2" placeholder="Anything the host should know..." style="margin-bottom: var(--space-3); resize: vertical;"></textarea>
+        <p class="slate" id="bookingTotalPreview" style="font-size:13px; margin-bottom: var(--space-2);"></p>
+        <p class="slate" style="font-size:12px; margin-bottom: var(--space-4);">The host will need to confirm your request before it's final.</p>
+        <button type="submit" class="btn btn-primary btn-block">Request to Book</button>
+    </form>
+</div>
+<script>
+(function () {
+    var checkIn = document.getElementById('bookingCheckIn');
+    var checkOut = document.getElementById('bookingCheckOut');
+    var preview = document.getElementById('bookingTotalPreview');
+    var nightlyRate = {{ property.price|default:0 }};
+    if (!checkIn || !checkOut || !preview) return;
+    function updatePreview() {
+        if (!checkIn.value || !checkOut.value) { preview.textContent = ''; return; }
+        var inDate = new Date(checkIn.value);
+        var outDate = new Date(checkOut.value);
+        var nights = Math.round((outDate - inDate) / 86400000);
+        if (nights > 0 && nightlyRate > 0) {
+            preview.textContent = nights + ' night' + (nights > 1 ? 's' : '') + ' × ₹' + nightlyRate.toLocaleString('en-IN') + ' = ₹' + (nights * nightlyRate).toLocaleString('en-IN');
+        } else {
+            preview.textContent = '';
+        }
+        checkOut.min = checkIn.value;
+    }
+    checkIn.addEventListener('change', updatePreview);
+    checkOut.addEventListener('change', updatePreview);
+})();
+</script>
+{% else %}
 <div class="contact-sheet-backdrop" id="visitSheetBackdrop"></div>
 <div class="contact-sheet" id="visitSheet">
     <div class="contact-sheet__handle"></div>
@@ -289,6 +408,7 @@
         <button type="submit" class="btn btn-primary btn-block">Request Visit</button>
     </form>
 </div>
+{% endif %}
 
 <div class="contact-sheet-backdrop" id="inquirySheetBackdrop"></div>
 <div class="contact-sheet" id="inquirySheet">

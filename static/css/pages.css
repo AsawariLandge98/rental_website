@@ -1,4 +1,12 @@
 /* ==========================================================================
+   Legal pages (Terms & Conditions, Privacy Policy)
+   ========================================================================== */
+.legal-page { max-width: 760px; padding-block: var(--space-4) var(--space-16); }
+.legal-page__meta { color: var(--color-slate); font-size: 13px; margin: var(--space-2) 0 var(--space-6); }
+.legal-page__body { color: var(--color-ink); font-size: 15px; line-height: 26px; }
+.legal-page__body p { margin-bottom: var(--space-4); white-space: pre-line; }
+
+/* ==========================================================================
    Dashboard stub (placeholder pages until Parts 7-10 are built)
    ========================================================================== */
 .dashboard-stub { padding-block: var(--space-12) var(--space-16); }

@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 from pathlib import Path
 
+from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -24,18 +25,37 @@ load_dotenv(BASE_DIR / '.env')
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ.get(
-    'DJANGO_SECRET_KEY',
-    'django-insecure-zl-jsk8jd3)a=)xdj)4e-mq7zwz2n%sub1c!li$9ltrh&$!=(9',
-)
+# SECURITY WARNING: don't run with debug turned on in production! Defaults to
+# False (fail-closed) rather than True — a deployment that forgets to set
+# DJANGO_DEBUG no longer silently leaks stack traces/settings. Local dev's
+# .env explicitly sets DJANGO_DEBUG=True, so this default change doesn't
+# affect it at all.
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
+# SECURITY WARNING: keep the secret key used in production secret! The
+# insecure dev fallback below is only ever used when DEBUG=True (local dev,
+# where .env may reasonably be absent) — a DEBUG=False deployment that
+# forgets to set DJANGO_SECRET_KEY fails loudly at startup instead of
+# silently running on a key that's visible right here in the source.
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+if not SECRET_KEY:
+    if DEBUG:
+        SECRET_KEY = 'django-insecure-zl-jsk8jd3)a=)xdj)4e-mq7zwz2n%sub1c!li$9ltrh&$!=(9'
+    else:
+        raise ImproperlyConfigured(
+            'DJANGO_SECRET_KEY must be set in the environment when DEBUG=False — '
+            'refusing to fall back to the insecure dev key outside local development.'
+        )
 
 ALLOWED_HOSTS = [
     h.strip() for h in os.environ.get('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',') if h.strip()
 ]
+# Render sets this automatically to the app's *.onrender.com hostname — no
+# env var needs to be hand-configured for the default subdomain to work.
+# A real custom domain still needs adding to DJANGO_ALLOWED_HOSTS above.
+RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
+if RENDER_EXTERNAL_HOSTNAME:
+    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 
 # Application definition
@@ -50,6 +70,7 @@ DJANGO_APPS = [
     'django.contrib.humanize',
     'django.contrib.postgres',
     'django.contrib.sites',
+    'django.contrib.sitemaps',
 ]
 
 THIRD_PARTY_APPS = [
@@ -61,6 +82,7 @@ THIRD_PARTY_APPS = [
     'allauth.account',
     'allauth.socialaccount',
     'allauth.socialaccount.providers.google',
+    'storages',
 ]
 
 LOCAL_APPS = [
@@ -71,6 +93,7 @@ LOCAL_APPS = [
     'hotels',
     'inquiries',
     'visits',
+    'bookings',
     'reviews',
     'subscriptions',
     'notifications',
@@ -84,6 +107,11 @@ SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # Serves collected static files directly from the app process — no
+    # separate static-file host/CDN needed on Render (or any PaaS that
+    # doesn't serve /static/ itself). Must sit right after SecurityMiddleware
+    # per WhiteNoise's own setup docs.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -113,6 +141,7 @@ TEMPLATES = [
                 'accounts.context_processors.user_dashboard',
                 'notifications.context_processors.unread_notifications',
                 'dashboard.context_processors.dash_page_title',
+                'cms.context_processors.site_settings',
             ],
         },
     },
@@ -126,25 +155,49 @@ LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'core:home'
 LOGOUT_REDIRECT_URL = 'core:home'
 
-# Dev-only: password reset emails are printed to the runserver console
-# instead of being sent, since no real SMTP/SMS provider is configured yet.
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'Rentora <no-reply@rentora.local>'
+# Real SMTP email — same "scaffolding first, keys later" pattern as
+# Razorpay/Google OAuth/S3 storage above: with no EMAIL_HOST_USER/PASSWORD
+# in .env, EMAIL_BACKEND stays the console backend (password-reset emails
+# print to the runserver log, exactly as before — zero behavior change).
+# Once real SMTP credentials are added, mail actually sends — no code
+# change needed. Works with Gmail (an App Password, not the account
+# password), SendGrid, AWS SES, or any standard SMTP provider.
+EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT') or 587)
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'Rentora <no-reply@rentora.local>')
+
+EMAIL_CONFIGURED = bool(EMAIL_HOST and EMAIL_HOST_USER and EMAIL_HOST_PASSWORD)
+EMAIL_BACKEND = (
+    'django.core.mail.backends.smtp.EmailBackend' if EMAIL_CONFIGURED
+    else 'django.core.mail.backends.console.EmailBackend'
+)
 
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.environ.get('DB_NAME', 'rental_website'),
-        'USER': os.environ.get('DB_USER', 'postgres'),
-        'PASSWORD': os.environ.get('DB_PASSWORD', ''),
-        'HOST': os.environ.get('DB_HOST', 'localhost'),
-        'PORT': os.environ.get('DB_PORT', '5432'),
+# Render's managed Postgres (and most other PaaS databases) hand the app a
+# single DATABASE_URL rather than discrete host/user/password vars. When
+# it's present, parse it; otherwise fall back to the original DB_* vars
+# local dev has always used, so nothing changes for this machine's Postgres.
+DATABASE_URL = os.environ.get('DATABASE_URL', '')
+if DATABASE_URL:
+    import dj_database_url
+    DATABASES = {'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.environ.get('DB_NAME', 'rental_website'),
+            'USER': os.environ.get('DB_USER', 'postgres'),
+            'PASSWORD': os.environ.get('DB_PASSWORD', ''),
+            'HOST': os.environ.get('DB_HOST', 'localhost'),
+            'PORT': os.environ.get('DB_PORT', '5432'),
+        }
     }
-}
 
 
 # Password validation
@@ -206,6 +259,18 @@ GOOGLE_OAUTH_CLIENT_ID = os.environ.get('GOOGLE_OAUTH_CLIENT_ID', '')
 GOOGLE_OAUTH_CLIENT_SECRET = os.environ.get('GOOGLE_OAUTH_CLIENT_SECRET', '')
 GOOGLE_OAUTH_CONFIGURED = bool(GOOGLE_OAUTH_CLIENT_ID and GOOGLE_OAUTH_CLIENT_SECRET)
 
+# Mobile OTP verification (Feature 24) — same "scaffolding first" pattern
+# again. No SMS gateway has been picked yet, so this is intentionally
+# generic (see core/sms.py) rather than one specific provider's API shape.
+# Blank SMS_API_URL/SMS_API_KEY keeps SMS_CONFIGURED False, and
+# accounts/views.py::mobile_verify_send falls back to a dev-mode path
+# (the OTP is shown on-screen instead of texted) so the whole verify flow
+# stays testable locally with zero external account.
+SMS_API_URL = os.environ.get('SMS_API_URL', '')
+SMS_API_KEY = os.environ.get('SMS_API_KEY', '')
+SMS_SENDER_ID = os.environ.get('SMS_SENDER_ID', 'RENTRA')
+SMS_CONFIGURED = bool(SMS_API_URL and SMS_API_KEY)
+
 ACCOUNT_ADAPTER = 'accounts.adapters.RentoraAccountAdapter'
 SOCIALACCOUNT_ADAPTER = 'accounts.adapters.RentoraSocialAccountAdapter'
 # Our custom User model has no `username` field at all (USERNAME_FIELD is
@@ -230,3 +295,114 @@ SOCIALACCOUNT_PROVIDERS = {
         'AUTH_PARAMS': {'access_type': 'online'},
     },
 }
+
+# ---------------------------------------------------------------------------
+# Production security headers — gated on `not DEBUG` so local dev (plain
+# HTTP on localhost) is unaffected. A deployment only gets these once
+# DJANGO_DEBUG is unset/False in its real environment.
+# CSRF_COOKIE_HTTPONLY is deliberately NOT set: static/js/main.js reads the
+# csrftoken cookie directly (getCsrfToken()) for its fetch() calls (Save
+# toggle, etc.) — HttpOnly would silently break those. The cookie is still
+# scoped to this site and sent only over HTTPS via CSRF_COOKIE_SECURE below.
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    SECURE_BROWSER_XSS_FILTER = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+# Render (like most PaaS hosts) terminates HTTPS at a proxy in front of the
+# app and forwards the original scheme via this header — without telling
+# Django to trust it, every request looks like plain HTTP to Django, and
+# SECURE_SSL_REDIRECT above would redirect-loop forever. Harmless locally:
+# runserver never sends this header, so DEBUG-mode requests are unaffected.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# Needed for any state-changing POST (login, forms, dashboard actions) to
+# pass CSRF checks once served over HTTPS on a real host — Django compares
+# the request's Origin/Referer against this list, not just ALLOWED_HOSTS.
+# The default already covers Render's own *.onrender.com subdomain; add a
+# real custom domain (once you have one) via DJANGO_CSRF_TRUSTED_ORIGINS,
+# e.g. "https://rentora.com,https://www.rentora.com".
+CSRF_TRUSTED_ORIGINS = [
+    o.strip() for o in os.environ.get(
+        'DJANGO_CSRF_TRUSTED_ORIGINS', 'https://*.onrender.com',
+    ).split(',') if o.strip()
+]
+
+# Error visibility in production — with DEBUG=False there is otherwise no
+# record of a 500 error anywhere. DJANGO_ADMINS (format
+# "Name:email,Name2:email2") is optional — when set, Django emails
+# unhandled exceptions to those addresses via EMAIL_BACKEND above; either
+# way, ERROR-and-above always goes to stdout, which every PaaS host
+# (Render included) captures and makes searchable in its own log viewer.
+ADMINS = [
+    tuple(pair.split(':', 1)) for pair in os.environ.get('DJANGO_ADMINS', '').split(',') if ':' in pair
+]
+SERVER_EMAIL = os.environ.get('SERVER_EMAIL', DEFAULT_FROM_EMAIL)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {'class': 'logging.StreamHandler'},
+        'mail_admins': {'level': 'ERROR', 'class': 'django.utils.log.AdminEmailHandler'},
+    },
+    'root': {'handlers': ['console'], 'level': 'INFO'},
+    'loggers': {
+        'django': {'handlers': ['console'], 'level': 'INFO', 'propagate': False},
+        'django.request': {'handlers': ['console', 'mail_admins'], 'level': 'ERROR', 'propagate': False},
+    },
+}
+
+# ---------------------------------------------------------------------------
+# Cloud file storage (S3-compatible) — property photos, profile photos, CMS
+# uploads. Same "scaffolding first, keys later" pattern as Razorpay/Google
+# OAuth above: with no AWS_* credentials in .env, Django keeps using local
+# disk storage (MEDIA_ROOT, unaffected) exactly as before. Once real
+# credentials are added, uploads switch to the S3 bucket automatically — no
+# code change needed. Works with AWS S3 directly, or any S3-compatible
+# provider (DigitalOcean Spaces, Backblaze B2, Cloudflare R2, ...) via
+# AWS_S3_ENDPOINT_URL.
+AWS_ACCESS_KEY_ID = os.environ.get('AWS_ACCESS_KEY_ID', '')
+AWS_SECRET_ACCESS_KEY = os.environ.get('AWS_SECRET_ACCESS_KEY', '')
+AWS_STORAGE_BUCKET_NAME = os.environ.get('AWS_STORAGE_BUCKET_NAME', '')
+AWS_S3_REGION_NAME = os.environ.get('AWS_S3_REGION_NAME', '')
+AWS_S3_ENDPOINT_URL = os.environ.get('AWS_S3_ENDPOINT_URL', '') or None
+CLOUD_STORAGE_CONFIGURED = bool(AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY and AWS_STORAGE_BUCKET_NAME)
+
+# 'staticfiles' (app CSS/JS/images, served by WhiteNoise above) is always
+# local + cache-busted, independent of where user-uploaded media lives.
+# 'default' (media — property photos, profile photos, CMS uploads) only
+# moves to S3 once real AWS_* credentials exist; until then it's plain
+# local disk, unchanged from before this block existed. On most PaaS hosts
+# (Render included) local disk is wiped on every deploy/restart, so
+# uploaded photos will NOT persist there until CLOUD_STORAGE_CONFIGURED is
+# true — turn on S3 (or an S3-compatible bucket) before relying on uploads
+# surviving a redeploy in production.
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {
+        # The manifest storage requires collectstatic to have already run
+        # (it looks up a staticfiles.json manifest) — fine in production,
+        # where that's always part of the build/deploy step, but it would
+        # break every {% static %} tag in local dev/tests where
+        # collectstatic is never run. Plain StaticFilesStorage (Django's
+        # own default) only when DEBUG=True; the real cache-busted manifest
+        # storage everywhere else.
+        'BACKEND': (
+            'django.contrib.staticfiles.storage.StaticFilesStorage' if DEBUG
+            else 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+        ),
+    },
+}
+
+if CLOUD_STORAGE_CONFIGURED:
+    AWS_S3_FILE_OVERWRITE = False
+    AWS_DEFAULT_ACL = None
+    AWS_QUERYSTRING_AUTH = False  # public bucket — plain, cacheable URLs, no signed-query noise
+    STORAGES['default'] = {'BACKEND': 'storages.backends.s3.S3Storage'}

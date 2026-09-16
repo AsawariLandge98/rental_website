@@ -65,7 +65,7 @@ class RentDetailsForm(StyledModelForm):
     class Meta:
         model = Property
         fields = [
-            'monthly_rent', 'security_deposit', 'maintenance_charges',
+            'monthly_rent', 'nightly_rate', 'security_deposit', 'maintenance_charges',
             'electricity_charges', 'water_charges', 'no_brokerage',
         ]
 

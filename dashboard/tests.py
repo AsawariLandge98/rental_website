@@ -1,12 +1,17 @@
-from django.test import TestCase
+from datetime import date, timedelta
+
+from django.core import mail
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from accounts.models import TenantProfile, User
-from cms.models import FAQ
+from accounts.models import OwnerProfile, TenantProfile, User
+from bookings.models import Booking
+from cms.models import ContentBlock, FAQ, LegalPage, PageSEO, SiteSettings
 from inquiries.models import Inquiry
 from notifications.models import Notification
 from properties.models import Property
+from reviews.models import Review
 from subscriptions.models import Payment, SubscriptionPlan
 from visits.models import Visit
 from .models import AuditLog, SupportTicket
@@ -148,6 +153,133 @@ class OwnerDashboardAccessTests(TestCase):
         self.client.force_login(self.tenant)
         response = self.client.get(reverse('dashboard:owner_inquiries'))
         self.assertEqual(response.status_code, 403)
+
+    def test_owner_can_submit_a_real_support_ticket(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(reverse('dashboard:owner_help'), {
+            'subject': 'Payout not received',
+            'category': SupportTicket.Category.PAYMENT,
+            'description': 'My last payout is missing.',
+        })
+        self.assertRedirects(response, reverse('dashboard:owner_help'))
+        self.assertTrue(SupportTicket.objects.filter(user=self.owner, subject='Payout not received').exists())
+
+
+class OwnerSettingsTests(TestCase):
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            email='owner@example.com', password='StrongPass123',
+            full_name='Test Owner', role=User.Role.OWNER,
+        )
+        self.client.force_login(self.owner)
+
+    def test_notification_preferences_update(self):
+        response = self.client.post(reverse('dashboard:owner_settings_notifications'), {
+            'email_notifications': 'on',
+        })
+        self.assertRedirects(response, reverse('dashboard:owner_settings'))
+        profile = OwnerProfile.objects.get(user=self.owner)
+        self.assertTrue(profile.email_notifications)
+        self.assertFalse(profile.sms_notifications)
+
+    def test_privacy_preferences_update(self):
+        response = self.client.post(reverse('dashboard:owner_settings_privacy'), {
+            'allow_tenant_contact': 'on',
+        })
+        self.assertRedirects(response, reverse('dashboard:owner_settings'))
+        profile = OwnerProfile.objects.get(user=self.owner)
+        self.assertTrue(profile.allow_tenant_contact)
+        self.assertFalse(profile.show_contact_to_tenants)
+
+    def test_password_change(self):
+        response = self.client.post(reverse('dashboard:owner_settings_password'), {
+            'old_password': 'StrongPass123',
+            'new_password1': 'NewStrongPass456',
+            'new_password2': 'NewStrongPass456',
+        })
+        self.assertRedirects(response, reverse('dashboard:owner_settings'))
+        self.client.logout()
+        self.assertTrue(self.client.login(email='owner@example.com', password='NewStrongPass456'))
+
+    def test_delete_account_requires_confirmation_text(self):
+        response = self.client.post(reverse('dashboard:owner_settings_delete'), {'confirm': 'nope'})
+        self.assertRedirects(response, reverse('dashboard:owner_settings'))
+        self.owner.refresh_from_db()
+        self.assertTrue(self.owner.is_active)
+
+    def test_delete_account_deactivates_and_logs_out(self):
+        response = self.client.post(reverse('dashboard:owner_settings_delete'), {'confirm': 'DELETE'})
+        self.assertRedirects(response, reverse('accounts:login'))
+        self.owner.refresh_from_db()
+        self.assertFalse(self.owner.is_active)
+
+    def test_tenant_is_blocked_from_owner_settings(self):
+        tenant = User.objects.create_user(
+            email='tenant@example.com', password='StrongPass123',
+            full_name='Test Tenant', role=User.Role.TENANT,
+        )
+        self.client.force_login(tenant)
+        response = self.client.get(reverse('dashboard:owner_settings'))
+        self.assertEqual(response.status_code, 403)
+
+
+class HelpWidgetQuickTicketTests(TestCase):
+    """The floating Help & Support widget's compact submit endpoint —
+    reachable from any page, for Tenant/Owner/Hotel accounts only."""
+
+    def setUp(self):
+        self.tenant = User.objects.create_user(
+            email='tenant@example.com', password='StrongPass123',
+            full_name='Test Tenant', role=User.Role.TENANT,
+        )
+        self.owner = User.objects.create_user(
+            email='owner@example.com', password='StrongPass123',
+            full_name='Test Owner', role=User.Role.OWNER,
+        )
+        self.admin = User.objects.create_user(
+            email='admin@example.com', password='StrongPass123',
+            full_name='Test Admin', role=User.Role.ADMIN,
+        )
+
+    def test_tenant_quick_ticket_records_page_url_and_redirects_back(self):
+        self.client.force_login(self.tenant)
+        response = self.client.post(reverse('dashboard:quick_support_ticket'), {
+            'subject': 'Question about this listing',
+            'category': SupportTicket.Category.PROPERTY,
+            'description': 'Is this still available?',
+            'page_url': '/properties/42/',
+            'next': '/properties/42/',
+        })
+        self.assertRedirects(response, '/properties/42/', fetch_redirect_response=False)
+        ticket = SupportTicket.objects.get(user=self.tenant)
+        self.assertEqual(ticket.page_url, '/properties/42/')
+
+    def test_owner_quick_ticket_via_ajax_returns_json(self):
+        self.client.force_login(self.owner)
+        response = self.client.post(
+            reverse('dashboard:quick_support_ticket'),
+            {'subject': 'Quick query', 'category': SupportTicket.Category.OTHER, 'description': 'Help needed.'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'ok': True})
+        self.assertTrue(SupportTicket.objects.filter(user=self.owner, subject='Quick query').exists())
+
+    def test_admin_cannot_use_quick_ticket_endpoint(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(
+            reverse('dashboard:quick_support_ticket'),
+            {'subject': 'x', 'category': SupportTicket.Category.OTHER, 'description': 'y'},
+            HTTP_X_REQUESTED_WITH='XMLHttpRequest',
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(SupportTicket.objects.filter(user=self.admin).exists())
+
+    def test_anonymous_is_redirected_to_login(self):
+        response = self.client.post(reverse('dashboard:quick_support_ticket'), {
+            'subject': 'x', 'category': SupportTicket.Category.OTHER, 'description': 'y',
+        })
+        self.assertRedirects(response, f"/accounts/login/?next={reverse('dashboard:quick_support_ticket')}")
 
 
 class OwnerDashboardStatsTests(TestCase):
@@ -330,6 +462,66 @@ class AdminDashboardAccessTests(TestCase):
         self.client.force_login(self.admin)
         self.assertEqual(self.client.get(reverse('dashboard:admin_settings')).status_code, 403)
         self.assertEqual(self.client.get(reverse('dashboard:admin_internal_users')).status_code, 403)
+
+    @override_settings(RAZORPAY_KEY_ID='', RAZORPAY_KEY_SECRET='', GOOGLE_OAUTH_CONFIGURED=False, EMAIL_CONFIGURED=False)
+    def test_settings_page_shows_unconfigured_integrations_honestly(self):
+        # Forced to a known unconfigured state via override_settings rather
+        # than relying on whatever real credentials happen to be in this
+        # machine's .env (e.g. a real Gmail SMTP account was added to this
+        # project's own .env for actual use — the test shouldn't care).
+        self.client.force_login(self.super_admin)
+        response = self.client.get(reverse('dashboard:admin_settings'))
+        names = [i['name'] for i in response.context['integrations']]
+        self.assertEqual(names, ['Razorpay Payments', 'Google Sign-In', 'Email (SMTP)'])
+        self.assertTrue(all(i['configured'] is False for i in response.context['integrations']))
+        self.assertFalse(response.context['email_configured'])
+        self.assertIn('Console', response.context['email_mode'])
+
+    @override_settings(RAZORPAY_KEY_ID='rzp_test_x', RAZORPAY_KEY_SECRET='secret', GOOGLE_OAUTH_CONFIGURED=True, EMAIL_CONFIGURED=True, EMAIL_HOST='smtp.example.com')
+    def test_settings_page_shows_configured_integrations_honestly(self):
+        self.client.force_login(self.super_admin)
+        response = self.client.get(reverse('dashboard:admin_settings'))
+        self.assertTrue(all(i['configured'] is True for i in response.context['integrations']))
+        self.assertTrue(response.context['email_configured'])
+        self.assertIn('smtp.example.com', response.context['email_mode'])
+
+    def test_send_test_email_without_smtp_configured_shows_real_error(self):
+        # No EMAIL_HOST_USER/PASSWORD in the test environment — must not
+        # pretend to send, and must not crash.
+        self.client.force_login(self.super_admin)
+        response = self.client.post(reverse('dashboard:admin_send_test_email'))
+        self.assertRedirects(response, reverse('dashboard:admin_settings'))
+
+    def test_send_test_email_is_admin_only_not_regular_admin(self):
+        self.client.force_login(self.admin)
+        response = self.client.post(reverse('dashboard:admin_send_test_email'))
+        self.assertEqual(response.status_code, 403)
+
+    @override_settings(EMAIL_CONFIGURED=True, EMAIL_HOST='smtp.example.com')
+    def test_send_test_email_actually_sends_once_configured(self):
+        self.client.force_login(self.super_admin)
+        response = self.client.post(reverse('dashboard:admin_send_test_email'))
+        self.assertRedirects(response, reverse('dashboard:admin_settings'))
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.super_admin.email])
+        self.assertEqual(mail.outbox[0].subject, 'Rentora — Test Email')
+
+    def test_update_property_photo_limits(self):
+        self.client.force_login(self.super_admin)
+        response = self.client.post(reverse('dashboard:admin_settings'), {
+            'min_photos_to_publish': 3, 'max_photos_per_listing': 30,
+        })
+        self.assertRedirects(response, reverse('dashboard:admin_settings'))
+        settings_obj = SiteSettings.load()
+        self.assertEqual(settings_obj.min_photos_to_publish, 3)
+        self.assertEqual(settings_obj.max_photos_per_listing, 30)
+
+    def test_photo_limit_update_is_logged(self):
+        self.client.force_login(self.super_admin)
+        self.client.post(reverse('dashboard:admin_settings'), {
+            'min_photos_to_publish': 3, 'max_photos_per_listing': 30,
+        })
+        self.assertTrue(AuditLog.objects.filter(target_type='SiteSettings', target_id=1).exists())
 
 
 class AdminDashboardStatsTests(TestCase):
@@ -654,6 +846,74 @@ class AdminInquiriesVisitsTests(TestCase):
         self.assertEqual(pending_visit.status, Visit.Status.CANCELLED)
 
 
+class AdminReviewsTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            email='admin@example.com', password='AdminPass123',
+            full_name='Test Admin', role=User.Role.ADMIN,
+        )
+        self.owner = User.objects.create_user(
+            email='owner@example.com', password='StrongPass123',
+            full_name='Test Owner', role=User.Role.OWNER,
+        )
+        self.tenant = User.objects.create_user(
+            email='tenant@example.com', password='StrongPass123',
+            full_name='Test Tenant', role=User.Role.TENANT,
+        )
+        self.published = Property.objects.create(
+            owner=self.owner, title='Sunshine Flat', status=Property.Status.PUBLISHED,
+            property_type='apartment', city='Nagpur', monthly_rent=15000,
+        )
+        self.review = Review.objects.create(
+            tenant=self.tenant, property=self.published, rating=5, comment='Loved it here.',
+        )
+        self.client.force_login(self.admin)
+
+    def test_access(self):
+        response = self.client.get(reverse('dashboard:admin_reviews'))
+        self.assertEqual(response.status_code, 200)
+        self.client.force_login(self.tenant)
+        response = self.client.get(reverse('dashboard:admin_reviews'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_stats_and_listing(self):
+        response = self.client.get(reverse('dashboard:admin_reviews'))
+        self.assertEqual(response.context['stats']['total'], 1)
+        self.assertEqual(response.context['stats']['average'], 5)
+        ids = {r.pk for r in response.context['reviews']}
+        self.assertEqual(ids, {self.review.pk})
+
+    def test_search_by_comment(self):
+        response = self.client.get(reverse('dashboard:admin_reviews'), {'q': 'Loved'})
+        ids = {r.pk for r in response.context['reviews']}
+        self.assertEqual(ids, {self.review.pk})
+        response = self.client.get(reverse('dashboard:admin_reviews'), {'q': 'nonexistent-text'})
+        self.assertEqual(response.context['reviews'].paginator.count, 0)
+
+    def test_filter_by_rating(self):
+        Review.objects.create(
+            tenant=User.objects.create_user(
+                email='tenant2@example.com', password='StrongPass123', full_name='Tenant Two', role=User.Role.TENANT,
+            ),
+            property=self.published, rating=2,
+        )
+        response = self.client.get(reverse('dashboard:admin_reviews'), {'rating': '5'})
+        ids = {r.pk for r in response.context['reviews']}
+        self.assertEqual(ids, {self.review.pk})
+
+    def test_delete_review_is_logged(self):
+        response = self.client.post(reverse('dashboard:admin_review_delete', args=[self.review.pk]))
+        self.assertRedirects(response, reverse('dashboard:admin_reviews'))
+        self.assertFalse(Review.objects.filter(pk=self.review.pk).exists())
+        self.assertTrue(AuditLog.objects.filter(target_type='Review').exists())
+
+    def test_regular_user_cannot_delete_a_review(self):
+        self.client.force_login(self.tenant)
+        response = self.client.post(reverse('dashboard:admin_review_delete', args=[self.review.pk]))
+        self.assertEqual(response.status_code, 403)
+        self.assertTrue(Review.objects.filter(pk=self.review.pk).exists())
+
+
 class OwnerInquiriesVisitsTests(TestCase):
     def setUp(self):
         self.owner = User.objects.create_user(
@@ -702,6 +962,10 @@ class OwnerInquiriesVisitsTests(TestCase):
         self.other_owner_pending_visit = Visit.objects.create(
             tenant=self.tenant, property=self.other_owner_property,
             scheduled_at=timezone.now() + timezone.timedelta(days=2),
+        )
+        self.past_scheduled_visit = Visit.objects.create(
+            tenant=self.tenant, property=self.published,
+            scheduled_at=timezone.now() - timezone.timedelta(days=1), status=Visit.Status.SCHEDULED,
         )
         self.client.force_login(self.owner)
 
@@ -752,11 +1016,11 @@ class OwnerInquiriesVisitsTests(TestCase):
     def test_visits_scoped_to_own_properties_only(self):
         response = self.client.get(reverse('dashboard:owner_visits'))
         stats = response.context['stats']
-        self.assertEqual(stats['total'], 2)
+        self.assertEqual(stats['total'], 3)
         self.assertEqual(stats['pending'], 1)
-        self.assertEqual(stats['scheduled'], 1)
+        self.assertEqual(stats['scheduled'], 2)
         ids = {v.pk for v in response.context['visits']}
-        self.assertEqual(ids, {self.scheduled_visit.pk, self.pending_visit.pk})
+        self.assertEqual(ids, {self.scheduled_visit.pk, self.pending_visit.pk, self.past_scheduled_visit.pk})
         self.assertNotIn(self.other_owner_visit.pk, ids)
         self.assertNotIn(self.other_owner_pending_visit.pk, ids)
 
@@ -803,6 +1067,36 @@ class OwnerInquiriesVisitsTests(TestCase):
         self.assertEqual(response.status_code, 404)
         self.other_owner_pending_visit.refresh_from_db()
         self.assertEqual(self.other_owner_pending_visit.status, Visit.Status.PENDING)
+
+    def test_complete_a_past_scheduled_visit_notifies_tenant(self):
+        response = self.client.post(reverse('dashboard:owner_visit_complete', args=[self.past_scheduled_visit.pk]))
+        self.assertRedirects(response, reverse('dashboard:owner_visits'))
+        self.past_scheduled_visit.refresh_from_db()
+        self.assertEqual(self.past_scheduled_visit.status, Visit.Status.COMPLETED)
+        self.assertTrue(Notification.objects.filter(user=self.tenant, message__icontains='completed').exists())
+
+    def test_cannot_complete_a_visit_before_its_scheduled_time(self):
+        # self.scheduled_visit is scheduled a day in the future — can't
+        # honestly be marked completed yet.
+        response = self.client.post(reverse('dashboard:owner_visit_complete', args=[self.scheduled_visit.pk]))
+        self.assertRedirects(response, reverse('dashboard:owner_visits'))
+        self.scheduled_visit.refresh_from_db()
+        self.assertEqual(self.scheduled_visit.status, Visit.Status.SCHEDULED)
+
+    def test_cannot_complete_a_pending_visit(self):
+        response = self.client.post(reverse('dashboard:owner_visit_complete', args=[self.pending_visit.pk]))
+        self.pending_visit.refresh_from_db()
+        self.assertEqual(self.pending_visit.status, Visit.Status.PENDING)
+
+    def test_cannot_complete_another_owners_visit(self):
+        past_other_owner_visit = Visit.objects.create(
+            tenant=self.tenant, property=self.other_owner_property,
+            scheduled_at=timezone.now() - timezone.timedelta(days=1), status=Visit.Status.SCHEDULED,
+        )
+        response = self.client.post(reverse('dashboard:owner_visit_complete', args=[past_other_owner_visit.pk]))
+        self.assertEqual(response.status_code, 404)
+        past_other_owner_visit.refresh_from_db()
+        self.assertEqual(past_other_owner_visit.status, Visit.Status.SCHEDULED)
 
 
 class AdminSupportTests(TestCase):
@@ -1019,6 +1313,25 @@ class AdminCmsFaqTests(TestCase):
         response = self.client.get(reverse('dashboard:admin_cms'))
         self.assertEqual(response.status_code, 403)
 
+    def test_website_pages_table_lists_every_public_page(self):
+        response = self.client.get(reverse('dashboard:admin_cms'))
+        titles = [p['title'] for p in response.context['pages']]
+        self.assertEqual(titles, ['Home', 'About Us', 'Contact Us', 'Become a Host', 'Terms & Conditions', 'Privacy Policy'])
+
+    def test_website_pages_last_updated_reflects_real_content_timestamp(self):
+        # The seed migrations already gave every page real ContentBlock/FAQ/
+        # LegalPage rows, so every page should resolve a real timestamp —
+        # never a fabricated one.
+        response = self.client.get(reverse('dashboard:admin_cms'))
+        for page in response.context['pages']:
+            self.assertIsNotNone(page['updated_at'], f'{page["title"]} has no real timestamp source')
+
+    def test_website_pages_manage_link_prefilters_correctly(self):
+        response = self.client.get(reverse('dashboard:admin_cms'))
+        pages_by_title = {p['title']: p for p in response.context['pages']}
+        self.assertIn('placement=home_why_choose', pages_by_title['Home']['manage_url'])
+        self.assertIn('placement=contact', pages_by_title['Contact Us']['manage_url'])
+
     def test_create_faq(self):
         response = self.client.post(reverse('dashboard:admin_cms_faq_add'), {
             'question': 'New question?', 'answer': 'New answer.',
@@ -1062,6 +1375,199 @@ class AdminCmsFaqTests(TestCase):
     def test_faq_actions_are_logged(self):
         self.client.post(reverse('dashboard:admin_cms_faq_toggle', args=[self.faq.pk]))
         self.assertTrue(AuditLog.objects.filter(target_type='FAQ', target_id=self.faq.pk).exists())
+
+
+class AdminCmsContentBlockTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            email='admin@example.com', password='AdminPass123',
+            full_name='Test Admin', role=User.Role.ADMIN,
+        )
+        self.tenant = User.objects.create_user(
+            email='tenant@example.com', password='StrongPass123',
+            full_name='Test Tenant', role=User.Role.TENANT,
+        )
+        self.block = ContentBlock.objects.create(
+            placement=ContentBlock.Placement.HOME_WHY_CHOOSE, icon='heart',
+            title='Existing block', text='Existing text.',
+        )
+        self.client.force_login(self.admin)
+
+    def test_access(self):
+        response = self.client.get(reverse('dashboard:admin_content_blocks'))
+        self.assertEqual(response.status_code, 200)
+        self.client.force_login(self.tenant)
+        response = self.client.get(reverse('dashboard:admin_content_blocks'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_create_block(self):
+        response = self.client.post(reverse('dashboard:admin_content_block_add'), {
+            'placement': ContentBlock.Placement.HOST_PERKS, 'icon': 'star',
+            'title': 'New perk', 'text': 'New perk text.', 'order': 0, 'is_published': 'on',
+        })
+        self.assertRedirects(response, reverse('dashboard:admin_content_blocks'))
+        self.assertTrue(ContentBlock.objects.filter(title='New perk', placement=ContentBlock.Placement.HOST_PERKS).exists())
+
+    def test_edit_block(self):
+        response = self.client.post(reverse('dashboard:admin_content_block_edit', args=[self.block.pk]), {
+            'placement': ContentBlock.Placement.HOME_WHY_CHOOSE, 'icon': 'heart',
+            'title': 'Updated block', 'text': 'Updated text.', 'order': 3, 'is_published': 'on',
+        })
+        self.assertRedirects(response, reverse('dashboard:admin_content_blocks'))
+        self.block.refresh_from_db()
+        self.assertEqual(self.block.title, 'Updated block')
+        self.assertEqual(self.block.order, 3)
+
+    def test_toggle_publish(self):
+        self.assertTrue(self.block.is_published)
+        response = self.client.post(reverse('dashboard:admin_content_block_toggle', args=[self.block.pk]))
+        self.assertRedirects(response, reverse('dashboard:admin_content_blocks'))
+        self.block.refresh_from_db()
+        self.assertFalse(self.block.is_published)
+
+    def test_delete_block(self):
+        response = self.client.post(reverse('dashboard:admin_content_block_delete', args=[self.block.pk]))
+        self.assertRedirects(response, reverse('dashboard:admin_content_blocks'))
+        self.assertFalse(ContentBlock.objects.filter(pk=self.block.pk).exists())
+
+    def test_block_actions_are_logged(self):
+        self.client.post(reverse('dashboard:admin_content_block_toggle', args=[self.block.pk]))
+        self.assertTrue(AuditLog.objects.filter(target_type='ContentBlock', target_id=self.block.pk).exists())
+
+
+class AdminCmsLegalPageTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            email='admin@example.com', password='AdminPass123',
+            full_name='Test Admin', role=User.Role.ADMIN,
+        )
+        self.tenant = User.objects.create_user(
+            email='tenant@example.com', password='StrongPass123',
+            full_name='Test Tenant', role=User.Role.TENANT,
+        )
+        # The 0006_seed_legal_pages data migration already created a 'terms'
+        # row (LegalPage.slug is unique) — fetch it rather than creating a
+        # second one.
+        self.page = LegalPage.objects.get(slug='terms')
+        self.client.force_login(self.admin)
+
+    def test_access(self):
+        response = self.client.get(reverse('dashboard:admin_legal_pages'))
+        self.assertEqual(response.status_code, 200)
+        self.client.force_login(self.tenant)
+        response = self.client.get(reverse('dashboard:admin_legal_pages'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_edit_legal_page(self):
+        response = self.client.post(reverse('dashboard:admin_legal_page_edit', args=[self.page.pk]), {
+            'title': 'Terms & Conditions', 'body': 'Updated body text.',
+        })
+        self.assertRedirects(response, reverse('dashboard:admin_legal_pages'))
+        self.page.refresh_from_db()
+        self.assertEqual(self.page.body, 'Updated body text.')
+
+    def test_edit_is_logged(self):
+        self.client.post(reverse('dashboard:admin_legal_page_edit', args=[self.page.pk]), {
+            'title': 'Terms & Conditions', 'body': 'Updated again.',
+        })
+        self.assertTrue(AuditLog.objects.filter(target_type='LegalPage', target_id=self.page.pk).exists())
+
+
+class AdminCmsSiteSettingsTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            email='admin@example.com', password='AdminPass123',
+            full_name='Test Admin', role=User.Role.ADMIN,
+        )
+        self.tenant = User.objects.create_user(
+            email='tenant@example.com', password='StrongPass123',
+            full_name='Test Tenant', role=User.Role.TENANT,
+        )
+        self.client.force_login(self.admin)
+
+    def test_access(self):
+        response = self.client.get(reverse('dashboard:admin_site_settings'))
+        self.assertEqual(response.status_code, 200)
+        self.client.force_login(self.tenant)
+        response = self.client.get(reverse('dashboard:admin_site_settings'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_update_settings(self):
+        response = self.client.post(reverse('dashboard:admin_site_settings'), {
+            'platform_name': 'Rentora',
+            'support_phone': '+91 90000 00000', 'support_email': 'help@rentora.local',
+            'business_address': '', 'facebook_url': 'https://facebook.com/rentora',
+            'instagram_url': '', 'twitter_url': '', 'linkedin_url': '',
+        })
+        self.assertRedirects(response, reverse('dashboard:admin_site_settings'))
+        settings_obj = SiteSettings.load()
+        self.assertEqual(settings_obj.support_phone, '+91 90000 00000')
+        self.assertEqual(settings_obj.facebook_url, 'https://facebook.com/rentora')
+
+    def test_settings_stay_a_singleton(self):
+        SiteSettings.load()
+        self.client.post(reverse('dashboard:admin_site_settings'), {
+            'platform_name': 'Rentora',
+            'support_phone': '+91 90000 00000', 'support_email': '', 'business_address': '',
+            'facebook_url': '', 'instagram_url': '', 'twitter_url': '', 'linkedin_url': '',
+        })
+        self.assertEqual(SiteSettings.objects.count(), 1)
+
+    def test_update_platform_name_and_it_appears_sitewide(self):
+        self.client.post(reverse('dashboard:admin_site_settings'), {
+            'platform_name': 'RentHub',
+            'support_phone': '', 'support_email': '', 'business_address': '',
+            'facebook_url': '', 'instagram_url': '', 'twitter_url': '', 'linkedin_url': '',
+        })
+        self.assertEqual(SiteSettings.load().platform_name, 'RentHub')
+
+
+class AdminSeoSettingsTests(TestCase):
+    def setUp(self):
+        self.admin = User.objects.create_user(
+            email='admin@example.com', password='AdminPass123',
+            full_name='Test Admin', role=User.Role.ADMIN,
+        )
+        self.tenant = User.objects.create_user(
+            email='tenant@example.com', password='StrongPass123',
+            full_name='Test Tenant', role=User.Role.TENANT,
+        )
+        self.client.force_login(self.admin)
+
+    def test_access(self):
+        response = self.client.get(reverse('dashboard:admin_seo_settings'))
+        self.assertEqual(response.status_code, 200)
+        self.client.force_login(self.tenant)
+        response = self.client.get(reverse('dashboard:admin_seo_settings'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_hub_lists_every_seeded_page(self):
+        response = self.client.get(reverse('dashboard:admin_seo_settings'))
+        pages = [p.page for p in response.context['pages']]
+        self.assertEqual(set(pages), {'home', 'about', 'contact', 'become_host', 'terms', 'privacy'})
+
+    def test_update_analytics_ids(self):
+        response = self.client.post(reverse('dashboard:admin_seo_settings'), {
+            'google_analytics_id': 'G-ABC123', 'facebook_pixel_id': '',
+        })
+        self.assertRedirects(response, reverse('dashboard:admin_seo_settings'))
+        self.assertEqual(SiteSettings.load().google_analytics_id, 'G-ABC123')
+
+    def test_edit_page_meta(self):
+        page_seo = PageSEO.objects.get(page=PageSEO.Page.HOME)
+        response = self.client.post(reverse('dashboard:admin_page_seo_edit', args=[page_seo.pk]), {
+            'meta_title': 'New Home Title', 'meta_description': 'New description.',
+        })
+        self.assertRedirects(response, reverse('dashboard:admin_seo_settings'))
+        page_seo.refresh_from_db()
+        self.assertEqual(page_seo.meta_title, 'New Home Title')
+
+    def test_page_meta_edit_is_logged(self):
+        page_seo = PageSEO.objects.get(page=PageSEO.Page.HOME)
+        self.client.post(reverse('dashboard:admin_page_seo_edit', args=[page_seo.pk]), {
+            'meta_title': 'New Home Title', 'meta_description': 'New description.',
+        })
+        self.assertTrue(AuditLog.objects.filter(target_type='PageSEO', target_id=page_seo.pk).exists())
 
 
 class AdminSubscriptionsTests(TestCase):
@@ -1275,3 +1781,100 @@ class AdminInternalUsersTests(TestCase):
     def test_admin_user_actions_are_logged(self):
         self.client.post(reverse('dashboard:admin_user_set_role_super_admin', args=[self.admin.pk]))
         self.assertTrue(AuditLog.objects.filter(target_type='User', target_id=self.admin.pk).exists())
+
+
+class OwnerAdminBookingsTests(TestCase):
+    """Feature 26 — the Hotel Booking flow. bookings/tests.py covers the
+    tenant-facing request/list/cancel actions; this covers the owner-side
+    Confirm/Decline and the platform-wide admin oversight list."""
+
+    def setUp(self):
+        self.owner = User.objects.create_user(
+            email='owner@example.com', password='StrongPass123', full_name='Owner', role=User.Role.OWNER,
+        )
+        self.other_owner = User.objects.create_user(
+            email='owner2@example.com', password='StrongPass123', full_name='Other Owner', role=User.Role.OWNER,
+        )
+        self.tenant = User.objects.create_user(
+            email='tenant@example.com', password='StrongPass123', full_name='Tenant', role=User.Role.TENANT,
+        )
+        self.hotel = Property.objects.create(
+            owner=self.owner, title='Lakeview Homestay', status=Property.Status.PUBLISHED,
+            category=Property.Category.HOMESTAY, city='Nagpur', nightly_rate=2000,
+        )
+        self.other_owner_hotel = Property.objects.create(
+            owner=self.other_owner, title='Other Homestay', status=Property.Status.PUBLISHED,
+            category=Property.Category.HOMESTAY, city='Nagpur', nightly_rate=1500,
+        )
+        self.pending = Booking.objects.create(
+            tenant=self.tenant, property=self.hotel,
+            check_in=date.today() + timedelta(days=5), check_out=date.today() + timedelta(days=8),
+        )
+        self.other_owner_booking = Booking.objects.create(
+            tenant=self.tenant, property=self.other_owner_hotel,
+            check_in=date.today() + timedelta(days=5), check_out=date.today() + timedelta(days=8),
+        )
+        self.client.force_login(self.owner)
+
+    def test_owner_bookings_access(self):
+        response = self.client.get(reverse('dashboard:owner_bookings'))
+        self.assertEqual(response.status_code, 200)
+        self.client.force_login(self.tenant)
+        response = self.client.get(reverse('dashboard:owner_bookings'))
+        self.assertEqual(response.status_code, 403)
+
+    def test_bookings_scoped_to_own_properties_only(self):
+        response = self.client.get(reverse('dashboard:owner_bookings'))
+        ids = {b.pk for b in response.context['bookings']}
+        self.assertEqual(ids, {self.pending.pk})
+        self.assertNotIn(self.other_owner_booking.pk, ids)
+
+    def test_owner_confirms_a_pending_booking(self):
+        response = self.client.post(reverse('dashboard:owner_booking_confirm', args=[self.pending.pk]))
+        self.assertRedirects(response, reverse('dashboard:owner_bookings'))
+        self.pending.refresh_from_db()
+        self.assertEqual(self.pending.status, Booking.Status.CONFIRMED)
+        self.assertTrue(self.tenant.notifications.filter(category='visit', message__icontains='confirmed').exists())
+
+    def test_owner_declines_a_pending_booking(self):
+        response = self.client.post(reverse('dashboard:owner_booking_decline', args=[self.pending.pk]))
+        self.assertRedirects(response, reverse('dashboard:owner_bookings'))
+        self.pending.refresh_from_db()
+        self.assertEqual(self.pending.status, Booking.Status.DECLINED)
+        self.assertTrue(self.tenant.notifications.filter(category='visit', message__icontains='declined').exists())
+
+    def test_cannot_confirm_another_owners_booking(self):
+        response = self.client.post(reverse('dashboard:owner_booking_confirm', args=[self.other_owner_booking.pk]))
+        self.assertEqual(response.status_code, 404)
+        self.other_owner_booking.refresh_from_db()
+        self.assertEqual(self.other_owner_booking.status, Booking.Status.PENDING)
+
+    def test_confirming_a_booking_that_overlaps_an_already_confirmed_one_is_blocked(self):
+        other_tenant = User.objects.create_user(
+            email='tenant2@example.com', password='StrongPass123', full_name='Tenant Two', role=User.Role.TENANT,
+        )
+        overlapping = Booking.objects.create(
+            tenant=other_tenant, property=self.hotel,
+            check_in=date.today() + timedelta(days=6), check_out=date.today() + timedelta(days=7),
+        )
+        self.pending.status = Booking.Status.CONFIRMED
+        self.pending.save(update_fields=['status'])
+
+        response = self.client.post(reverse('dashboard:owner_booking_confirm', args=[overlapping.pk]))
+        self.assertRedirects(response, reverse('dashboard:owner_bookings'))
+        overlapping.refresh_from_db()
+        self.assertEqual(overlapping.status, Booking.Status.PENDING)
+
+    def test_admin_bookings_lists_every_booking_platform_wide(self):
+        admin = User.objects.create_user(
+            email='admin@example.com', password='StrongPass123', full_name='Admin', role=User.Role.ADMIN,
+        )
+        self.client.force_login(admin)
+        response = self.client.get(reverse('dashboard:admin_bookings'))
+        self.assertEqual(response.status_code, 200)
+        ids = {b.pk for b in response.context['bookings']}
+        self.assertEqual(ids, {self.pending.pk, self.other_owner_booking.pk})
+
+    def test_admin_bookings_requires_admin_role(self):
+        response = self.client.get(reverse('dashboard:admin_bookings'))
+        self.assertEqual(response.status_code, 403)

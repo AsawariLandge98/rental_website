@@ -66,7 +66,9 @@
 </div>
 
 <div class="dash-section">
-    <h2 class="text-h3" style="margin-bottom: var(--space-4);">Quick Actions</h2>
+    <div class="dash-section__head">
+        <h2 class="text-h3">Quick Actions</h2>
+    </div>
     <div class="dash-quick-actions">
         <a href="{% url 'dashboard:admin_users' %}">{% include "partials/icon.html" with name="users" %}User Management</a>
         <a href="{% url 'dashboard:admin_properties' %}">{% include "partials/icon.html" with name="building" %}Properties</a>
